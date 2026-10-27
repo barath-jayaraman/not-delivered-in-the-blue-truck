@@ -5,6 +5,7 @@ import type {
   CartItem,
   DecideResponse,
   Merchant,
+  PolicyGateEntry,
   Priority,
   ProductSummary,
   PrototypeOrder,
@@ -51,6 +52,12 @@ function arrivalDate(deliveryDays: number): string {
   const date = new Date();
   date.setDate(date.getDate() + deliveryDays);
   return formatDate(date);
+}
+
+function productionRouteLabel(offer: ScoredOffer): string {
+  return offer.merchant === "Walmart"
+    ? "browser — Agentic Access Terms"
+    : "official API only";
 }
 
 function returnsLabel(offer: ScoredOffer): string {
@@ -114,6 +121,8 @@ export default function ShoppingApp() {
   const [placedOrders, setPlacedOrders] = useState<PrototypeOrder[]>([]);
   const [returnMethods, setReturnMethods] = useState<Record<string, ReturnMethod>>({});
   const [labelOrderNumber, setLabelOrderNumber] = useState<string | null>(null);
+  const [policyGate, setPolicyGate] = useState<PolicyGateEntry[]>([]);
+  const [walmartConsent, setWalmartConsent] = useState(false);
   const [now, setNow] = useState(0);
 
   useEffect(() => {
@@ -145,6 +154,27 @@ export default function ShoppingApp() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/policy-gate")
+      .then((res) => res.json())
+      .then((data: { entries?: PolicyGateEntry[] }) => {
+        if (!cancelled && Array.isArray(data.entries)) setPolicyGate(data.entries);
+      })
+      .catch(() => {
+        // The gate panel is informational; the flow works without it.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Any cart change voids a previously given Walmart consent: the guest must
+  // re-review exactly what they are authorizing.
+  useEffect(() => {
+    setWalmartConsent(false);
+  }, [cart]);
+
   const selectedOffer = useMemo(
     () => result?.offers.find((offer) => offer.id === selectedOfferId) ?? result?.recommendation,
     [result, selectedOfferId],
@@ -155,6 +185,9 @@ export default function ShoppingApp() {
     const shipping = cart.reduce((sum, item) => sum + item.shippingCost * item.quantity, 0);
     return { subtotal, shipping, total: subtotal + shipping, count: cart.reduce((n, i) => n + i.quantity, 0) };
   }, [cart]);
+
+  const cartHasWalmart = cart.some((item) => item.merchant === "Walmart");
+  const walmartCartItems = cart.filter((item) => item.merchant === "Walmart");
 
   const labelOrder = orders.find((order) => order.confirmationNumber === labelOrderNumber);
 
@@ -252,6 +285,8 @@ export default function ShoppingApp() {
   function completeSandboxCheckout(e: React.FormEvent) {
     e.preventDefault();
     if (cart.length === 0) return;
+    // Walmart Human Consent Gate: no consent, no checkout — even in sandbox.
+    if (cartHasWalmart && !walmartConsent) return;
 
     const purchasedAt = new Date();
     const base = purchasedAt.getTime().toString(36).toUpperCase();
@@ -282,6 +317,7 @@ export default function ShoppingApp() {
         returnDeadline,
         guestName,
         guestEmail,
+        consentGateConfirmed: item.merchant === "Walmart" ? walmartConsent : undefined,
         status: "Sample order confirmed",
         dataSource: "sample",
       };
@@ -319,22 +355,42 @@ export default function ShoppingApp() {
     if (!result) return null;
     const merchantOffers = result.offers.filter((offer) => offer.merchant === merchant);
     if (merchantOffers.length === 0) return null;
-    const isEbay = merchant === "eBay";
+    const moduleMeta: Record<
+      string,
+      { moduleClass: string; logoClass: string; heading: string; note: string }
+    > = {
+      Walmart: {
+        moduleClass: "walmartModule",
+        logoClass: "walmartLogo",
+        heading: "Walmart offers — browsed route",
+        note: "Production route is agent browsing under Walmart's Agentic Access Terms (website tier). These records are sample data, and a Walmart checkout always stops at the human consent gate below.",
+      },
+      "Best Buy": {
+        moduleClass: "bestBuyModule",
+        logoClass: "bestBuyLogo",
+        heading: "Best Buy offers",
+        note: "Best Buy arrival is a sample shipping-service estimate, not an API ETA. Returns shown here are a curated retailer-policy sample.",
+      },
+      eBay: {
+        moduleClass: "ebayModule",
+        logoClass: "ebayLogo",
+        heading: "eBay offers — separate module",
+        note: "Prototype presentation keeps eBay sample content visually separate and labelled. A future live module must re-query within the 6-hour freshness limit.",
+      },
+    };
+    const meta = moduleMeta[merchant];
+    if (!meta) return null;
     return (
       <section
-        className={`merchantModule ${isEbay ? "ebayModule" : "bestBuyModule"}`}
+        className={`merchantModule ${meta.moduleClass}`}
         aria-label={`${merchant} sample offers`}
       >
         <div className="merchantHeader">
           <div>
-            <span className={`merchantLogo ${isEbay ? "ebayLogo" : "bestBuyLogo"}`}>{merchant}</span>
-            <h4>{isEbay ? "eBay offers — separate module" : "Best Buy offers"}</h4>
+            <span className={`merchantLogo ${meta.logoClass}`}>{merchant}</span>
+            <h4>{meta.heading}</h4>
           </div>
-          <p>
-            {isEbay
-              ? "Prototype presentation keeps eBay sample content visually separate and labelled. A future live module must re-query within the 6-hour freshness limit."
-              : "Best Buy arrival is a sample shipping-service estimate, not an API ETA. Returns shown here are a curated retailer-policy sample."}
-          </p>
+          <p>{meta.note}</p>
         </div>
         <div className="tableWrap merchantTableWrap">
           <table className="compareTable">
@@ -373,7 +429,7 @@ export default function ShoppingApp() {
                     <small>{offer.condition} · {offer.sampleListingLabel}</small>
                     {offer.id === result.recommendation.id && <span className="tag"> Recommended</span>}
                     <small className="provenance">
-                      Source: sample data · Method: sample (production: API only) · Retrieved: not retrieved · Policy: api-only
+                      Source: sample data · Method: sample (production: {productionRouteLabel(offer)}) · Retrieved: not retrieved · Policy: {offer.provenance.policyStatus}
                     </small>
                   </td>
                   <td>{money(offer.price)}</td>
@@ -393,6 +449,65 @@ export default function ShoppingApp() {
             </tbody>
           </table>
         </div>
+      </section>
+    );
+  }
+
+  function renderPolicyGatePanel() {
+    if (policyGate.length === 0) return null;
+    return (
+      <section className="policyGatePanel" aria-labelledby="policy-gate-heading">
+        <div className="sectionHeadingRow">
+          <div>
+            <p className="eyebrow">Technical depth · policy-routed retrieval</p>
+            <h3 id="policy-gate-heading">Merchant policy gate</h3>
+          </div>
+          <span className="sampleBadge">Checked before any data moves</span>
+        </div>
+        <p className="gateIntro">
+          Every merchant is routed by its own agent policy first. The gate is
+          prohibition-based: a route is used only when the merchant&apos;s terms
+          allow it, and an active block or challenge stops the session — it is
+          never evaded.
+        </p>
+        <ul className="gateList">
+          {policyGate.map((entry) => (
+            <li className="gateRow" key={entry.merchant}>
+              <strong className="gateMerchant">{entry.merchant}</strong>
+              <span className={`gateChip gateChip-${entry.route}`}>{entry.outcomeLabel}</span>
+              <span className="gateDetail">{entry.detail}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  function renderAgentPanel() {
+    if (!result) return null;
+    const activity = result.agentActivity;
+    return (
+      <section className="agentPanel" aria-labelledby="agent-activity-heading">
+        <div className="sectionHeadingRow">
+          <div>
+            <p className="eyebrow">Agent activity</p>
+            <h3 id="agent-activity-heading">How this recommendation was produced</h3>
+          </div>
+          <span className="sampleBadge">{activity.liveConfigured ? "API configured" : "Local pipeline"}</span>
+        </div>
+        <p className="agentModelLabel">{activity.modelLabel}.</p>
+        <ol className="agentSteps">
+          {activity.steps.map((step, index) => (
+            <li className="agentStep" key={step.id}>
+              <span className="agentStepNumber">{index + 1}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <span className="agentStepEngine">{step.engine}</span>
+                <p>{step.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </section>
     );
   }
@@ -474,6 +589,8 @@ export default function ShoppingApp() {
         ))}
       </div>
 
+      {renderPolicyGatePanel()}
+
       {error && (
         <div className="errorBox" role="alert">
           <p>{error}</p>
@@ -499,7 +616,7 @@ export default function ShoppingApp() {
                   sample arrival in {item.fastestDeliveryDays} days · {item.offerCount} offers
                 </p>
                 <p className="provenanceText">
-                  Sources: eBay + Best Buy sample records · Method: sample · Retrieved: not retrieved · Policy: api-only
+                  Sources: {item.sourceMerchants.join(" + ")} sample records · Method: sample · Retrieved: not retrieved · Policy: per-merchant gate (Walmart browsed route; Best Buy/eBay API)
                 </p>
                 <button className="secondaryButton" type="button" onClick={() => void openProduct(item.id)}>
                   Compare top five
@@ -539,9 +656,12 @@ export default function ShoppingApp() {
             </p>
           </article>
 
+          {renderAgentPanel()}
+
           <h4 className="tableTitle">Top five options — grouped by merchant</h4>
-          {renderOfferModule("eBay")}
+          {renderOfferModule("Walmart")}
           {renderOfferModule("Best Buy")}
+          {renderOfferModule("eBay")}
 
           <article className="selectedPanel">
             <div>
@@ -632,9 +752,54 @@ export default function ShoppingApp() {
                   <input value={demoCvc} onChange={(e) => setDemoCvc(e.target.value)} inputMode="numeric" autoComplete="off" required />
                 </label>
               </div>
-              <button className="ctaButton" type="submit">
+              {cartHasWalmart && (
+                <section className="consentGate" aria-labelledby="consent-gate-heading">
+                  <p className="eyebrow">Human Consent Gate — required for Walmart</p>
+                  <h4 id="consent-gate-heading">Review and authorize the Walmart purchase</h4>
+                  <p>
+                    Walmart&apos;s Agentic Access Terms require a person to approve every
+                    purchase: the agent never checks out on its own, and your
+                    payment-card details are never shared with the agent. This sandbox
+                    mirrors that rule — review the Walmart item below, then confirm to
+                    continue.
+                  </p>
+                  <ul className="consentReview">
+                    {walmartCartItems.map((item) => (
+                      <li key={item.offerId}>
+                        <strong>{item.productName}</strong> · Ships from and sold by{" "}
+                        {item.seller} · {money(item.totalCost * item.quantity)} all-in ·
+                        estimated arrival {arrivalDate(item.deliveryDays)} ·{" "}
+                        {item.returnWindowDays}-day sample return window
+                      </li>
+                    ))}
+                  </ul>
+                  <label className="consentCheck">
+                    <input
+                      type="checkbox"
+                      checked={walmartConsent}
+                      onChange={(e) => setWalmartConsent(e.target.checked)}
+                      required
+                    />
+                    <span>
+                      <strong>I authorize this purchase</strong> — I reviewed the merchant,
+                      item, total, and delivery above and approve this Walmart checkout.
+                    </span>
+                  </label>
+                </section>
+              )}
+              <button
+                className="ctaButton"
+                type="submit"
+                disabled={cartHasWalmart && !walmartConsent}
+              >
                 Complete sandbox checkout — no charge
               </button>
+              {cartHasWalmart && !walmartConsent && (
+                <p className="consentHint">
+                  The Walmart consent gate above must be confirmed before checkout can
+                  complete.
+                </p>
+              )}
             </form>
           </>
         )}
@@ -670,6 +835,12 @@ export default function ShoppingApp() {
               <p>
                 Sample estimated arrival: {formatDate(order.estimatedArrival)} · Guest: {order.guestName} ({order.guestEmail})
               </p>
+              {order.consentGateConfirmed && (
+                <p>
+                  Walmart Human Consent Gate: confirmed by the guest before checkout, as
+                  Walmart&apos;s Agentic Access Terms require.
+                </p>
+              )}
             </article>
           ))}
         </section>
