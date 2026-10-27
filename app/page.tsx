@@ -25,17 +25,20 @@ export default function Home() {
         <div>
           <h3>2 · Compare the top five</h3>
           <p>
-            eBay offers stay in a distinct eBay module and Best Buy offers in
-            their own block — each with price, shipping, arrival, returns,
-            warranty, rating, and a score.
+            Walmart, Best Buy, and eBay offers each sit in their own merchant
+            block — with price, shipping, arrival, returns, warranty, rating,
+            and a score. The policy gate routes every merchant first: Walmart
+            is browsed under its Agentic Access Terms, Best Buy and eBay use
+            official APIs, and Target stays out — authorized-channel only.
           </p>
         </div>
         <div>
           <h3>3 · Try the full journey</h3>
           <p>
-            Add an offer to the cart, complete sandbox guest checkout, watch
-            the return countdown, and initiate a sample return — all locally,
-            with no real order or charge.
+            Add an offer to the cart, pass the Walmart human consent gate,
+            complete sandbox guest checkout, watch the return countdown, and
+            initiate a sample return — all locally, with no real order or
+            charge.
           </p>
         </div>
       </section>

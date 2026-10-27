@@ -647,6 +647,190 @@ main {
   color: #ffe000;
 }
 
+.walmartModule {
+  background: #eaf3fc;
+  border: 2px solid #0071ce;
+}
+
+.walmartLogo {
+  background: #0071ce;
+  color: #ffc220;
+}
+
+.policyGatePanel,
+.agentPanel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 30px;
+}
+
+.gateIntro {
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 14px;
+  max-width: 860px;
+}
+
+.gateList {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.gateRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.gateMerchant {
+  min-width: 84px;
+  font-size: 15.5px;
+}
+
+.gateChip {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.gateChip-browser {
+  background: #e3f0fd;
+  color: #005da8;
+  border: 1px solid #0071ce;
+}
+
+.gateChip-api {
+  background: #eefaf3;
+  color: #14663c;
+  border: 1px solid #bfe8d2;
+}
+
+.gateChip-authorized-channel-only {
+  background: #fdeeee;
+  color: #8c2323;
+  border: 1px solid #f0b9b9;
+}
+
+.gateDetail {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  flex: 1 1 320px;
+}
+
+.agentModelLabel {
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+
+.agentSteps {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.agentStep {
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.agentStepNumber {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agentStep strong {
+  font-size: 15.5px;
+}
+
+.agentStepEngine {
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.agentStep p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 3px;
+}
+
+.consentGate {
+  border: 2px solid #0071ce;
+  background: #f2f8ff;
+  border-radius: 14px;
+  padding: 16px;
+  margin: 18px 0;
+}
+
+.consentGate h4 {
+  margin: 4px 0 8px;
+}
+
+.consentGate p {
+  color: #33475f;
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.consentReview {
+  margin: 12px 0;
+  padding-left: 18px;
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+.consentCheck {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-top: 1px solid #bcd8f3;
+  padding-top: 12px;
+  cursor: pointer;
+  line-height: 1.5;
+  font-size: 14.5px;
+}
+
+.consentCheck input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #0071ce;
+}
+
+.consentHint {
+  color: #8c5a10;
+  font-size: 13.5px;
+  margin-top: 10px;
+}
+
+.ctaButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .merchantTableWrap {
   border-radius: 12px;
 }
