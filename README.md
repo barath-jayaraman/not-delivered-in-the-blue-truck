@@ -37,23 +37,80 @@ dependencies beyond Next and React.
 1. **Retail-style search** — a broad search such as “Bose headphones” lists
    matching models. A more specific search, or selecting a model, opens its
    comparison.
-2. **Top-five comparison** — each product has five sample offers from eBay
-   sellers and Best Buy. Results show merchant/seller, condition, price,
-   shipping, estimated arrival, return window, free vs buyer-paid returns,
-   warranty, seller rating, total cost, and score.
+2. **Top-five comparison** — each product has six sample offers spanning
+   Walmart, Best Buy, and eBay sellers; the top five are ranked and shown.
+   Results show merchant/seller, condition, price, shipping, estimated
+   arrival, return window, free vs buyer-paid returns, warranty, seller
+   rating, total cost, and score.
 3. **Recommendation** — offers are weighted by the shopper's selected
    priority: cheapest, fastest, or easiest returns. The explanation compares
    the winner with the cheapest-sticker offer in plain language.
-4. **Guest cart and sandbox checkout** — no account or login. Payment fields
+4. **Agent activity panel** — every comparison shows the pipeline that
+   produced it, step by step: interpret → route merchants through the
+   policy gate → gather → verify/normalize → score → explain (see
+   [Meta AI usage](#meta-ai-usage)).
+5. **Merchant policy gate panel** — the home view lists each merchant's
+   gate outcome before any data moves: Walmart browsed under its Agentic
+   Access Terms, Best Buy and eBay official-API only, Target
+   authorized-channel only (never browsed).
+6. **Guest cart and sandbox checkout** — no account or login. Payment fields
    are dummy fields, stay in the page, and are not transmitted or stored.
-5. **Sample confirmation** — shows a generated confirmation number and
+   If the cart contains a Walmart offer, checkout additionally requires
+   the **Human Consent Gate** (below).
+7. **Sample confirmation** — shows a generated confirmation number and
    “Ships from and sold by [seller].” No retailer order or email exists.
-6. **Order history and live countdown** — sample orders persist in
+8. **Order history and live countdown** — sample orders persist in
    `localStorage`, with the return deadline and remaining time updating while
    the page is open.
-7. **Prototype returns** — the shopper can choose UPS drop-off or UPS pickup
+9. **Prototype returns** — the shopper can choose UPS drop-off or UPS pickup
    and view/print a conspicuously labelled sample label. It is not a UPS
    label and must not be used for shipment.
+
+### Human Consent Gate (Walmart)
+
+Walmart's Agentic Access Terms require a human to approve every checkout:
+agents never check out autonomously and never receive payment-card details.
+The prototype implements that rule as product behavior. When the cart
+contains a Walmart offer, the checkout form shows a distinct consent panel
+— merchant, item, all-in total, and estimated arrival — and the guest must
+affirmatively check **“I authorize this purchase”** before the sandbox
+checkout can complete. Changing the cart voids the consent, and the
+resulting sample order records that the gate was passed. Other merchants
+keep the standard sandbox flow.
+
+## Meta AI usage
+
+Meta AI is the engine of the pipeline, not a bolt-on chat box. The pipeline
+(`lib/agent.ts`) runs six steps for every comparison, and each step is a
+**Muse Spark** role in the finished product:
+
+| Pipeline step | Muse Spark's role |
+|---|---|
+| Interpret | Understand the natural-language request, resolve it to a canonical product, and read the shopper's priorities (budget, need-by, cheapest/fastest/returns). |
+| Route | Apply the merchant policy gate — decide, per merchant, whether data may come from an official API, from agent browsing under that merchant's terms, or not at all (Target). |
+| Gather | On the browsing route, drive the backend browser session: read Walmart product pages, choose navigation actions, and extract price, shipping, and arrival into structured fields. On API routes, supervise the official-API adapters. |
+| Verify | Cross-check extracted fields against the page/response, reject mismatches, and normalize every offer into one schema with full provenance. |
+| Score | *Deterministic application logic, deliberately not the model* — so totals and rankings are computed, never hallucinated. Muse receives the scored deltas. |
+| Explain | Turn the scored trade-offs into the plain-language recommendation ("pay $X more, get it 2 days sooner with free 90-day returns"). |
+
+**Where the live call plugs in:** the seam is `lib/agent.ts`. Set the
+server-side environment variables
+
+```bash
+META_MODEL_API_ENDPOINT=<Meta Model API endpoint>
+META_MODEL_API_KEY=<key>
+META_MODEL_NAME=Muse Spark        # optional, this is the default
+```
+
+and the agent-activity panel switches its label from local mode to
+endpoint-configured mode. Until a key is configured, the local pipeline
+performs the identical steps and the UI says so honestly — the app never
+fakes a live model call. In this prototype all merchant data is sample
+data, so no live model or retailer call is made either way.
+
+**Also used:** **Muse Code** assisted in building this project.
+**Roadmap:** **Muse Image** photo search (buy-from-a-photo) is planned as
+a second Meta surface after the hackathon build.
 
 ## Architecture
 
@@ -64,8 +121,10 @@ dependencies beyond Next and React.
 | Local sample catalog/search | `lib/data.ts` |
 | Scoring and explanation logic | `lib/scoring.ts` |
 | Policy registry and adapter seams | `lib/adapters.ts` |
+| Muse Spark pipeline + Meta Model API seam | `lib/agent.ts` |
 | Product search API | `app/api/search/route.ts` |
 | Comparison API | `app/api/decide/route.ts` |
+| Policy-gate API | `app/api/policy-gate/route.ts` |
 | Search → comparison → cart → orders UI | `components/ShoppingApp.tsx` |
 
 ### Policy-routed hybrid acquisition (future design)
@@ -93,12 +152,36 @@ purchasing, CAPTCHA handling, login automation, or any live acquisition.
 
 ### Per-merchant policy registry
 
-- **eBay — `api-only`.** eBay expressly restricts website automation
-  outside authorized methods. Use only the official eBay APIs for a future
-  live search/comparison/handoff implementation.
+- **Walmart — `browser-allowed-under-terms` (merchant #1).** Walmart.com
+  Terms of Use (updated Sep 21, 2026), §16.L "Authorized Agents," route
+  agents into Walmart's **Agentic Access Terms**. The website tier allows
+  an agent to browse and assist "as a person would" under binding
+  conditions: self-identify when asked, never mask or forge origin, never
+  defeat human-vs-software checks, never mimic human timing to evade
+  detection, obtain the customer's explicit informed consent before
+  acting, and present Walmart data accurately. Still prohibited on the
+  website tier: scraping/bulk extraction, training AI/ML on site
+  materials without written consent, and autonomous checkout — a **Human
+  Consent Gate** is required before every checkout (implemented in this
+  prototype's checkout), and agents never receive payment-card details.
+  The Agent Gateway tier (MCP + registered Agent Credential, autonomous
+  checkout within customer-set limits) is an invitation-only beta.
+  Production route: browsing, with Walmart's normal returns process
+  applying to agent purchases.
 - **Best Buy — `api-only`.** Best Buy expressly restricts website automation
   outside authorized methods. Use only the official Best Buy APIs for a
   future live implementation.
+- **eBay — `api-only`.** eBay expressly restricts website automation
+  outside authorized methods. Use only the official eBay APIs for a future
+  live search/comparison/handoff implementation.
+- **Target — `authorized-channel-only`.** Target's Terms & Conditions
+  (updated Mar 22, 2026) recognize agents only as *approved* Agentic
+  Commerce Agents acting with a customer's explicit permission, through
+  partner channels (e.g. Google UCP, OpenAI ACP); no public application
+  exists to become an approved agent. Its general terms bar extraction of
+  prices/listings. Target is therefore **not browsed, scraped, or queried
+  through its internal "Redsky" API** — it appears in the policy-gate
+  panel as the showcase of the gate working, and carries no offers.
 - **Unknown/future merchants — `browser-permitted-unless-prohibited`** by
   default under Barath's rule, unless an official API is selected as the
   preferred route or an explicit prohibition makes the route
@@ -209,8 +292,11 @@ not train on eBay Content.
 - Deployment or publication.
 - GitHub repository creation/upload from this build task.
 - Live merchant credentials or API calls.
-- Scraping or a real browser crawler.
-- Browser purchasing for eBay or Best Buy.
+- Scraping or a real browser crawler. Walmart sample records stand in for
+  the future browsing route; no live Walmart browsing happens in this
+  build, and Target is never browsed at all (authorized-channel only).
+- Browser purchasing for any merchant — Walmart checkout always stops at
+  the human consent gate, and even then completes only as a sandbox order.
 - Real payment processing, retailer orders, fulfillment, emails, returns, or
   carrier labels.
 - User accounts/logins (Stage 3 in the product plan).
