@@ -3,11 +3,13 @@ import type { Merchant, Offer, Product, ProductSummary } from "./types";
 /**
  * SAMPLE CATALOG — local prototype data only.
  *
- * Merchants are intentionally limited to eBay and Best Buy. These records do
- * not come from live APIs, are not live prices, and must always be displayed
- * as sample data. Future live adapters must return this same Product/Offer
- * shape only after the applicable retailer's API and automation terms pass
- * the policy gate documented in README.md and lib/adapters.ts.
+ * Merchants are Walmart (merchant #1, browsed route), Best Buy, and eBay.
+ * Target carries no offers: the policy gate routes it authorized-channel
+ * only, so it is never browsed or scraped. These records do not come from
+ * live APIs or live browsing, are not live prices, and must always be
+ * displayed as sample data. Future live adapters must return this same
+ * Product/Offer shape only through the route the policy gate allows for
+ * that merchant (see README.md and lib/adapters.ts).
  */
 
 type OfferSpec = [
@@ -24,38 +26,46 @@ type OfferSpec = [
 ];
 
 function makeOffers(productId: string, specs: OfferSpec[]): Offer[] {
-  return specs.map((spec, index) => ({
-    id: `${productId}-offer-${index + 1}`,
-    merchant: spec[0],
-    seller: spec[1],
-    channel: spec[0],
-    condition: spec[2],
-    price: spec[3],
-    shippingCost: spec[4],
-    deliveryDays: spec[5],
-    deliveryBasis:
-      spec[0] === "Best Buy"
-        ? "Sample shipping-service estimate"
-        : "Sample seller delivery estimate",
-    returnWindowDays: spec[6],
-    returnCost: spec[7],
-    returnPolicySource:
-      spec[0] === "Best Buy"
-        ? "Curated retailer-policy sample"
-        : "Sample seller return terms",
-    warrantyMonths: spec[8],
-    sellerRating: spec[9],
-    sampleListingLabel: `Sample ${spec[0]} listing ${index + 1}`,
-    provenance: {
-      sourceMerchant: spec[0],
-      acquisitionMethod: "sample",
-      sourceUrl: null,
-      retrievedAt: null,
-      policyStatus: "sample-only-api-route",
-      policyNote:
-        "Local sample record. Production route for this merchant is official API only; no scraping or browser purchasing.",
-    },
-  }));
+  return specs.map((spec, index) => {
+    const merchant = spec[0];
+    const isWalmart = merchant === "Walmart";
+    return {
+      id: `${productId}-offer-${index + 1}`,
+      merchant,
+      seller: spec[1],
+      channel: merchant,
+      condition: spec[2],
+      price: spec[3],
+      shippingCost: spec[4],
+      deliveryDays: spec[5],
+      deliveryBasis: isWalmart
+        ? "Sample page-displayed delivery estimate"
+        : merchant === "Best Buy"
+          ? "Sample shipping-service estimate"
+          : "Sample seller delivery estimate",
+      returnWindowDays: spec[6],
+      returnCost: spec[7],
+      returnPolicySource:
+        merchant === "eBay"
+          ? "Sample seller return terms"
+          : "Curated retailer-policy sample",
+      warrantyMonths: spec[8],
+      sellerRating: spec[9],
+      sampleListingLabel: `Sample ${merchant} listing ${index + 1}`,
+      provenance: {
+        sourceMerchant: merchant,
+        acquisitionMethod: "sample",
+        sourceUrl: null,
+        retrievedAt: null,
+        policyStatus: isWalmart
+          ? "sample-only-browser-route"
+          : "sample-only-api-route",
+        policyNote: isWalmart
+          ? "Local sample record. Production route for Walmart is agent browsing under the Agentic Access Terms website tier (Terms of Use §16.L): browsing allowed under conditions — self-identify when asked, no scraping or bulk extraction, no defeating human checks — and a Human Consent Gate is required before any checkout."
+          : "Local sample record. Production route for this merchant is official API only; no scraping or browser purchasing.",
+      },
+    } satisfies Offer;
+  });
 }
 
 function product(
@@ -94,6 +104,7 @@ export const PRODUCTS: Product[] = [
       "noise cancelling headphones",
     ],
     [
+      ["Walmart", "Walmart", "New", 359.99, 0, 2, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 379.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Audio Empire (eBay Top Rated Plus)", "New", 339.0, 0, 3, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 329.99, 0, 3, 15, "free", 12, 4.8],
@@ -108,6 +119,7 @@ export const PRODUCTS: Product[] = [
     "Headphones",
     ["bose headphones", "bose quietcomfort", "quietcomfort headphones", "noise cancelling headphones"],
     [
+      ["Walmart", "Walmart", "New", 229.99, 0, 2, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 249.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Audio Empire (eBay Top Rated Plus)", "New", 219.0, 0, 4, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 199.99, 0, 3, 15, "free", 12, 4.8],
@@ -122,6 +134,7 @@ export const PRODUCTS: Product[] = [
     "Headphones",
     ["sony headphones", "wh-1000xm6", "xm6", "noise cancelling headphones", "wireless headphones"],
     [
+      ["Walmart", "Walmart", "New", 379.99, 0, 2, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 399.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Audio Empire (eBay Top Rated Plus)", "New", 359.0, 0, 3, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 339.99, 0, 4, 15, "free", 12, 4.8],
@@ -136,6 +149,7 @@ export const PRODUCTS: Product[] = [
     "Running shoes",
     ["nike running shoes", "pegasus 41", "running shoes", "running shoe"],
     [
+      ["Walmart", "Walmart", "New", 124.97, 0, 3, 90, "free", 0, 4.6],
       ["Best Buy", "Best Buy", "New", 139.99, 0, 3, 15, "free", 0, 4.6],
       ["eBay", "Run Fast Store (eBay Top Rated Plus)", "New", 119.0, 0, 4, 60, "free", 0, 4.9],
       ["eBay", "Stride Supply (eBay)", "New", 109.95, 6.99, 5, 30, "free", 0, 4.7],
@@ -150,6 +164,7 @@ export const PRODUCTS: Product[] = [
     "Running shoes",
     ["adidas running shoes", "ultraboost 5", "running shoes", "running shoe"],
     [
+      ["Walmart", "Walmart", "New", 171.0, 0, 3, 90, "free", 0, 4.6],
       ["Best Buy", "Best Buy", "New", 189.99, 0, 3, 15, "free", 0, 4.6],
       ["eBay", "Run Fast Store (eBay Top Rated Plus)", "New", 164.0, 0, 4, 60, "free", 0, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 149.99, 0, 4, 15, "free", 0, 4.6],
@@ -164,6 +179,7 @@ export const PRODUCTS: Product[] = [
     "TVs",
     ["samsung tv", "55 inch tv", "55-inch tv", "4k tv", "crystal uhd", "u8000f"],
     [
+      ["Walmart", "Walmart", "New", 397.0, 0, 3, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 429.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Home Theater Hub (eBay Top Rated Plus)", "New", 399.0, 0, 4, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 359.99, 0, 3, 15, "free", 12, 4.8],
@@ -178,6 +194,7 @@ export const PRODUCTS: Product[] = [
     "TVs",
     ["lg tv", "55 inch tv", "55-inch tv", "oled tv", "evo c5", "4k tv"],
     [
+      ["Walmart", "Walmart", "New", 996.99, 0, 3, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 1099.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Home Theater Hub (eBay Top Rated Plus)", "New", 999.0, 0, 4, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 899.99, 0, 3, 15, "free", 12, 4.8],
@@ -192,6 +209,7 @@ export const PRODUCTS: Product[] = [
     "Robot vacuums",
     ["roborock s8", "robot vacuum", "robot vacuums", "vacuum"],
     [
+      ["Walmart", "Walmart", "New", 429.99, 0, 2, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 459.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Clean Home Store (eBay Top Rated Plus)", "New", 399.0, 0, 4, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 369.99, 0, 3, 15, "free", 12, 4.8],
@@ -206,6 +224,7 @@ export const PRODUCTS: Product[] = [
     "Coffee makers",
     ["breville espresso", "barista express impress", "coffee maker", "espresso machine", "coffee machine"],
     [
+      ["Walmart", "Walmart", "New", 699.95, 0, 3, 30, "free", 12, 4.7],
       ["Best Buy", "Best Buy", "New", 749.99, 0, 2, 15, "free", 12, 4.8],
       ["eBay", "Kitchen Kings (eBay Top Rated Plus)", "New", 679.0, 0, 5, 60, "free", 12, 4.9],
       ["Best Buy", "Best Buy", "Open-box", 599.99, 0, 3, 15, "free", 12, 4.8],
@@ -296,7 +315,7 @@ export function summarizeProduct(entry: RankedProduct): ProductSummary {
     acquisitionMethod: "sample",
     sourceUrl: null,
     retrievedAt: null,
-    policyStatus: "sample-only-api-route",
+    policyStatus: "sample-mixed-routes",
   };
 }
 

@@ -6,6 +6,8 @@ import type {
   ScoredOffer,
 } from "./types";
 import { findProduct, getProductById } from "./data";
+import { getPolicyGateEntries } from "./adapters";
+import { buildAgentActivity } from "./agent";
 
 /**
  * LOCAL SCORING ENGINE (v1).
@@ -206,6 +208,17 @@ export function decide(req: DecideRequest): DecideResponse | null {
   const cheapestSticker = [...allOffers].sort((a, b) => a.price - b.price)[0];
   const prices = product.offers.map((offer) => offer.price);
 
+  const gathered = [...new Set(product.offers.map((offer) => offer.merchant))].map(
+    (merchant) => ({
+      merchant,
+      route:
+        merchant === "Walmart"
+          ? "planned browsing route (Agentic Access Terms)"
+          : "official API route",
+      offerCount: product.offers.filter((offer) => offer.merchant === merchant).length,
+    }),
+  );
+
   return {
     product: { id: product.id, name: product.name, category: product.category },
     priority: req.priority,
@@ -226,6 +239,15 @@ export function decide(req: DecideRequest): DecideResponse | null {
     sourceMerchants: [...new Set(product.offers.map((offer) => offer.merchant))],
     acquisitionMethod: "sample",
     retrievedAt: null,
-    policyStatus: "sample-only-api-route",
+    policyStatus: "sample-mixed-routes",
+    policyGate: getPolicyGateEntries(),
+    agentActivity: buildAgentActivity({
+      productName: product.name,
+      priority: req.priority,
+      needByDays: req.needByDays,
+      gathered,
+      totalOffers: product.offers.length,
+      recommendationSeller: recommendation.seller,
+    }),
   };
 }

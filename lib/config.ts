@@ -8,7 +8,7 @@ export const BRAND = {
   company: "Nio Innovations LLC",
   /** Short descriptor used under the hero headline. */
   blurb:
-    "Search once, compare the top five sample offers from eBay sellers and Best Buy, and see price, shipping, arrival time, returns, warranty, and seller rating together.",
+    "Search once, compare the top five sample offers from Walmart, Best Buy, and eBay sellers, and see price, shipping, arrival time, returns, warranty, and seller rating together.",
   /** Honesty note — this local prototype never presents sample data as live. */
   betaNote:
     "Prototype only: merchants, prices, offers, checkout, orders, and return labels are sample data. No live prices are shown, no payment is charged, no retailer order is placed, and no real return is created.",

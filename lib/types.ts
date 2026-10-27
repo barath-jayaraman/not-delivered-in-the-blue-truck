@@ -1,6 +1,6 @@
 export type Priority = "cheapest" | "fastest" | "returns";
 
-export type Merchant = "eBay" | "Best Buy";
+export type Merchant = "Walmart" | "Best Buy" | "eBay" | "Target";
 export type DataMode = "sample";
 export type ReturnCost = "free" | "buyer-paid" | "final-sale";
 
@@ -10,9 +10,46 @@ export type AcquisitionMethod = "api" | "browser" | "disabled";
 export type OfferAcquisitionMethod = AcquisitionMethod | "sample";
 export type OfferPolicyStatus =
   | "sample-only-api-route"
+  | "sample-only-browser-route"
+  | "sample-mixed-routes"
   | "api-only"
   | "browser-permitted-unless-prohibited"
+  | "browser-allowed-under-terms"
+  | "authorized-channel-only"
   | "excluded-prohibited";
+
+/** How the policy gate routes a merchant in production. */
+export type PolicyGateRoute = "browser" | "api" | "authorized-channel-only";
+
+export interface PolicyGateEntry {
+  merchant: string;
+  route: PolicyGateRoute;
+  /** Short outcome label shown in the UI policy-gate panel. */
+  outcomeLabel: string;
+  /** One factual line explaining the outcome. */
+  detail: string;
+}
+
+/** One narrated step of the Muse Spark agent pipeline (see lib/agent.ts). */
+export interface AgentStep {
+  id: "interpret" | "route" | "gather" | "verify" | "score" | "explain";
+  title: string;
+  /** What the app actually did in this step for this request. */
+  detail: string;
+  /** Which engine performed the step in this run. */
+  engine: string;
+  status: "done";
+}
+
+export interface AgentActivity {
+  /** `local` until a live Meta Model API endpoint + key are configured. */
+  mode: "local" | "live-configured";
+  /** Whether META_MODEL_API_ENDPOINT and META_MODEL_API_KEY are both set. */
+  liveConfigured: boolean;
+  /** Honest label for the panel header; never claims a live call happened. */
+  modelLabel: string;
+  steps: AgentStep[];
+}
 
 export interface OfferProvenance {
   sourceMerchant: Merchant;
@@ -38,7 +75,10 @@ export interface Offer {
   shippingCost: number; // 0 = free shipping
   deliveryDays: number; // sample estimate / service-level proxy in this prototype
   /** Be explicit about a key API gap: Best Buy does not supply an ETA attribute. */
-  deliveryBasis: "Sample seller delivery estimate" | "Sample shipping-service estimate";
+  deliveryBasis:
+    | "Sample seller delivery estimate"
+    | "Sample shipping-service estimate"
+    | "Sample page-displayed delivery estimate";
   returnWindowDays: number; // 0 when final sale
   returnCost: ReturnCost;
   /** eBay sample terms are seller terms; Best Buy values are a curated policy sample. */
@@ -85,6 +125,7 @@ export interface SearchResponse {
   query: string;
   products: ProductSummary[];
   dataSource: DataMode;
+  policyGate: PolicyGateEntry[];
 }
 
 export interface ScoredOffer extends Offer {
@@ -117,6 +158,8 @@ export interface DecideResponse {
   acquisitionMethod: OfferAcquisitionMethod;
   retrievedAt: null;
   policyStatus: OfferPolicyStatus;
+  policyGate: PolicyGateEntry[];
+  agentActivity: AgentActivity;
 }
 
 export interface CartItem {
@@ -164,6 +207,8 @@ export interface PrototypeOrder {
   returnDeadline: string | null;
   guestName: string;
   guestEmail: string;
+  /** True when the guest passed the Walmart Human Consent Gate at checkout. */
+  consentGateConfirmed?: boolean;
   status: "Sample order confirmed" | "Sample return initiated";
   returnRequest?: PrototypeReturn;
   dataSource: DataMode;

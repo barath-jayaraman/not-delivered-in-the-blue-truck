@@ -4,6 +4,7 @@ import type {
   Merchant,
   Offer,
   OfferProvenance,
+  PolicyGateEntry,
   Product,
 } from "./types";
 
@@ -24,8 +25,25 @@ import type {
  * - `disabled`: the route is not used because the merchant is API-only or
  *   because an explicit prohibition applies.
  *
- * eBay and Best Buy are API-route only in this prototype. Their websites must
- * not be scraped and no browser-automated purchasing is implemented for them.
+ * eBay and Best Buy are API-route only. Their websites must not be scraped
+ * and no browser-automated purchasing is implemented for them.
+ *
+ * Walmart is the browsed merchant: its Terms of Use (updated Sep 21, 2026),
+ * §16.L "Authorized Agents," route agents into Walmart's Agentic Access
+ * Terms. The website tier allows an agent to browse and assist "as a person
+ * would" under binding conditions (self-identify when asked, never mask
+ * origin or defeat human checks, never mimic human timing, obtain the
+ * customer's explicit informed consent before acting, present data
+ * accurately). Scraping/bulk extraction, AI/ML training on site materials,
+ * and autonomous checkout remain prohibited — a Human Consent Gate is
+ * required before every checkout (implemented in the UI for Walmart
+ * offers). The Agent Gateway MCP tier is invitation-only beta.
+ *
+ * Target is authorized-channel only: its terms recognize only approved
+ * Agentic Commerce Agents (partner channels such as UCP/ACP, no public
+ * application) and bar extraction of prices/listings. Target is never
+ * browsed or scraped here, and its internal "Redsky" API is not used.
+ *
  * The current adapters return local sample records only and make no calls.
  *
  * Every live result must preserve OfferProvenance: source merchant,
@@ -55,6 +73,8 @@ import type {
 export type MerchantPolicyStatus =
   | "api-only"
   | "browser-permitted-unless-prohibited"
+  | "browser-allowed-under-terms"
+  | "authorized-channel-only"
   | "excluded-prohibited";
 
 export interface MerchantPolicy {
@@ -65,17 +85,20 @@ export interface MerchantPolicy {
   rationale: string;
   /** Browser purchasing is never enabled by this generic policy model. */
   browserPurchasingAllowed: false;
+  /** True when the merchant's terms require a human to approve checkout. */
+  consentGateRequired: boolean;
 }
 
 export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
   {
-    merchant: "eBay",
-    allowedAcquisitionMethods: ["api"],
-    preferredAcquisitionMethod: "api",
-    status: "api-only",
+    merchant: "Walmart",
+    allowedAcquisitionMethods: ["browser"],
+    preferredAcquisitionMethod: "browser",
+    status: "browser-allowed-under-terms",
     rationale:
-      "eBay expressly restricts website automation outside authorized methods, so the browser route is disabled and the official API route is used.",
+      "Walmart's Agentic Access Terms (Terms of Use §16.L, updated Sep 21, 2026) allow an agent to browse the website tier and assist under conditions: self-identify when asked, no origin masking, no defeating human checks, no human-timing mimicry, explicit customer consent before acting, accurate data presentation. Scraping/bulk extraction and autonomous checkout remain prohibited; a Human Consent Gate is required before every checkout.",
     browserPurchasingAllowed: false,
+    consentGateRequired: true,
   },
   {
     merchant: "Best Buy",
@@ -85,8 +108,71 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     rationale:
       "Best Buy expressly restricts website automation outside authorized methods, so the browser route is disabled and the official API route is used.",
     browserPurchasingAllowed: false,
+    consentGateRequired: false,
+  },
+  {
+    merchant: "eBay",
+    allowedAcquisitionMethods: ["api"],
+    preferredAcquisitionMethod: "api",
+    status: "api-only",
+    rationale:
+      "eBay expressly restricts website automation outside authorized methods, so the browser route is disabled and the official API route is used.",
+    browserPurchasingAllowed: false,
+    consentGateRequired: false,
+  },
+  {
+    merchant: "Target",
+    allowedAcquisitionMethods: [],
+    preferredAcquisitionMethod: "disabled",
+    status: "authorized-channel-only",
+    rationale:
+      "Target's terms recognize only approved Agentic Commerce Agents acting with a customer's explicit permission (partner channels such as UCP/ACP; no public application exists) and bar data extraction/scraping of listings and prices. Target is not browsed, scraped, or queried through any unofficial API.",
+    browserPurchasingAllowed: false,
+    consentGateRequired: false,
   },
 ];
+
+/** Compact gate outcomes for the UI policy-gate panel and API responses. */
+export function getPolicyGateEntries(): PolicyGateEntry[] {
+  const presentation: Record<
+    string,
+    { route: PolicyGateEntry["route"]; outcomeLabel: string; detail: string }
+  > = {
+    Walmart: {
+      route: "browser",
+      outcomeLabel: "Browsing allowed — Agentic Access Terms",
+      detail:
+        "Website tier (Terms of Use §16.L): the agent may browse and assist under conditions — no scraping or bulk extraction, and a human consent gate before every checkout.",
+    },
+    "Best Buy": {
+      route: "api",
+      outcomeLabel: "Official API",
+      detail:
+        "Site terms restrict automation outside authorized methods, so data comes only through the official Best Buy Products API.",
+    },
+    eBay: {
+      route: "api",
+      outcomeLabel: "Official API",
+      detail:
+        "Automation is restricted outside authorized methods, so data comes only through the official eBay APIs — displayed in a separate module with a 6-hour freshness rule.",
+    },
+    Target: {
+      route: "authorized-channel-only",
+      outcomeLabel: "Authorized-channel only — not browsed",
+      detail:
+        "Target admits only approved Agentic Commerce Agents through partner channels (approval-gated, no public application), so the gate does not browse or scrape Target.",
+    },
+  };
+  return MERCHANT_POLICY_REGISTRY.map((policy) => {
+    const entry = presentation[policy.merchant];
+    return {
+      merchant: policy.merchant,
+      route: entry?.route ?? "api",
+      outcomeLabel: entry?.outcomeLabel ?? policy.status,
+      detail: entry?.detail ?? policy.rationale,
+    };
+  });
+}
 
 export function getMerchantPolicy(merchant: Merchant | string): MerchantPolicy {
   return (
@@ -98,8 +184,14 @@ export function getMerchantPolicy(merchant: Merchant | string): MerchantPolicy {
       rationale:
         "Default prohibition-based rule: if no explicit prohibition is found, the browser route is permitted. An explicit prohibition changes the status to excluded-prohibited; an active challenge stops that session.",
       browserPurchasingAllowed: false,
+      consentGateRequired: false,
     }
   );
+}
+
+/** Merchants whose offers require the Human Consent Gate before checkout. */
+export function requiresConsentGate(merchant: Merchant | string): boolean {
+  return getMerchantPolicy(merchant).consentGateRequired;
 }
 
 export interface MerchantAdapter {
@@ -114,7 +206,7 @@ export interface MerchantAdapter {
 abstract class SampleMerchantAdapter implements MerchantAdapter {
   abstract merchant: Merchant;
   readonly mode = "sample" as const;
-  readonly acquisitionMethod = "api" as const;
+  readonly acquisitionMethod: AcquisitionMethod = "api";
 
   get policy(): MerchantPolicy {
     return getMerchantPolicy(this.merchant);
@@ -141,6 +233,17 @@ abstract class SampleMerchantAdapter implements MerchantAdapter {
   }
 }
 
+/**
+ * Future implementation target: the Walmart browser adapter. Production
+ * route is backend-controlled browsing under the Agentic Access Terms
+ * website tier (see the BrowserAdapter notes below); checkout always stops
+ * at the Human Consent Gate. This sample adapter performs no browsing.
+ */
+export class SampleWalmartAdapter extends SampleMerchantAdapter {
+  readonly merchant = "Walmart" as const;
+  override readonly acquisitionMethod = "browser" as const;
+}
+
 /** Future implementation target: official eBay Browse API only. */
 export class SampleEbayAdapter extends SampleMerchantAdapter {
   readonly merchant = "eBay" as const;
@@ -152,8 +255,9 @@ export class SampleBestBuyAdapter extends SampleMerchantAdapter {
 }
 
 export const merchantAdapters: MerchantAdapter[] = [
-  new SampleEbayAdapter(),
+  new SampleWalmartAdapter(),
   new SampleBestBuyAdapter(),
+  new SampleEbayAdapter(),
 ];
 
 /**
