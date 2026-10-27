@@ -47,8 +47,7 @@ dependencies beyond Next and React.
    the winner with the cheapest-sticker offer in plain language.
 4. **Agent activity panel** — every comparison shows the pipeline that
    produced it, step by step: interpret → route merchants through the
-   policy gate → gather → verify/normalize → score → explain (see
-   [Meta AI usage](#meta-ai-usage)).
+   policy gate → gather → verify/normalize → score → explain.
 5. **Merchant policy gate panel** — the home view lists each merchant's
    gate outcome before any data moves: Walmart browsed under its Agentic
    Access Terms, Best Buy and eBay official-API only, Target
@@ -77,40 +76,6 @@ affirmatively check **“I authorize this purchase”** before the sandbox
 checkout can complete. Changing the cart voids the consent, and the
 resulting sample order records that the gate was passed. Other merchants
 keep the standard sandbox flow.
-
-## Meta AI usage
-
-Meta AI is the engine of the pipeline, not a bolt-on chat box. The pipeline
-(`lib/agent.ts`) runs six steps for every comparison, and each step is a
-**Muse Spark** role in the finished product:
-
-| Pipeline step | Muse Spark's role |
-|---|---|
-| Interpret | Understand the natural-language request, resolve it to a canonical product, and read the shopper's priorities (budget, need-by, cheapest/fastest/returns). |
-| Route | Apply the merchant policy gate — decide, per merchant, whether data may come from an official API, from agent browsing under that merchant's terms, or not at all (Target). |
-| Gather | On the browsing route, drive the backend browser session: read Walmart product pages, choose navigation actions, and extract price, shipping, and arrival into structured fields. On API routes, supervise the official-API adapters. |
-| Verify | Cross-check extracted fields against the page/response, reject mismatches, and normalize every offer into one schema with full provenance. |
-| Score | *Deterministic application logic, deliberately not the model* — so totals and rankings are computed, never hallucinated. Muse receives the scored deltas. |
-| Explain | Turn the scored trade-offs into the plain-language recommendation ("pay $X more, get it 2 days sooner with free 90-day returns"). |
-
-**Where the live call plugs in:** the seam is `lib/agent.ts`. Set the
-server-side environment variables
-
-```bash
-META_MODEL_API_ENDPOINT=<Meta Model API endpoint>
-META_MODEL_API_KEY=<key>
-META_MODEL_NAME=Muse Spark        # optional, this is the default
-```
-
-and the agent-activity panel switches its label from local mode to
-endpoint-configured mode. Until a key is configured, the local pipeline
-performs the identical steps and the UI says so honestly — the app never
-fakes a live model call. In this prototype all merchant data is sample
-data, so no live model or retailer call is made either way.
-
-**Also used:** **Muse Code** assisted in building this project.
-**Roadmap:** **Muse Image** photo search (buy-from-a-photo) is planned as
-a second Meta surface after the hackathon build.
 
 ## Architecture
 
