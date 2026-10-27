@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchProducts, summarizeProduct } from "@/lib/data";
+import { getPolicyGateEntries } from "@/lib/adapters";
 import type { SearchResponse } from "@/lib/types";
 
 /**
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
     query,
     products: ranked.map(summarizeProduct),
     dataSource: "sample",
+    policyGate: getPolicyGateEntries(),
   };
   return NextResponse.json(response);
 }
