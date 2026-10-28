@@ -86,7 +86,7 @@ keep the standard sandbox flow.
 | Local sample catalog/search | `lib/data.ts` |
 | Scoring and explanation logic | `lib/scoring.ts` |
 | Policy registry and adapter seams | `lib/adapters.ts` |
-| Muse Spark pipeline + Meta Model API seam | `lib/agent.ts` |
+| Muse Spark pipeline + Meta Model API live path | `lib/agent.ts` |
 | Product search API | `app/api/search/route.ts` |
 | Comparison API | `app/api/decide/route.ts` |
 | Policy-gate API | `app/api/policy-gate/route.ts` |
