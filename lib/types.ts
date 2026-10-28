@@ -42,10 +42,17 @@ export interface AgentStep {
 }
 
 export interface AgentActivity {
-  /** `local` until a live Meta Model API endpoint + key are configured. */
-  mode: "local" | "live-configured";
-  /** Whether META_MODEL_API_ENDPOINT and META_MODEL_API_KEY are both set. */
+  /**
+   * `live` only when a Muse Spark call actually succeeded for this request;
+   * `live-configured` when a key is configured but this request ran on the
+   * local pipeline (live call failed, timed out, or was not attempted);
+   * `local` when no key is configured at all.
+   */
+  mode: "local" | "live-configured" | "live";
+  /** Whether META_MODEL_API_KEY is set server-side (the endpoint has a default). */
   liveConfigured: boolean;
+  /** Pipeline steps that ran on Muse Spark for this request; empty unless mode is `live`. */
+  liveSteps: AgentStep["id"][];
   /** Honest label for the panel header; never claims a live call happened. */
   modelLabel: string;
   steps: AgentStep[];
