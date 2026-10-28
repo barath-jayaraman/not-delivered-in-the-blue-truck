@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { decide } from "@/lib/scoring";
+import { decideWithAgent } from "@/lib/decide-live";
 import { PRODUCTS } from "@/lib/data";
 import type { DecideRequest, Priority } from "@/lib/types";
 
@@ -9,13 +9,18 @@ import type { DecideRequest, Priority } from "@/lib/types";
  *         needByDays: number, priority: Priority }
  *
  * Prototype: served by the local scoring engine (lib/scoring.ts) over sample
- * data only. Future live data must be supplied by policy-approved official
- * eBay Browse API and Best Buy Products API adapters (lib/adapters.ts). No
- * scraping or browser-automated purchasing belongs behind this route.
+ * data only. Future live data must arrive through the route the policy gate
+ * allows per merchant (lib/adapters.ts): Walmart via browsing under its
+ * Agentic Access Terms, Best Buy/eBay via their official APIs. Target is
+ * authorized-channel only and is never browsed. No scraping or
+ * browser-automated purchasing belongs behind this route.
  *
- * Muse Spark seam: a future implementation may pass the scored offers and
- * parameter deltas to Muse to generate the explanation. It must operate on
- * our comparison logic and must not train on eBay Content.
+ * Muse Spark: served by lib/decide-live.ts. When META_MODEL_API_KEY is
+ * configured server-side, Muse Spark interprets the shopper's query and
+ * writes the recommendation explanation via the Meta Model API; scoring
+ * stays deterministic and local, live failures fall back silently, and the
+ * agent-activity payload reports mode "live" only for steps that actually
+ * ran live on this request. Muse must not train on eBay Content.
  */
 export async function POST(request: Request) {
   let body: Partial<DecideRequest>;
@@ -45,7 +50,7 @@ export async function POST(request: Request) {
   const budget =
     typeof body.budget === "number" && body.budget > 0 ? body.budget : null;
 
-  const result = decide({ query, productId, budget, needByDays, priority });
+  const result = await decideWithAgent({ query, productId, budget, needByDays, priority });
   if (!result) {
     return NextResponse.json(
       {
