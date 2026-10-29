@@ -38,8 +38,14 @@ export const DEFAULT_META_MODEL_ENDPOINT =
   "https://api.meta.ai/v1/chat/completions";
 export const DEFAULT_META_MODEL_NAME = "muse-spark-1.1";
 
-/** Muse Spark spends many tokens reasoning; starved caps return no text. */
-const LIVE_MAX_TOKENS = 1600;
+/**
+ * Muse Spark reasons at length by default (measured Oct 28, 2026: a short
+ * explain prompt burned 1,598 of a 1,600-token cap on reasoning and returned
+ * no visible text). reasoning_effort "low" is accepted by the API and keeps
+ * these extraction/short-writing calls fast; the cap stays generous as
+ * headroom so the visible reply is never starved.
+ */
+const LIVE_MAX_TOKENS = 2500;
 /** Abort a live call after ~20s and fall back to the local pipeline. */
 const LIVE_TIMEOUT_MS = 20_000;
 
@@ -104,6 +110,7 @@ async function callMetaModel(
           model: config.model,
           messages,
           max_tokens: LIVE_MAX_TOKENS,
+          reasoning_effort: "low",
           temperature,
         }),
         signal: controller.signal,
