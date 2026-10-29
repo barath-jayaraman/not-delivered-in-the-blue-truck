@@ -7,12 +7,18 @@ import {
   type InterpretedQuery,
   type LiveRunInfo,
 } from "./agent";
+import { ebayApiEnabled, fetchLiveEbayOffers } from "./adapters/ebay-api";
+import {
+  fetchLiveWalmartOffers,
+  walmartBrowseEnabled,
+} from "./adapters/walmart-browse";
 import { findProduct, getProductById } from "./data";
-import { decide } from "./scoring";
+import { buildExplanation, decide, scoreOffers } from "./scoring";
 import type {
   AgentStep,
   DecideRequest,
   DecideResponse,
+  Offer,
   ScoredOffer,
 } from "./types";
 
@@ -88,11 +94,150 @@ function gatheredFor(productId: string) {
   };
 }
 
+/**
+ * Live offers already merged into a result, keyed by the result object.
+ * Successive merchant merges (Walmart browse, eBay API) re-score the full
+ * pool — catalog samples plus every live offer merged so far — so an
+ * earlier merchant's live offer is never dropped by a later merge.
+ */
+const mergedLivePool = new WeakMap<DecideResponse, Offer[]>();
+
+/**
+ * Merge newly fetched live offers into a decide result. The combined set
+ * is re-scored with the same deterministic engine so live offers compete
+ * on identical terms, and the local explanation is rebuilt so every
+ * figure it cites stays grounded. The response is flagged through
+ * `liveData` (which lists every live merchant present) and through each
+ * live offer's provenance.
+ */
+function applyLiveOffers(
+  result: DecideResponse,
+  req: DecideRequest,
+  liveOffers: Offer[],
+): DecideResponse {
+  const product = getProductById(result.product.id);
+  if (!product) return result;
+
+  const pool = [...(mergedLivePool.get(result) ?? []), ...liveOffers];
+  mergedLivePool.set(result, pool);
+  const poolIds = new Set(pool.map((o) => o.id));
+
+  const rescored = scoreOffers([...product.offers, ...pool], req);
+  const top = rescored.slice(0, 5);
+  // A live offer must be visible alongside the sample offers even when it
+  // does not out-score five of them: swap it in for the lowest-ranked
+  // non-live offer and restore score order. The recommendation still goes
+  // to the genuine top scorer.
+  for (const live of pool) {
+    if (top.some((o) => o.id === live.id)) continue;
+    const scoredLive = rescored.find((o) => o.id === live.id);
+    if (!scoredLive) continue;
+    let replaceIdx = -1;
+    for (let i = top.length - 1; i >= 0; i--) {
+      if (!poolIds.has(top[i].id)) {
+        replaceIdx = i;
+        break;
+      }
+    }
+    if (replaceIdx >= 0) top[replaceIdx] = scoredLive;
+  }
+  top.sort((a, b) => b.score - a.score);
+  result.offers = top;
+  result.recommendation = result.offers[0];
+  result.cheapestSticker = [...rescored].sort((a, b) => a.price - b.price)[0];
+  result.explanation = buildExplanation(
+    result.recommendation,
+    result.cheapestSticker,
+    result.priority,
+    result.needByDays,
+  );
+  const all = [...product.offers, ...pool];
+  result.priceRange = {
+    lowest: Math.min(...all.map((o) => o.price)),
+    highest: Math.max(...all.map((o) => o.price)),
+  };
+  result.fastestDeliveryDays = Math.min(...all.map((o) => o.deliveryDays));
+
+  const byMerchant = new Map<string, Offer[]>();
+  for (const offer of pool) {
+    const group = byMerchant.get(offer.merchant) ?? [];
+    group.push(offer);
+    byMerchant.set(offer.merchant, group);
+  }
+  const merchants = [...byMerchant.entries()].map(([merchant, offers]) => ({
+    merchant,
+    retrievedAt:
+      offers[0].provenance.retrievedAt ?? new Date().toISOString(),
+    sourceUrl: offers[0].provenance.sourceUrl ?? "",
+    offerIds: offers.map((o) => o.id),
+  }));
+  result.liveData = {
+    merchant: merchants[0].merchant,
+    retrievedAt: merchants[0].retrievedAt,
+    sourceUrl: merchants[0].sourceUrl,
+    offerIds: pool.map((o) => o.id),
+    merchants,
+  };
+  return result;
+}
+
+/**
+ * Merge the live Walmart browsed offer (when ENABLE_WALMART_BROWSE=1) into
+ * a decide result. When browsing is disabled, blocked, or finds no match,
+ * the result is returned untouched.
+ */
+async function mergeLiveWalmartOffers(
+  result: DecideResponse,
+  req: DecideRequest,
+): Promise<DecideResponse> {
+  if (!walmartBrowseEnabled()) return result;
+  const product = getProductById(result.product.id);
+  if (!product) return result;
+
+  let liveOffers: Awaited<ReturnType<typeof fetchLiveWalmartOffers>> = [];
+  try {
+    liveOffers = await fetchLiveWalmartOffers(product);
+  } catch {
+    return result;
+  }
+  if (!liveOffers.length) return result;
+  return applyLiveOffers(result, req, liveOffers);
+}
+
+/**
+ * Merge the live eBay offer (when ENABLE_EBAY_API=1 and the production
+ * keyset is configured) into a decide result. Same contract as the
+ * Walmart merge: any failure or no honest match leaves the result
+ * untouched, and the sample flow is never disturbed.
+ */
+async function mergeLiveEbayOffers(
+  result: DecideResponse,
+  req: DecideRequest,
+): Promise<DecideResponse> {
+  if (!ebayApiEnabled()) return result;
+  const product = getProductById(result.product.id);
+  if (!product) return result;
+
+  let liveOffers: Awaited<ReturnType<typeof fetchLiveEbayOffers>> = [];
+  try {
+    liveOffers = await fetchLiveEbayOffers(product);
+  } catch {
+    return result;
+  }
+  if (!liveOffers.length) return result;
+  return applyLiveOffers(result, req, liveOffers);
+}
+
 export async function decideWithAgent(
   req: DecideRequest,
 ): Promise<DecideResponse | null> {
   const config = getMetaModelConfig();
-  if (!config.liveConfigured) return decide(req);
+  if (!config.liveConfigured) {
+    const result = decide(req);
+    if (!result) return null;
+    await mergeLiveWalmartOffers(result, req);
+    return mergeLiveEbayOffers(result, req);
+  }
 
   const liveSteps: AgentStep["id"][] = [];
   let interpretation: InterpretedQuery | null = null;
@@ -112,6 +257,12 @@ export async function decideWithAgent(
 
   const result = decide(effectiveReq);
   if (!result) return null;
+
+  // Merge any live merchant offers (Walmart browse, eBay API) before the
+  // explanation step so the Muse explanation grounds against the same
+  // winner/cheapest facts it cites.
+  await mergeLiveWalmartOffers(result, effectiveReq);
+  await mergeLiveEbayOffers(result, effectiveReq);
 
   const liveExplanation = await explainRecommendation({
     productName: result.product.name,

@@ -7,7 +7,7 @@ export type ReturnCost = "free" | "buyer-paid" | "final-sale";
 /** Production acquisition routes supported by the policy registry. */
 export type AcquisitionMethod = "api" | "browser" | "disabled";
 /** The local prototype adds `sample` so simulated records never claim retrieval. */
-export type OfferAcquisitionMethod = AcquisitionMethod | "sample";
+export type OfferAcquisitionMethod = AcquisitionMethod | "sample" | "browse";
 export type OfferPolicyStatus =
   | "sample-only-api-route"
   | "sample-only-browser-route"
@@ -15,6 +15,7 @@ export type OfferPolicyStatus =
   | "api-only"
   | "browser-permitted-unless-prohibited"
   | "browser-allowed-under-terms"
+  | "browse-allowed-agentic-access-terms"
   | "authorized-channel-only"
   | "excluded-prohibited";
 
@@ -85,7 +86,9 @@ export interface Offer {
   deliveryBasis:
     | "Sample seller delivery estimate"
     | "Sample shipping-service estimate"
-    | "Sample page-displayed delivery estimate";
+    | "Sample page-displayed delivery estimate"
+    | "Live page-displayed delivery estimate"
+    | "Live API delivery estimate";
   returnWindowDays: number; // 0 when final sale
   returnCost: ReturnCost;
   /** eBay sample terms are seller terms; Best Buy values are a curated policy sample. */
@@ -167,6 +170,25 @@ export interface DecideResponse {
   policyStatus: OfferPolicyStatus;
   policyGate: PolicyGateEntry[];
   agentActivity: AgentActivity;
+  /**
+   * Present only when a live merchant offer was merged into this response
+   * (see lib/adapters/walmart-browse.ts and lib/adapters/ebay-api.ts). The
+   * live offers themselves are flagged individually through their
+   * provenance. The flat fields describe the first live merchant merged;
+   * `merchants` lists every live merchant present in the response.
+   */
+  liveData?: {
+    merchant: string;
+    retrievedAt: string;
+    sourceUrl: string;
+    offerIds: string[];
+    merchants?: {
+      merchant: string;
+      retrievedAt: string;
+      sourceUrl: string;
+      offerIds: string[];
+    }[];
+  };
 }
 
 export interface CartItem {
