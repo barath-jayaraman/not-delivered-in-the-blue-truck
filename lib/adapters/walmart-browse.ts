@@ -36,7 +36,9 @@ import type { Offer, Product } from "../types";
  *   for that session: the adapter returns no live offers and the caller
  *   falls back to sample data. Nothing here evades a block.
  *
- * Enabled only when ENABLE_WALMART_BROWSE=1 (default off).
+ * Enabled by default (Barath's go-live directive, Oct 29, 2026). Set
+ * ENABLE_WALMART_BROWSE=0 to disable. The merchant policy registry gate
+ * still applies on top of this switch.
  */
 
 const USER_AGENT =
@@ -51,7 +53,7 @@ const FREE_SHIPPING_THRESHOLD = 35;
 const ELECTRONICS_RETURN_WINDOW_DAYS = 30;
 
 export function walmartBrowseEnabled(): boolean {
-  return process.env.ENABLE_WALMART_BROWSE === "1";
+  return process.env.ENABLE_WALMART_BROWSE !== "0";
 }
 
 /* ------------------------------------------------------------------ */
