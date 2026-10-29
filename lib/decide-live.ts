@@ -12,6 +12,7 @@ import {
   fetchLiveWalmartOffers,
   walmartBrowseEnabled,
 } from "./adapters/walmart-browse";
+import { fetchRelayWalmartOffers } from "./adapters/walmart-relay";
 import { findProduct, getProductById } from "./data";
 import { buildExplanation, decide, scoreOffers } from "./scoring";
 import type {
@@ -182,9 +183,15 @@ function applyLiveOffers(
 }
 
 /**
- * Merge the live Walmart browsed offer (when ENABLE_WALMART_BROWSE=1) into
- * a decide result. When browsing is disabled, blocked, or finds no match,
- * the result is returned untouched.
+ * Merge the live Walmart offer into a decide result. Source preference:
+ * (1) the direct browsed offer from lib/adapters/walmart-browse.ts —
+ * works wherever Walmart serves this client; (2) the fetch-relay offer
+ * from lib/adapters/walmart-relay.ts — the same adapter's extraction,
+ * produced off-host and republished as a JSON document, for hosts whose
+ * direct fetches Walmart blocks/challenges (production). When browsing
+ * is disabled (ENABLE_WALMART_BROWSE=0), both sources are off; when
+ * neither yields an offer, the result is returned untouched and the
+ * sample flow stands.
  */
 async function mergeLiveWalmartOffers(
   result: DecideResponse,
@@ -194,11 +201,18 @@ async function mergeLiveWalmartOffers(
   const product = getProductById(result.product.id);
   if (!product) return result;
 
-  let liveOffers: Awaited<ReturnType<typeof fetchLiveWalmartOffers>> = [];
+  let liveOffers: Offer[] = [];
   try {
     liveOffers = await fetchLiveWalmartOffers(product);
   } catch {
-    return result;
+    liveOffers = [];
+  }
+  if (!liveOffers.length) {
+    try {
+      liveOffers = await fetchRelayWalmartOffers(product);
+    } catch {
+      return result;
+    }
   }
   if (!liveOffers.length) return result;
   return applyLiveOffers(result, req, liveOffers);
