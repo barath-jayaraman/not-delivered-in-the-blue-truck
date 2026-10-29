@@ -311,6 +311,10 @@ export async function explainRecommendation(
     input.cheapestSticker.price,
     input.cheapestSticker.shippingCost,
     input.cheapestSticker.totalCost,
+    // Trade-off differences between the two offers are scored facts too —
+    // without them, any "costs $X more" phrasing reads as ungrounded.
+    Math.abs(input.winner.price - input.cheapestSticker.price),
+    Math.abs(input.winner.totalCost - input.cheapestSticker.totalCost),
   ];
   return figuresAreGrounded(text, allowedFigures) ? text : null;
 }
