@@ -219,8 +219,9 @@ async function mergeLiveWalmartOffers(
 }
 
 /**
- * Merge the live eBay offer (when ENABLE_EBAY_API=1 and the production
- * keyset is configured) into a decide result. Same contract as the
+ * Merge the live eBay offer (when the production keyset resolves and
+ * ENABLE_EBAY_API is not "0" — see the enablement rule in
+ * lib/adapters/ebay-api.ts) into a decide result. Same contract as the
  * Walmart merge: any failure or no honest match leaves the result
  * untouched, and the sample flow is never disturbed.
  */

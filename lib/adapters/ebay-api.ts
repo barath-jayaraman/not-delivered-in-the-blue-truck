@@ -12,9 +12,11 @@ import type { Offer, Product } from "../types";
  * What this adapter does:
  * - Authenticates with the OAuth client-credentials flow against
  *   https://api.ebay.com/identity/v1/oauth2/token using the production
- *   keyset supplied at runtime via EBAY_CLIENT_ID / EBAY_CLIENT_SECRET.
- *   The application token is cached in memory until shortly before expiry.
- *   Neither the secret nor the token is ever logged.
+ *   keyset supplied at runtime via EBAY_CLIENT_ID / EBAY_CLIENT_SECRET
+ *   (or the eBay_App_ID / eBay_Cert_ID aliases — see the credential
+ *   resolver below). The application token is cached in memory until
+ *   shortly before expiry. Neither the secret nor the token is ever
+ *   logged.
  * - Searches item summaries (Buy Browse API, EBAY_US marketplace) for the
  *   catalog product's "<brand> <model>" and picks the best-matching NEW
  *   listing with deterministic token-overlap matching, the same approach
@@ -40,8 +42,9 @@ import type { Offer, Product } from "../types";
  * - No authorized-seller flag is inferred; seller feedback is shown only
  *   as the labelled rating it is.
  *
- * Enabled only when ENABLE_EBAY_API=1 AND both key env vars are set
- * (default off / no-op). Any failure — no keys, auth rejection, network,
+ * Enabled whenever both credentials resolve and ENABLE_EBAY_API is not
+ * explicitly "0" (see the enablement rule below). With no keys the
+ * adapter is a no-op. Any failure — no keys, auth rejection, network,
  * parse — returns no live offers and the caller falls back to sample
  * data. Never throws.
  */
@@ -63,14 +66,53 @@ const TOKEN_EXPIRY_BUFFER_MS = 60_000;
  */
 const CURATED_RETURN_WINDOW_DAYS = 30;
 
-export function ebayCredentialsConfigured(): boolean {
-  return Boolean(
-    process.env.EBAY_CLIENT_ID && process.env.EBAY_CLIENT_SECRET,
+/**
+ * Credential aliases + enablement rule (changed 2026-10-30):
+ *
+ * Barath added the production keyset to Vercel under eBay's own labels
+ * from the developer portal — `eBay_App_ID` and `eBay_Cert_ID` — and
+ * Vercel env names are case-sensitive, so the adapter resolves the
+ * canonical EBAY_CLIENT_ID / EBAY_CLIENT_SECRET first and falls back to
+ * those aliases. He never has to re-paste the values under new names.
+ *
+ * Enablement follows the same spirit: the adapter used to require an
+ * explicit ENABLE_EBAY_API=1 that was never added, which silently kept
+ * production on sample data. Now the presence of both keys IS the opt-in
+ * (nobody sets production eBay keys by accident); ENABLE_EBAY_API="0"
+ * remains as an explicit kill switch, and any other value — including
+ * unset — leaves the adapter enabled when both keys resolve.
+ */
+function firstSetEnv(...values: (string | undefined)[]): string | undefined {
+  for (const value of values) {
+    if (value && value.trim()) return value;
+  }
+  return undefined;
+}
+
+export function resolveEbayCredentials(): {
+  clientId: string;
+  clientSecret: string;
+} | null {
+  const clientId = firstSetEnv(
+    process.env.EBAY_CLIENT_ID,
+    process.env.eBay_App_ID,
   );
+  const clientSecret = firstSetEnv(
+    process.env.EBAY_CLIENT_SECRET,
+    process.env.eBay_Cert_ID,
+  );
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+export function ebayCredentialsConfigured(): boolean {
+  return resolveEbayCredentials() !== null;
 }
 
 export function ebayApiEnabled(): boolean {
-  return process.env.ENABLE_EBAY_API === "1" && ebayCredentialsConfigured();
+  return (
+    process.env.ENABLE_EBAY_API !== "0" && ebayCredentialsConfigured()
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -81,9 +123,9 @@ let tokenCache: { accessToken: string; expiresAt: number } | null = null;
 let tokenInFlight: Promise<string | null> | null = null;
 
 async function requestApplicationToken(): Promise<string | null> {
-  const clientId = process.env.EBAY_CLIENT_ID;
-  const clientSecret = process.env.EBAY_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
+  const credentials = resolveEbayCredentials();
+  if (!credentials) return null;
+  const { clientId, clientSecret } = credentials;
 
   let response: Response;
   try {
