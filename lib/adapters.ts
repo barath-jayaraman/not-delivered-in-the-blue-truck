@@ -75,6 +75,7 @@ export type MerchantPolicyStatus =
   | "api-only"
   | "browser-permitted-unless-prohibited"
   | "browser-allowed-under-terms"
+  | "ucp-authorized-channel"
   | "authorized-channel-only"
   | "excluded-prohibited";
 
@@ -131,6 +132,36 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     browserPurchasingAllowed: false,
     consentGateRequired: false,
   },
+  // UCP stores: each publishes a public UCP profile at
+  // /.well-known/ucp declaring catalog.search over MCP — the merchant's
+  // own authorized agent channel (see lib/adapters/ucp.ts). All nine
+  // were verified live with real priced catalog responses on
+  // Oct 31, 2026. Catalog reads only; no cart/checkout calls.
+  ...[
+    "Steve Madden",
+    "Gymshark",
+    "Everlane",
+    "Monos",
+    "Allbirds",
+    "Kith",
+    "Misen",
+    "SKIMS",
+    "Fenty Beauty",
+  ].map(
+    (merchant): MerchantPolicy => ({
+      merchant,
+      allowedAcquisitionMethods: ["api"],
+      preferredAcquisitionMethod: "api",
+      status: "ucp-authorized-channel",
+      rationale:
+        `${merchant} publishes a public UCP profile (/.well-known/ucp) declaring the ` +
+        `dev.ucp.shopping.catalog.search capability over an MCP transport — its own ` +
+        `merchant-published authorized channel for agents. Catalog data is read live, ` +
+        `at request time, through that profile; no browsing or scraping is used.`,
+      browserPurchasingAllowed: false,
+      consentGateRequired: false,
+    }),
+  ),
 ];
 
 /** Compact gate outcomes for the UI policy-gate panel and API responses. */
@@ -166,11 +197,23 @@ export function getPolicyGateEntries(): PolicyGateEntry[] {
   };
   return MERCHANT_POLICY_REGISTRY.map((policy) => {
     const entry = presentation[policy.merchant];
+    if (entry) {
+      return { merchant: policy.merchant, ...entry };
+    }
+    if (policy.status === "ucp-authorized-channel") {
+      return {
+        merchant: policy.merchant,
+        route: "ucp" as PolicyGateEntry["route"],
+        outcomeLabel: "UCP — merchant-published catalog (MCP)",
+        detail:
+          "This store publishes a public UCP profile declaring catalog search over MCP, so prices are read live through the merchant's own authorized agent channel — no browsing or scraping.",
+      };
+    }
     return {
       merchant: policy.merchant,
-      route: entry?.route ?? "api",
-      outcomeLabel: entry?.outcomeLabel ?? policy.status,
-      detail: entry?.detail ?? policy.rationale,
+      route: "api" as PolicyGateEntry["route"],
+      outcomeLabel: policy.status,
+      detail: policy.rationale,
     };
   });
 }

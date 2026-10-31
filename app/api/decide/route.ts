@@ -3,6 +3,9 @@ import { decideWithAgent } from "@/lib/decide-live";
 import { PRODUCTS } from "@/lib/data";
 import type { DecideRequest, Priority } from "@/lib/types";
 
+/** Live UCP catalog calls can take tens of seconds; allow the maximum window. */
+export const maxDuration = 60;
+
 /**
  * POST /api/decide
  * Body: { productId?: string, query?: string, budget?: number,

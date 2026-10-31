@@ -93,7 +93,15 @@ export function scoreOffers(
       }
       if (offer.returnCost === "final-sale") flags.push("Final sale — no returns");
       if (offer.returnCost === "buyer-paid") flags.push("Returns are buyer-paid");
-      if (offer.shippingCost === 0) flags.push("Free shipping");
+      // "Free shipping" is claimed only when the source stated a $0
+      // charge. UCP catalog offers carry shippingCost 0 because the
+      // catalog states no shipping charge at all (it is calculated at
+      // the merchant's checkout) — that absence must never read as free.
+      if (
+        offer.shippingCost === 0 &&
+        offer.provenance.policyStatus !== "ucp-public-profile"
+      )
+        flags.push("Free shipping");
       if (offer.deliveryDays <= req.needByDays)
         flags.push(`Arrives in ${offer.deliveryDays} day${offer.deliveryDays === 1 ? "" : "s"}`);
 
@@ -123,6 +131,25 @@ function warrantyPhrase(o: ScoredOffer): string {
     : "no warranty stated by the seller";
 }
 
+function ratingPhrase(o: ScoredOffer): string {
+  // UCP first-party stores state no seller rating (sellerRating 0 is an
+  // absence of data, like warrantyMonths 0) — never render it as stars.
+  return o.provenance.policyStatus === "ucp-public-profile"
+    ? "sold by the merchant's own first-party store"
+    : `a ${o.sellerRating.toFixed(1)}-star rated seller`;
+}
+
+function shippingPhrase(o: ScoredOffer): string {
+  // UCP catalog offers state no shipping charge: it is calculated by
+  // the merchant at checkout and excluded from the total — never "free".
+  if (o.provenance.policyStatus === "ucp-public-profile") {
+    return "shipping calculated at the merchant's checkout, not included";
+  }
+  return o.shippingCost === 0
+    ? "free shipping"
+    : `${money(o.shippingCost)} shipping`;
+}
+
 export function buildExplanation(
   winner: ScoredOffer,
   cheapest: ScoredOffer,
@@ -139,9 +166,9 @@ export function buildExplanation(
   if (winner.id === cheapest.id) {
     return (
       `The cheapest sticker price is also the right buy here. ${winner.seller} is the best whole deal on ${priorityLabel}: ` +
-      `${money(winner.totalCost)} all-in (${money(winner.price)} + ${winner.shippingCost === 0 ? "free shipping" : money(winner.shippingCost) + " shipping"}), ` +
+      `${money(winner.totalCost)} all-in (${money(winner.price)} + ${shippingPhrase(winner)}), ` +
       `arrives in ${winner.deliveryDays} day${winner.deliveryDays === 1 ? "" : "s"}, ${returnsPhrase(winner)}, ` +
-      `${warrantyPhrase(winner)}, and a ${winner.sellerRating.toFixed(1)}-star rated seller. ` +
+      `${warrantyPhrase(winner)}, and ${ratingPhrase(winner)}. ` +
       (winner.deliveryDays > needByDays
         ? `One warning: no live offer in this comparison makes your ${needByDays}-day deadline — this is the closest option. `
         : "") +
@@ -173,7 +200,11 @@ export function buildExplanation(
           : `arrives ${winner.deliveryDays - cheapest.deliveryDays} day${winner.deliveryDays - cheapest.deliveryDays === 1 ? "" : "s"} later, still inside your deadline`,
     );
   }
-  if (winner.shippingCost === 0 && cheapest.shippingCost > 0) {
+  if (
+    winner.shippingCost === 0 &&
+    cheapest.shippingCost > 0 &&
+    winner.provenance.policyStatus !== "ucp-public-profile"
+  ) {
     parts.push("free shipping");
   }
   if (
@@ -193,7 +224,10 @@ export function buildExplanation(
           : `no warranty stated by its seller vs ${cheapest.warrantyMonths} months from the cheapest seller`,
     );
   }
-  if (winner.sellerRating > cheapest.sellerRating) {
+  if (
+    winner.sellerRating > cheapest.sellerRating &&
+    cheapest.provenance.policyStatus !== "ucp-public-profile"
+  ) {
     parts.push(
       `a better-rated seller (${winner.sellerRating.toFixed(1)}★ vs ${cheapest.sellerRating.toFixed(1)}★)`,
     );

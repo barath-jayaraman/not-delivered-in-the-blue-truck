@@ -4,6 +4,9 @@ import { getMetaModelConfig, interpretQuery } from "@/lib/agent";
 import { searchLiveProducts } from "@/lib/live-search";
 import type { SearchResponse } from "@/lib/types";
 
+/** Live UCP catalog calls can take tens of seconds; allow the maximum window. */
+export const maxDuration = 60;
+
 /**
  * GET /api/search?q=...
  *

@@ -111,7 +111,9 @@ async function buildLiveComparison(
     route:
       merchant === "Walmart"
         ? "browsing route (Agentic Access Terms)"
-        : "official API route",
+        : merchant === "eBay"
+          ? "official API route"
+          : "UCP catalog via merchant-published profile (MCP)",
     offerCount: group.offers.filter((o) => o.merchant === merchant).length,
   }));
   const agentActivity = buildAgentActivity({

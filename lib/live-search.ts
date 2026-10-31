@@ -7,6 +7,11 @@ import {
   type EbayItemSummary,
 } from "./adapters/ebay-api";
 import {
+  buildUcpOffer,
+  searchUcpStore,
+  selectUcpStores,
+} from "./adapters/ucp";
+import {
   buildWalmartOffer,
   fetchWalmartSearchItems,
   parseWalmartItem,
@@ -28,6 +33,11 @@ import type { Merchant, Offer, ProductSummary } from "./types";
  *   Agentic Access Terms website tier (lib/adapters/walmart-browse.ts) —
  *   self-identifying agent, serialized rate limiting, stop-on-block; a
  *   redirect/challenge simply yields no Walmart results for that search.
+ * - UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith,
+ *   Misen, SKIMS, Fenty Beauty), through each store's own published UCP
+ *   profile and MCP catalog (lib/adapters/ucp.ts) — the merchant's
+ *   authorized agent channel. Only the stores whose assortment matches
+ *   the query are called, in parallel with the other sources.
  *
  * NO STORED LISTINGS OR PRICES ANYWHERE (Barath's rule, Oct 31, 2026):
  * nothing in this module — or anywhere in the app — keeps search results
@@ -51,7 +61,7 @@ import type { Merchant, Offer, ProductSummary } from "./types";
  * the listing is skipped, never guessed.
  */
 
-const MAX_GROUPS = 10;
+const MAX_GROUPS = 20;
 const MAX_OFFERS_PER_GROUP = 6;
 const MAX_EBAY_OFFERS_PER_GROUP = 4;
 const MAX_WALMART_OFFERS_PER_GROUP = 2;
@@ -82,6 +92,7 @@ const FILLER_TOKENS = new Set([
   "over", "ear", "on", "in", "with", "and", "the", "for", "of", "by",
   "tv", "television", "shoes", "shoe", "sneakers", "sneaker", "running",
   "vacuum", "vacuums", "robot", "espresso", "machine", "coffee", "maker",
+  "luggage", "suitcase", "carry", "leggings", "sweater", "knife", "knives",
   "inch", "inches", "in", "cm", "mm", "gb", "tb", "hz", "smart", "series",
   "gen", "generation", "edition", "new", "sealed", "genuine", "authentic",
   "oem", "original", "official", "premium", "free",
@@ -96,6 +107,7 @@ const COLOR_TOKENS = new Set([
   "gray", "pink", "purple", "orange", "yellow", "brown", "tan", "cream",
   "midnight", "lunar", "eclipse", "onyx", "ivory", "charcoal", "navy",
   "beige", "olive", "burgundy", "teal", "coral", "smoke", "sandstone",
+  "taupe", "mocha", "canvas", "heather", "cocoa", "mist",
 ]);
 
 /** Accessory markers: the listing is an add-on, not the product itself. */
@@ -133,6 +145,16 @@ const KNOWN_BRANDS: [string, string][] = [
   ["patagonia", "Patagonia"],
   ["fisher price", "Fisher-Price"],
   ["under armour", "Under Armour"],
+  ["steve madden", "Steve Madden"],
+  ["maison margiela", "Maison Margiela"],
+  ["fenty beauty", "Fenty Beauty"],
+  ["gymshark", "Gymshark"],
+  ["everlane", "Everlane"],
+  ["allbirds", "Allbirds"],
+  ["misen", "Misen"],
+  ["skims", "SKIMS"],
+  ["monos", "Monos"],
+  ["kith", "Kith"],
   ["new balance", "New Balance"],
   ["beats", "Beats"],
   ["bose", "Bose"],
@@ -207,6 +229,15 @@ interface Candidate {
   offer: Offer;
   title: string;
   imageUrl: string | null;
+  /**
+   * True when the source's own search already established relevance:
+   * a UCP store's catalog server semantically matched the query within
+   * the assortment we routed to it, so its products need not share a
+   * literal token with the query ("Tree Runner" for "sneakers"). The
+   * model-identity grouping still applies unchanged. eBay/Walmart
+   * listings keep the literal-token gate — their result sets are noisy.
+   */
+  trustedRelevance?: boolean;
 }
 
 function distinctiveTokens(
@@ -231,7 +262,11 @@ function guessCategory(text: string): string {
   const t = ` ${text.toLowerCase()} `;
   if (/headphone|earbud|earphone/.test(t)) return "Headphones";
   if (/\btv\b|television|oled|qled/.test(t)) return "TVs";
+  if (/luggage|carry on|suitcase/.test(t)) return "Luggage";
+  if (/knife|knives|cookware|skillet/.test(t)) return "Kitchen";
+  if (/lipstick|lip gloss|makeup|foundation|mascara/.test(t)) return "Beauty";
   if (/shoe|sneaker|running/.test(t)) return "Running shoes";
+  if (/sweater|leggings|bodysuit|hoodie|apparel/.test(t)) return "Apparel";
   if (/vacuum|roomba|roborock/.test(t)) return "Robot vacuums";
   if (/espresso|coffee/.test(t)) return "Coffee makers";
   return "General";
@@ -269,8 +304,16 @@ function groupListings(
   for (const candidate of candidates) {
     const titleTokens = tokens(candidate.title);
     // Accessory listings are not the product — unless the shopper
-    // searched for the accessory itself.
-    const accessory = titleTokens.some((t) => ACCESSORY_TOKENS.has(t));
+    // searched for the accessory itself. "Sleeve" alone does not make
+    // a listing an accessory (a long-sleeve bodysuit is a product);
+    // it counts only alongside a case/cover word.
+    const accessory = titleTokens.some((t) => {
+      if (!ACCESSORY_TOKENS.has(t)) return false;
+      if (t === "sleeve" || t === "sleeves") {
+        return titleTokens.includes("case") || titleTokens.includes("cover");
+      }
+      return true;
+    });
     if (
       accessory &&
       !titleTokens.some((t) => ACCESSORY_TOKENS.has(t) && queryTokens.has(t))
@@ -279,8 +322,13 @@ function groupListings(
     }
     const { brand, brandTokens } = detectBrand(titleTokens);
     const distinctive = distinctiveTokens(titleTokens, brandTokens);
-    // Relevance: the listing must share at least one token with the query.
-    if (!titleTokens.some((t) => queryTokens.has(t))) continue;
+    // Relevance: the listing must share at least one token with the query
+    // (waived for UCP candidates — see Candidate.trustedRelevance).
+    if (
+      !candidate.trustedRelevance &&
+      !titleTokens.some((t) => queryTokens.has(t))
+    )
+      continue;
     const key = groupKey(brand, distinctive);
     const existing = groups.get(key);
     if (existing) {
@@ -292,16 +340,26 @@ function groupListings(
 
   const built: LiveProductGroup[] = [];
   for (const group of groups.values()) {
-    // Per-merchant caps keep one marketplace from flooding the table.
-    const ebay = group.entries
-      .filter((e) => e.offer.merchant === "eBay")
-      .sort((a, b) => a.offer.price - b.offer.price)
-      .slice(0, MAX_EBAY_OFFERS_PER_GROUP);
-    const walmart = group.entries
-      .filter((e) => e.offer.merchant === "Walmart")
-      .sort((a, b) => a.offer.price - b.offer.price)
-      .slice(0, MAX_WALMART_OFFERS_PER_GROUP);
-    const kept = [...walmart, ...ebay]
+    // Per-merchant caps keep one marketplace from flooding the table:
+    // eBay (a marketplace of many sellers) gets more slots; each
+    // first-party or browsed merchant gets two.
+    const byMerchant = new Map<string, Candidate[]>();
+    for (const entry of group.entries) {
+      const list = byMerchant.get(entry.offer.merchant) ?? [];
+      list.push(entry);
+      byMerchant.set(entry.offer.merchant, list);
+    }
+    const kept = [...byMerchant.values()]
+      .flatMap((entries) =>
+        [...entries]
+          .sort((a, b) => a.offer.price - b.offer.price)
+          .slice(
+            0,
+            entries[0].offer.merchant === "eBay"
+              ? MAX_EBAY_OFFERS_PER_GROUP
+              : MAX_WALMART_OFFERS_PER_GROUP,
+          ),
+      )
       .sort((a, b) => a.offer.price - b.offer.price)
       .slice(0, MAX_OFFERS_PER_GROUP);
     if (!kept.length) continue;
@@ -342,12 +400,21 @@ function groupListings(
     });
   }
 
-  // Two-merchant groups first (the comparison story), then more offers,
-  // then lower from-price.
+  // Multi-merchant groups first (the comparison story), then groups
+  // carrying a UCP first-party offer (the authorized-channel story),
+  // then more offers, then lower from-price. Without the UCP tier, a
+  // high-volume browsed marketplace's single-merchant groups would
+  // crowd every UCP group past the cap on generic queries.
+  const tier = (g: LiveProductGroup): number => {
+    if (g.merchants.length > 1) return 0;
+    if (
+      g.offers.some((o) => o.provenance.policyStatus === "ucp-public-profile")
+    )
+      return 1;
+    return 2;
+  };
   built.sort((a, b) => {
-    const bothA = a.merchants.length > 1 ? 0 : 1;
-    const bothB = b.merchants.length > 1 ? 0 : 1;
-    if (bothA !== bothB) return bothA - bothB;
+    if (tier(a) !== tier(b)) return tier(a) - tier(b);
     if (b.offers.length !== a.offers.length) return b.offers.length - a.offers.length;
     return (
       Math.min(...a.offers.map((o) => o.price)) -
@@ -441,6 +508,42 @@ async function collectWalmartCandidates(
   return candidates;
 }
 
+/**
+ * UCP candidates: for each store whose assortment matches the query,
+ * run its published UCP catalog live (lib/adapters/ucp.ts) and map the
+ * priced products it returns. First-party brand stores whose titles
+ * omit the brand get it prefixed so grouping identity carries the
+ * brand; multi-brand retailers' products keep their own titles/brands.
+ * A store that does not answer contributes nothing.
+ */
+async function collectUcpCandidates(query: string): Promise<Candidate[]> {
+  const stores = selectUcpStores(query);
+  if (!stores.length) return [];
+  const retrievedAt = new Date().toISOString();
+  const perStore = await Promise.allSettled(
+    stores.map((store) => searchUcpStore(store, query)),
+  );
+  const candidates: Candidate[] = [];
+  stores.forEach((store, i) => {
+    const result = perStore[i];
+    if (result.status !== "fulfilled") return;
+    for (const product of result.value) {
+      const title =
+        store.prefixBrand &&
+        !product.title.toLowerCase().includes(store.brand.toLowerCase())
+          ? `${store.brand} ${product.title}`
+          : product.title;
+      candidates.push({
+        offer: buildUcpOffer(store, product, retrievedAt),
+        title,
+        imageUrl: product.imageUrl,
+        trustedRelevance: true,
+      });
+    }
+  });
+  return candidates;
+}
+
 /* ------------------------------------------------------------------ */
 /* Public search — live every time, in-flight dedupe only              */
 /* ------------------------------------------------------------------ */
@@ -459,13 +562,15 @@ export interface LiveSearchResult {
 const inflight = new Map<string, Promise<LiveSearchResult>>();
 
 async function runLiveSearch(query: string): Promise<LiveSearchResult> {
-  const [ebayResult, walmartResult] = await Promise.allSettled([
+  const [ebayResult, walmartResult, ucpResult] = await Promise.allSettled([
     collectEbayCandidates(query),
     collectWalmartCandidates(query),
+    collectUcpCandidates(query),
   ]);
   const candidates = [
     ...(ebayResult.status === "fulfilled" ? ebayResult.value : []),
     ...(walmartResult.status === "fulfilled" ? walmartResult.value : []),
+    ...(ucpResult.status === "fulfilled" ? ucpResult.value : []),
   ];
   const groups = groupListings(query, candidates);
   const summaries = groups.map((group) => summarizeGroup(group, query));

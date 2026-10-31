@@ -1,6 +1,19 @@
 export type Priority = "cheapest" | "fastest" | "returns";
 
-export type Merchant = "Walmart" | "Best Buy" | "eBay" | "Target";
+export type Merchant =
+  | "Walmart"
+  | "Best Buy"
+  | "eBay"
+  | "Target"
+  | "Steve Madden"
+  | "Gymshark"
+  | "Everlane"
+  | "Monos"
+  | "Allbirds"
+  | "Kith"
+  | "Misen"
+  | "SKIMS"
+  | "Fenty Beauty";
 /** "live" marks records retrieved from a merchant for this request (see lib/live-search.ts). */
 export type DataMode = "sample" | "live";
 export type ReturnCost = "free" | "buyer-paid" | "final-sale";
@@ -17,11 +30,12 @@ export type OfferPolicyStatus =
   | "browser-permitted-unless-prohibited"
   | "browser-allowed-under-terms"
   | "browse-allowed-agentic-access-terms"
+  | "ucp-public-profile"
   | "authorized-channel-only"
   | "excluded-prohibited";
 
 /** How the policy gate routes a merchant in production. */
-export type PolicyGateRoute = "browser" | "api" | "authorized-channel-only";
+export type PolicyGateRoute = "browser" | "api" | "ucp" | "authorized-channel-only";
 
 export interface PolicyGateEntry {
   merchant: string;

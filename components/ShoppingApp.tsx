@@ -666,7 +666,7 @@ export default function ShoppingApp() {
               <strong>No products to show</strong>
               <p>
                 {total === 0
-                  ? `Nothing matched “${searchMeta?.query}” — not in the catalog, and live search at Walmart and eBay returned nothing for it. Try headphones, a 55 inch TV, a robot vacuum, running shoes, or a coffee maker.`
+                  ? `Nothing matched “${searchMeta?.query}” — live search at eBay, Walmart, and the UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty) returned nothing for it. Try headphones, a 55 inch TV, running shoes, leggings, a sweater, a carry-on, sneakers, a chef's knife, or lip gloss.`
                   : "No products match the selected filters. Loosen a filter to see more."}
               </p>
             </div>
@@ -790,7 +790,10 @@ export default function ShoppingApp() {
                         <span className="merchantName">{offer.merchant}</span>
                         <span className="sellerName">{offer.seller}</span>
                         <span className="conditionLine">
-                          {offer.condition} · {offer.sellerRating.toFixed(1)} seller rating
+                          {offer.condition} ·{" "}
+                          {offer.provenance.policyStatus === "ucp-public-profile"
+                            ? "First-party store — no seller rating stated"
+                            : `${offer.sellerRating.toFixed(1)} seller rating`}
                         </span>
                         {result.liveData?.offerIds.includes(offer.id) && (
                           <span className="livePill livePillSmall">Live price</span>
