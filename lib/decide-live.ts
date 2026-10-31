@@ -63,6 +63,7 @@ function toExplainFacts(offer: ScoredOffer): ExplainOfferFacts {
     warrantyMonths: offer.warrantyMonths,
     sellerRating: offer.sellerRating,
     score: offer.score,
+    firstPartyStore: offer.provenance.policyStatus === "ucp-public-profile",
   };
 }
 
@@ -100,7 +101,16 @@ async function buildLiveComparison(
       cheapestSticker: toExplainFacts(cheapestSticker),
       sameOffer: recommendation.id === cheapestSticker.id,
     });
-    if (liveExplanation) {
+    // Honesty backstop: a UCP catalog states no shipping charge, so any
+    // model text claiming "free shipping" for a comparison involving a
+    // UCP offer is rejected whole and the local explanation stands.
+    const involvesUcp = [recommendation, cheapestSticker].some(
+      (o) => o.provenance.policyStatus === "ucp-public-profile",
+    );
+    if (
+      liveExplanation &&
+      !(involvesUcp && /free shipping/i.test(liveExplanation))
+    ) {
       explanation = liveExplanation;
       liveSteps.push("explain");
     }

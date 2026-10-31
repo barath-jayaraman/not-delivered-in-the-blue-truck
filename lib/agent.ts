@@ -234,6 +234,14 @@ export interface ExplainOfferFacts {
   warrantyMonths: number;
   sellerRating: number;
   score: number;
+  /**
+   * True for UCP first-party store offers: the merchant's catalog
+   * states NO shipping charge (it is calculated at checkout and is not
+   * in the total) and NO seller rating. shippingCost 0 / sellerRating 0
+   * there are absences of data and must never be rendered to the model
+   * as "free" shipping or a 0.0 rating.
+   */
+  firstPartyStore?: boolean;
 }
 
 export interface ExplainInput {
@@ -249,11 +257,19 @@ const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 function offerFacts(label: string, o: ExplainOfferFacts): string {
+  const shipping = o.firstPartyStore
+    ? "shipping not stated by the merchant — calculated at checkout and NOT included in the total (never call it free)"
+    : o.shippingCost === 0
+      ? "free"
+      : money(o.shippingCost);
+  const rating = o.firstPartyStore
+    ? "no seller rating (the merchant's own first-party store)"
+    : o.sellerRating.toFixed(1);
   return (
     `${label}: seller ${o.seller} (${o.merchant}), total ${money(o.totalCost)} ` +
-    `(sticker ${money(o.price)} + shipping ${o.shippingCost === 0 ? "free" : money(o.shippingCost)}), ` +
+    `(sticker ${money(o.price)} + shipping ${shipping}), ` +
     `arrives in ${o.deliveryDays} days, returns: ${o.returnCost} within ${o.returnWindowDays} days, ` +
-    `warranty ${o.warrantyMonths > 0 ? `${o.warrantyMonths} months` : "not stated by seller"}, seller rating ${o.sellerRating.toFixed(1)}, score ${o.score}/100.`
+    `warranty ${o.warrantyMonths > 0 ? `${o.warrantyMonths} months` : "not stated by seller"}, seller rating ${rating}, score ${o.score}/100.`
   );
 }
 
