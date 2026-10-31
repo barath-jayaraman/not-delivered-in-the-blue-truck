@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T16:39:36.057Z",
+  "generatedAt": "2026-10-31T10:39:28.540Z",
   "offers": {
     "bose-qc-ultra-2": {
       "id": "walmart-live-16093316143",
@@ -21,9 +21,9 @@
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
         "sourceUrl": "https://www.walmart.com/ip/Bose-QuietComfort-Ultra-Headphones-II-Bluetooth-Over-Ear-Noise-Cancelling-Headphones-Black/16093316143?classType=VARIANT",
-        "retrievedAt": "2026-10-30T16:39:16.523Z",
+        "retrievedAt": "2026-10-31T10:39:09.473Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:16.537Z from Walmart's public search-results page (https://www.walmart.com/search?q=Bose%20QuietComfort%20Ultra%20Headphones%20(2nd%20Gen)) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:09.485Z from Walmart's public search-results page (https://www.walmart.com/search?q=Bose%20QuietComfort%20Ultra%20Headphones%20(2nd%20Gen)) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     },
     "bose-qc-headphones": {
@@ -34,7 +34,7 @@
       "condition": "New",
       "price": 169,
       "shippingCost": 0,
-      "deliveryDays": 3,
+      "deliveryDays": 2,
       "deliveryBasis": "Live page-displayed delivery estimate",
       "returnWindowDays": 30,
       "returnCost": "free",
@@ -46,20 +46,20 @@
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
         "sourceUrl": "https://www.walmart.com/ip/Bose-QuietComfort-Headphones-Noise-Cancelling-Over-Ear-Wireless-Bluetooth-Earphones-Sandstone/9744661583?classType=VARIANT",
-        "retrievedAt": "2026-10-30T16:39:19.242Z",
+        "retrievedAt": "2026-10-31T10:39:11.784Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:19.242Z from Walmart's public search-results page (https://www.walmart.com/search?q=Bose%20QuietComfort%20Headphones) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:11.784Z from Walmart's public search-results page (https://www.walmart.com/search?q=Bose%20QuietComfort%20Headphones) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     },
     "sony-xm6": {
       "id": "walmart-live-16504921979",
       "merchant": "Walmart",
-      "seller": "Focus Camera",
+      "seller": "Adorama",
       "channel": "Walmart",
       "condition": "New",
       "price": 458,
       "shippingCost": 0,
-      "deliveryDays": 1,
+      "deliveryDays": 3,
       "deliveryBasis": "Live page-displayed delivery estimate",
       "returnWindowDays": 30,
       "returnCost": "free",
@@ -71,9 +71,9 @@
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
         "sourceUrl": "https://www.walmart.com/ip/Sony-WH1000XM6-Noise-Canceling-Wireless-Over-Ear-Headphones/16504921979?classType=VARIANT",
-        "retrievedAt": "2026-10-30T16:39:21.908Z",
+        "retrievedAt": "2026-10-31T10:39:14.005Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:21.908Z from Walmart's public search-results page (https://www.walmart.com/search?q=Sony%20WH-1000XM6%20Wireless%20Headphones) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:14.005Z from Walmart's public search-results page (https://www.walmart.com/search?q=Sony%20WH-1000XM6%20Wireless%20Headphones) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     },
     "nike-pegasus-41": {
@@ -84,7 +84,7 @@
       "condition": "New",
       "price": 109.99,
       "shippingCost": 0,
-      "deliveryDays": 7,
+      "deliveryDays": 6,
       "deliveryBasis": "Live page-displayed delivery estimate",
       "returnWindowDays": 30,
       "returnCost": "free",
@@ -96,9 +96,9 @@
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
         "sourceUrl": "https://www.walmart.com/ip/Men-s-Nike-Air-Zoom-Pegasus-41-Pure-Platinum-FD2722-102-8-5/19583071910?classType=VARIANT&athbdg=L2005",
-        "retrievedAt": "2026-10-30T16:39:24.010Z",
+        "retrievedAt": "2026-10-31T10:39:16.579Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:24.010Z from Walmart's public search-results page (https://www.walmart.com/search?q=Nike%20Pegasus%2041%20Running%20Shoes) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:16.579Z from Walmart's public search-results page (https://www.walmart.com/search?q=Nike%20Pegasus%2041%20Running%20Shoes) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     },
     "samsung-u8000f-55": {
@@ -109,7 +109,7 @@
       "condition": "Open-box",
       "price": 313,
       "shippingCost": 0,
-      "deliveryDays": 7,
+      "deliveryDays": 6,
       "deliveryBasis": "Live page-displayed delivery estimate",
       "returnWindowDays": 30,
       "returnCost": "free",
@@ -121,34 +121,34 @@
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
         "sourceUrl": "https://www.walmart.com/ip/Samsung-55-Class-Crystal-UHD-4K-Smart-TV-UN55U8000FDXZA/19271764224?conditionGroupCode=3&classType=REGULAR",
-        "retrievedAt": "2026-10-30T16:39:29.043Z",
+        "retrievedAt": "2026-10-31T10:39:21.087Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:29.043Z from Walmart's public search-results page (https://www.walmart.com/search?q=Samsung%2055-inch%20Crystal%20UHD%20U8000F%20TV) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:21.087Z from Walmart's public search-results page (https://www.walmart.com/search?q=Samsung%2055-inch%20Crystal%20UHD%20U8000F%20TV) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     },
     "lg-c5-55": {
-      "id": "walmart-live-18892305173",
+      "id": "walmart-live-14423052490",
       "merchant": "Walmart",
-      "seller": "Brandsmart USA",
+      "seller": "Beach Camera",
       "channel": "Walmart",
       "condition": "New",
-      "price": 1122.18,
+      "price": 997,
       "shippingCost": 0,
-      "deliveryDays": 5,
+      "deliveryDays": 9,
       "deliveryBasis": "Live page-displayed delivery estimate",
       "returnWindowDays": 30,
       "returnCost": "free",
       "returnPolicySource": "Curated retailer-policy sample",
       "warrantyMonths": 0,
-      "sellerRating": 4.8,
-      "sampleListingLabel": "Live Walmart listing 18892305173",
+      "sellerRating": 4.4,
+      "sampleListingLabel": "Live Walmart listing 14423052490",
       "provenance": {
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
-        "sourceUrl": "https://www.walmart.com/ip/LG-55-C5-Series-4K-UHD-OLED-evo-AI-Smart-webOS-25-TV-OLED55C5PUA/18892305173?classType=VARIANT",
-        "retrievedAt": "2026-10-30T16:39:31.732Z",
+        "sourceUrl": "https://www.walmart.com/ip/LG-55-C5-Series-4K-UHD-OLED-evo-AI-Smart-webOS-25-TV-OLED55C5PUA/14423052490?classType=REGULAR&athbdg=L1300",
+        "retrievedAt": "2026-10-31T10:39:23.863Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:31.732Z from Walmart's public search-results page (https://www.walmart.com/search?q=LG%2055-inch%20OLED%20evo%20C5%20TV) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:23.863Z from Walmart's public search-results page (https://www.walmart.com/search?q=LG%2055-inch%20OLED%20evo%20C5%20TV) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     },
     "breville-barista-express-impress": {
@@ -159,7 +159,7 @@
       "condition": "New",
       "price": 829,
       "shippingCost": 0,
-      "deliveryDays": 7,
+      "deliveryDays": 6,
       "deliveryBasis": "Live page-displayed delivery estimate",
       "returnWindowDays": 30,
       "returnCost": "free",
@@ -171,9 +171,9 @@
         "sourceMerchant": "Walmart",
         "acquisitionMethod": "browse",
         "sourceUrl": "https://www.walmart.com/ip/Breville-Barista-Express-Impress-Espresso-Machine-2-Liters-Stainless-Steel/1733254345?classType=REGULAR",
-        "retrievedAt": "2026-10-30T16:39:36.057Z",
+        "retrievedAt": "2026-10-31T10:39:28.540Z",
         "policyStatus": "browse-allowed-agentic-access-terms",
-        "policyNote": "Live price retrieved 2026-10-30T16:39:36.057Z from Walmart's public search-results page (https://www.walmart.com/search?q=Breville%20Barista%20Express%20Impress%20Espresso%20Machine) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
+        "policyNote": "Live price retrieved 2026-10-31T10:39:28.540Z from Walmart's public search-results page (https://www.walmart.com/search?q=Breville%20Barista%20Express%20Impress%20Espresso%20Machine) under the Agentic Access Terms website tier (Terms of Use §16.L): single page view with a self-identifying user agent, no login, no checkout action. Walmart product pages currently redirect this client to /blocked, so extraction uses search-results state only. No shipping charge was displayed for the listing; shipping is shown as $0.00 under Walmart's published free-shipping policy for orders of $35+. The listing displayed no return terms; the return window/cost are Walmart's published electronics return policy (curated). The rating field carries the listing's displayed average review rating for this first-party offer."
       }
     }
   }
