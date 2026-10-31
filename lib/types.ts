@@ -1,7 +1,8 @@
 export type Priority = "cheapest" | "fastest" | "returns";
 
 export type Merchant = "Walmart" | "Best Buy" | "eBay" | "Target";
-export type DataMode = "sample";
+/** "live" marks records retrieved from a merchant for this request (see lib/live-search.ts). */
+export type DataMode = "sample" | "live";
 export type ReturnCost = "free" | "buyer-paid" | "final-sale";
 
 /** Production acquisition routes supported by the policy registry. */
@@ -93,6 +94,11 @@ export interface Offer {
   returnCost: ReturnCost;
   /** eBay sample terms are seller terms; Best Buy values are a curated policy sample. */
   returnPolicySource: "Sample seller return terms" | "Curated retailer-policy sample";
+  /**
+   * Stated warranty period in months. 0 means the source stated NO
+   * warranty period — an absence of data, displayed as "Not stated by
+   * seller"; it must never be rendered or phrased as "no warranty".
+   */
   warrantyMonths: number;
   /** Seller / retailer rating, 0–5 scale. */
   sellerRating: number;
@@ -109,7 +115,12 @@ export interface Product {
   category: string;
   /** Aliases and lower-case search phrases. */
   keywords: string[];
-  offers: Offer[];
+  /**
+   * Presentation metadata ONLY (name/brand/model/category/keywords, plus
+   * the stored photo keyed by id). A Product carries NO offers, listings,
+   * or prices: every price the app shows is fetched live in the request
+   * that displays it (lib/live-search.ts).
+   */
 }
 
 export interface ProductSummary {
@@ -126,9 +137,13 @@ export interface ProductSummary {
   dataSource: DataMode;
   sourceMerchants: Merchant[];
   acquisitionMethod: OfferAcquisitionMethod;
-  sourceUrl: null;
-  retrievedAt: null;
+  /** Live summaries link the first listing they were built from. */
+  sourceUrl: string | null;
+  /** When the listings behind this summary were retrieved (this request). */
+  retrievedAt: string | null;
   policyStatus: OfferPolicyStatus;
+  /** Image URL supplied by the merchant for live results. */
+  imageUrl?: string | null;
 }
 
 export interface SearchResponse {
@@ -147,13 +162,15 @@ export interface ScoredOffer extends Offer {
 export interface DecideRequest {
   query?: string;
   productId?: string;
+  /** Set when the shopper picked a live-search result (see lib/live-search.ts). */
+  liveGroupId?: string;
   budget?: number | null;
   needByDays: number;
   priority: Priority;
 }
 
 export interface DecideResponse {
-  product: { id: string; name: string; category: string };
+  product: { id: string; name: string; category: string; imageUrl?: string | null };
   priority: Priority;
   needByDays: number;
   budget: number | null;
@@ -166,7 +183,8 @@ export interface DecideResponse {
   dataSource: DataMode;
   sourceMerchants: Merchant[];
   acquisitionMethod: OfferAcquisitionMethod;
-  retrievedAt: null;
+  /** Null for sample decisions; the retrieval time for live decisions. */
+  retrievedAt: string | null;
   policyStatus: OfferPolicyStatus;
   policyGate: PolicyGateEntry[];
   agentActivity: AgentActivity;
@@ -194,6 +212,8 @@ export interface DecideResponse {
 export interface CartItem {
   productId: string;
   productName: string;
+  /** Merchant-supplied image for live-search products; null for catalog items. */
+  imageUrl?: string | null;
   offerId: string;
   merchant: Merchant;
   seller: string;
@@ -220,6 +240,8 @@ export interface PrototypeOrder {
   confirmationNumber: string;
   productId: string;
   productName: string;
+  /** Merchant-supplied image for live-search products; null for catalog items. */
+  imageUrl?: string | null;
   offerId: string;
   merchant: Merchant;
   seller: string;

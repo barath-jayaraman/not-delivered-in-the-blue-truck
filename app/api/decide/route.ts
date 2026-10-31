@@ -8,19 +8,20 @@ import type { DecideRequest, Priority } from "@/lib/types";
  * Body: { productId?: string, query?: string, budget?: number,
  *         needByDays: number, priority: Priority }
  *
- * Prototype: served by the local scoring engine (lib/scoring.ts) over sample
- * data only. Future live data must arrive through the route the policy gate
- * allows per merchant (lib/adapters.ts): Walmart via browsing under its
- * Agentic Access Terms, Best Buy/eBay via their official APIs. Target is
- * authorized-channel only and is never browsed. No scraping or
+ * Served by lib/decide-live.ts: EVERY comparison is built from offers
+ * fetched live in this request (eBay Buy Browse API + Walmart
+ * search-page fetch, per the policy gate in lib/adapters.ts). No stored
+ * listings or prices are ever served; when live sources return nothing
+ * for the selection, the answer is the honest empty state below. Target
+ * is authorized-channel only and is never browsed. No scraping or
  * browser-automated purchasing belongs behind this route.
  *
- * Muse Spark: served by lib/decide-live.ts. When META_MODEL_API_KEY is
- * configured server-side, Muse Spark interprets the shopper's query and
- * writes the recommendation explanation via the Meta Model API; scoring
- * stays deterministic and local, live failures fall back silently, and the
- * agent-activity payload reports mode "live" only for steps that actually
- * ran live on this request. Muse must not train on eBay Content.
+ * Muse Spark: when META_MODEL_API_KEY is configured server-side, Muse
+ * Spark interprets the shopper's query and writes the recommendation
+ * explanation via the Meta Model API; scoring stays deterministic and
+ * local, live failures fall back silently, and the agent-activity
+ * payload reports mode "live" only for steps that actually ran live on
+ * this request. Muse must not train on eBay Content.
  */
 export async function POST(request: Request) {
   let body: Partial<DecideRequest>;
@@ -32,7 +33,9 @@ export async function POST(request: Request) {
 
   const query = typeof body.query === "string" ? body.query.trim() : "";
   const productId = typeof body.productId === "string" ? body.productId.trim() : "";
-  if (!query && !productId) {
+  const liveGroupId =
+    typeof body.liveGroupId === "string" ? body.liveGroupId.trim() : "";
+  if (!query && !productId && !liveGroupId) {
     return NextResponse.json(
       { error: "Select a product or tell us what you want to buy." },
       { status: 400 },
@@ -50,11 +53,18 @@ export async function POST(request: Request) {
   const budget =
     typeof body.budget === "number" && body.budget > 0 ? body.budget : null;
 
-  const result = await decideWithAgent({ query, productId, budget, needByDays, priority });
+  const result = await decideWithAgent({
+    query,
+    productId,
+    liveGroupId: liveGroupId || undefined,
+    budget,
+    needByDays,
+    priority,
+  });
   if (!result) {
     return NextResponse.json(
       {
-        error: "No sample prototype product matches that selection yet.",
+        error: "No live offers could be gathered for that selection right now.",
         suggestions: PRODUCTS.map((p) => p.name),
       },
       { status: 404 },

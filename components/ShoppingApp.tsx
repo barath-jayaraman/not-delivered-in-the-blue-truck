@@ -12,7 +12,7 @@ import type {
   SearchResponse,
 } from "@/lib/types";
 import { BRAND } from "@/lib/config";
-import { CATEGORY_TILES, productImage } from "@/lib/images";
+import { CATEGORY_IMAGES, CATEGORY_TILES, productImage } from "@/lib/images";
 
 const ORDER_STORAGE_KEY = "not-delivered-in-the-blue-truck-prototype-orders-v1";
 
@@ -77,7 +77,14 @@ function returnCostLabel(offer: ScoredOffer): string {
 }
 
 function warrantyLabel(offer: ScoredOffer): string {
-  return offer.warrantyMonths === 0 ? "None" : `${offer.warrantyMonths} months`;
+  // warrantyMonths 0 means the source stated no warranty period — that is
+  // an absence of data, never a claim of "no warranty".
+  if (offer.warrantyMonths <= 0) return "Not stated by seller";
+  if (offer.warrantyMonths % 12 === 0) {
+    const years = offer.warrantyMonths / 12;
+    return `${years}-year warranty`;
+  }
+  return `${offer.warrantyMonths}-month warranty`;
 }
 
 function countdown(order: PrototypeOrder, now: number) {
@@ -111,6 +118,29 @@ function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 6).toUpperCase();
 }
 
+/** Live-group categories that differ from the stored category-art keys. */
+const CATEGORY_IMAGE_ALIASES: Record<string, string> = {
+  "Running shoes": CATEGORY_IMAGES.Fitness,
+  "Robot vacuums": CATEGORY_IMAGES.Home,
+  "Coffee makers": CATEGORY_IMAGES["Coffee & Kitchen"],
+};
+
+/** Image for a search result row: the merchant's own image for live
+ *  results, then category art, then the stored asset keyed by id. */
+function summaryImage(product: ProductSummary): string {
+  if (product.imageUrl) return product.imageUrl;
+  return (
+    CATEGORY_IMAGES[product.category] ??
+    CATEGORY_IMAGE_ALIASES[product.category] ??
+    productImage(product.id)
+  );
+}
+
+/** Image for cart/order records, which remember a live product's image. */
+function recordImage(record: { productId: string; imageUrl?: string | null }): string {
+  return record.imageUrl ?? productImage(record.productId);
+}
+
 export default function ShoppingApp() {
   const [view, setView] = useState<View>("home");
   const [query, setQuery] = useState("");
@@ -118,6 +148,7 @@ export default function ShoppingApp() {
   const [error, setError] = useState<string | null>(null);
 
   const [featured, setFeatured] = useState<ProductSummary[]>([]);
+  const [featuredLoaded, setFeaturedLoaded] = useState(false);
   const [searchMeta, setSearchMeta] = useState<{ query: string; products: ProductSummary[] } | null>(null);
   const [sort, setSort] = useState<SortMode>("featured");
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
@@ -126,6 +157,8 @@ export default function ShoppingApp() {
 
   const [result, setResult] = useState<DecideResponse | null>(null);
   const [priority, setPriority] = useState<Priority>("cheapest");
+  /** Live-search groups currently openable: group id → the query that found it. */
+  const [liveGroups, setLiveGroups] = useState<Record<string, string>>({});
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
@@ -174,7 +207,9 @@ export default function ShoppingApp() {
     return () => window.clearInterval(timer);
   }, []);
 
-  /* ----- featured products for the home view: every catalog product ----- */
+  /* ----- featured products for the home view: LIVE category searches.
+     Every figure on these cards was fetched live when the page loaded;
+     nothing is stored or re-shown from an earlier fetch. ----- */
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -191,7 +226,19 @@ export default function ShoppingApp() {
           // A failed category probe just leaves that product out of the grid.
         }
       }
-      if (!cancelled) setFeatured([...byId.values()]);
+      if (!cancelled) {
+        setFeatured([...byId.values()]);
+        // Featured cards open through the live decide path, re-fetching
+        // live under the product's own name.
+        setLiveGroups((previous) => {
+          const next = { ...previous };
+          for (const product of byId.values()) {
+            if (!next[product.id]) next[product.id] = product.name;
+          }
+          return next;
+        });
+        setFeaturedLoaded(true);
+      }
     })();
     return () => {
       cancelled = true;
@@ -245,15 +292,23 @@ export default function ShoppingApp() {
 
   /* ----- data actions ----- */
 
-  async function openProduct(productId: string, prio: Priority = priority) {
+  async function openProduct(
+    productId: string,
+    prio: Priority = priority,
+    liveQueryOverride?: string,
+  ) {
     setLoading(true);
     setError(null);
+    // A live-search result opens through its live group, not the catalog.
+    const liveQuery = liveQueryOverride ?? liveGroups[productId];
     try {
       const res = await fetch("/api/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId,
+          liveGroupId: liveQuery ? productId : undefined,
+          query: liveQuery,
           budget: null,
           needByDays: NEED_BY_DAYS,
           priority: prio,
@@ -292,9 +347,22 @@ export default function ShoppingApp() {
         setView("results");
         return;
       }
+      // Remember live groups so their product pages open through the
+      // live decide path (and priority changes keep working).
+      if (data.dataSource === "live") {
+        setLiveGroups((previous) => {
+          const next = { ...previous };
+          for (const product of data.products) next[product.id] = q;
+          return next;
+        });
+      }
       if (data.products.length === 1) {
         setSearchMeta({ query: q, products: data.products });
-        await openProduct(data.products[0].id);
+        await openProduct(
+          data.products[0].id,
+          priority,
+          data.dataSource === "live" ? q : undefined,
+        );
         return;
       }
       setSearchMeta({ query: q, products: data.products });
@@ -330,6 +398,7 @@ export default function ShoppingApp() {
     const item: CartItem = {
       productId: result.product.id,
       productName: result.product.name,
+      imageUrl: result.product.imageUrl ?? null,
       offerId: offer.id,
       merchant: offer.merchant,
       seller: offer.seller,
@@ -378,6 +447,7 @@ export default function ShoppingApp() {
         confirmationNumber: `NDBT-${base}-${index + 1}${randomSuffix()}`,
         productId: item.productId,
         productName: item.productName,
+        imageUrl: item.imageUrl ?? null,
         offerId: item.offerId,
         merchant: item.merchant,
         seller: item.seller,
@@ -456,15 +526,24 @@ export default function ShoppingApp() {
             <h2 id="featured-products">Featured products</h2>
           </div>
           {featured.length === 0 ? (
-            <p className="loadingNote">Loading products…</p>
+            <p className="loadingNote">
+              {featuredLoaded
+                ? "Live picks are unavailable right now — search above to compare live offers."
+                : "Loading live products…"}
+            </p>
           ) : (
             <div className="productGrid">
               {featured.map((product) => (
                 <article className="productCard" key={product.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="productPhoto" src={productImage(product.id)} alt={product.name} />
+                  <img className="productPhoto" src={summaryImage(product)} alt={product.name} />
                   <div className="productBody">
-                    <h3>{product.name}</h3>
+                    <h3>
+                      {product.name}
+                      {product.dataSource === "live" && (
+                        <span className="livePill">Live</span>
+                      )}
+                    </h3>
                     <div className="fromPrice">
                       From<strong>{money(product.lowestPrice)}</strong>
                     </div>
@@ -587,7 +666,7 @@ export default function ShoppingApp() {
               <strong>No products to show</strong>
               <p>
                 {total === 0
-                  ? `No sample prototype products match “${searchMeta?.query}”. Try headphones, a 55 inch TV, a robot vacuum, running shoes, or a coffee maker.`
+                  ? `Nothing matched “${searchMeta?.query}” — not in the catalog, and live search at Walmart and eBay returned nothing for it. Try headphones, a 55 inch TV, a robot vacuum, running shoes, or a coffee maker.`
                   : "No products match the selected filters. Loosen a filter to see more."}
               </p>
             </div>
@@ -601,15 +680,26 @@ export default function ShoppingApp() {
                   onClick={() => void openProduct(product.id)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="resultThumb" src={productImage(product.id)} alt={product.name} />
+                  <img className="resultThumb" src={summaryImage(product)} alt={product.name} />
                   <span className="resultBody">
-                    <h3>{product.name}</h3>
+                    <h3>
+                      {product.name}
+                      {product.dataSource === "live" && (
+                        <span className="livePill">Live</span>
+                      )}
+                    </h3>
                     <p className="resultFrom">
                       From <strong>{money(product.lowestPrice)}</strong>
                     </p>
                     <p className="arrivalLine">
                       Arrives in as fast as {product.fastestDeliveryDays} days
                     </p>
+                    {product.dataSource === "live" && (
+                      <p className="resultMeta">
+                        Live prices from {product.sourceMerchants.join(" · ")} ·{" "}
+                        {product.offerCount} offer{product.offerCount === 1 ? "" : "s"}
+                      </p>
+                    )}
                   </span>
                 </button>
               ))}
@@ -631,8 +721,21 @@ export default function ShoppingApp() {
 
         <div className="titleLine">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="titleThumb" src={productImage(result.product.id)} alt={result.product.name} />
-          <h1>{result.product.name}</h1>
+          <img
+            className="titleThumb"
+            src={
+              result.product.imageUrl ??
+              (result.dataSource === "live"
+                ? (CATEGORY_IMAGES[result.product.category] ??
+                  productImage(result.product.id))
+                : productImage(result.product.id))
+            }
+            alt={result.product.name}
+          />
+          <h1>
+            {result.product.name}
+            {result.dataSource === "live" && <span className="livePill">Live</span>}
+          </h1>
           <span className="titleFrom">
             from <strong>{money(result.priceRange.lowest)}</strong>
           </span>
@@ -683,12 +786,15 @@ export default function ShoppingApp() {
                   <tr key={offer.id} className={isWinner ? "winnerRow" : ""}>
                     <td data-label="Merchant / Seller">
                       <span className="sellerCellInner">
-                        {isWinner && <span className="winnerPill">★ Winner</span>}
+                        {isWinner && <span className="winnerPill">★ Best Whole Deal</span>}
                         <span className="merchantName">{offer.merchant}</span>
                         <span className="sellerName">{offer.seller}</span>
                         <span className="conditionLine">
                           {offer.condition} · {offer.sellerRating.toFixed(1)} seller rating
                         </span>
+                        {result.liveData?.offerIds.includes(offer.id) && (
+                          <span className="livePill livePillSmall">Live price</span>
+                        )}
                       </span>
                     </td>
                     <td data-label="Total (all-in)">
@@ -732,6 +838,13 @@ export default function ShoppingApp() {
         )}
 
         <p className="shipsLine">Ships from and sold by {result.recommendation.seller}</p>
+        {result.dataSource === "live" && result.retrievedAt && (
+          <p className="liveLine">
+            Live prices retrieved {formatDateTime(result.retrievedAt)} from{" "}
+            {result.sourceMerchants.join(" and ")} — every figure is the listing&apos;s
+            own.
+          </p>
+        )}
         <p className="smallPrint">
           {result.agentActivity.mode === "live"
             ? "Comparison assembled with Muse Spark."
@@ -761,7 +874,7 @@ export default function ShoppingApp() {
               {cart.map((item) => (
                 <article className="cartItem" key={item.offerId}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="cartThumb" src={productImage(item.productId)} alt={item.productName} />
+                  <img className="cartThumb" src={recordImage(item)} alt={item.productName} />
                   <div className="cartItemBody">
                     <strong>{item.productName}</strong>
                     <p>Ships from and sold by {item.seller}</p>
@@ -890,7 +1003,7 @@ export default function ShoppingApp() {
             {placedOrders.map((order) => (
               <article className="confirmationCard" key={order.confirmationNumber}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="cartThumb" src={productImage(order.productId)} alt={order.productName} />
+                <img className="cartThumb" src={recordImage(order)} alt={order.productName} />
                 <div>
                   <dl>
                     <div>
@@ -957,7 +1070,7 @@ export default function ShoppingApp() {
                 <article className="orderCard" key={order.confirmationNumber}>
                   <div className="orderHead">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className="orderThumb" src={productImage(order.productId)} alt={order.productName} />
+                    <img className="orderThumb" src={recordImage(order)} alt={order.productName} />
                     <div className="orderMain">
                       <p className="orderNumber">{order.confirmationNumber}</p>
                       <h4>{order.productName}</h4>
@@ -1085,7 +1198,7 @@ export default function ShoppingApp() {
             <strong>{BRAND.name}</strong>
             <p>Built by {BRAND.company}.</p>
           </div>
-          <span className="prototypeTag">Prototype — sample offers.</span>
+          <span className="prototypeTag">Live prices, fetched when you search · Prototype checkout.</span>
         </div>
       </footer>
 

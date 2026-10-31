@@ -1,5 +1,5 @@
 import { getMerchantPolicy } from "../adapters";
-import type { Offer, Product } from "../types";
+import type { Offer } from "../types";
 
 /**
  * EBAY LIVE API ADAPTER — official eBay Buy Browse API only.
@@ -17,11 +17,11 @@ import type { Offer, Product } from "../types";
  *   resolver below). The application token is cached in memory until
  *   shortly before expiry. Neither the secret nor the token is ever
  *   logged.
- * - Searches item summaries (Buy Browse API, EBAY_US marketplace) for the
- *   catalog product's "<brand> <model>" and picks the best-matching NEW
- *   listing with deterministic token-overlap matching, the same approach
- *   as the Walmart browse adapter. Accessories and other variants are
- *   penalized, never selected silently.
+ * - Searches item summaries (Buy Browse API, EBAY_US marketplace) and
+ *   returns them raw; grouping listings into distinct products — with
+ *   the model-token discipline that keeps different models apart — lives
+ *   in lib/live-search.ts, which also builds the offers via this
+ *   adapter's mapping below.
  * - Maps ONLY fields the listing itself carries into the Offer shape.
  *   Shipping is taken from the listing's first shipping option; a listing
  *   whose shipping charge is not stated is skipped rather than guessed
@@ -33,7 +33,9 @@ import type { Offer, Product } from "../types";
  *
  * eBay developer-agreement obligations honored here:
  * - Listing data freshness: eBay Content may be displayed for at most 6
- *   hours. This adapter caches a lookup for at most 5 minutes.
+ *   hours. This adapter caches nothing — every lookup is fetched live in
+ *   the request that displays it. (The OAuth application token is auth
+ *   state, not listing data, and is the only thing held in memory.)
  * - eBay Content is never used to train AI models. The live explanation
  *   pipeline (lib/agent.ts) reasons only over our own scored deltas.
  * - eBay offers stay clearly identified as eBay: merchant/channel are
@@ -54,7 +56,6 @@ const SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search";
 const BROWSE_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const FETCH_TIMEOUT_MS = 15_000;
 /** Far inside eBay's 6-hour display-freshness limit for listing data. */
-const CACHE_TTL_MS = 5 * 60_000;
 /** Refresh the application token this long before its stated expiry. */
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 /**
@@ -203,13 +204,15 @@ interface EbayShippingOption {
   maxEstimatedDeliveryDate?: string;
 }
 
-interface EbayItemSummary {
+export interface EbayItemSummary {
   itemId?: string;
   legacyItemId?: string;
   title?: string;
   condition?: string;
   price?: EbayMoney;
   itemWebUrl?: string;
+  image?: { imageUrl?: string };
+  thumbnailImages?: { imageUrl?: string }[];
   topRatedBuyingExperience?: boolean;
   seller?: {
     username?: string;
@@ -299,64 +302,53 @@ interface PickedListing {
   deliveryDays: number;
 }
 
-function pickPrimaryItem(
-  product: Product,
-  items: EbayItemSummary[],
-): PickedListing | null {
-  const productTokens = new Set(tokens(product.name));
-  let best: (PickedListing & { score: number }) | null = null;
+/**
+ * Apply the adapter's field rules to one listing: USD price present,
+ * shipping charge STATED by the listing (free shipping is an explicit
+ * $0.00), and an estimable delivery date. Returns null when any figure
+ * would have to be guessed — such listings are skipped, never invented.
+ */
+export function parseEbayListing(item: EbayItemSummary): {
+  price: number;
+  shippingCost: number;
+  deliveryDays: number;
+} | null {
+  const price = parseMoney(item.price);
+  if (price == null || price <= 0) return null;
+  const shippingOption = item.shippingOptions?.[0];
+  const shippingCost = parseMoney(shippingOption?.shippingCost);
+  if (shippingCost == null) return null;
+  const deliveryDays =
+    daysUntil(shippingOption?.maxEstimatedDeliveryDate) ??
+    daysUntil(item.estimatedDeliveryDate?.maximumEstimatedDeliveryDate);
+  if (deliveryDays == null) return null;
+  return { price, shippingCost, deliveryDays };
+}
 
-  for (const item of items) {
-    if (!item.title || !item.itemId || !item.itemWebUrl) continue;
-
-    // NEW items only: refurbished / open-box / pre-owned listings are a
-    // different offer class and are never substituted silently.
-    const condition = (item.condition ?? "").toLowerCase();
-    if (!condition.startsWith("new")) continue;
-
-    const itemTokens = tokens(item.title);
-    if (!itemTokens.includes(product.brand.toLowerCase())) continue;
-    const overlap = [...productTokens].filter((t) => itemTokens.includes(t));
-    if (overlap.length < Math.min(2, productTokens.size)) continue;
-
-    const price = parseMoney(item.price);
-    if (price == null || price <= 0) continue;
-
-    // Shipping: only what the listing states. Free shipping is an
-    // explicit $0.00 charge in the payload; an unstated charge means the
-    // listing is skipped, never guessed.
-    const shippingOption = item.shippingOptions?.[0];
-    const shippingCost = parseMoney(shippingOption?.shippingCost);
-    if (shippingCost == null) continue;
-
-    // Delivery: the latest date of the listing's estimated range.
-    const deliveryDays =
-      daysUntil(shippingOption?.maxEstimatedDeliveryDate) ??
-      daysUntil(item.estimatedDeliveryDate?.maximumEstimatedDeliveryDate);
-    if (deliveryDays == null) continue;
-
-    let score = overlap.length * 10;
-    for (const token of itemTokens) {
-      if (QUALIFIER_TOKENS.has(token) && !productTokens.has(token)) {
-        score -= 3;
-      }
-    }
-    if (item.topRatedBuyingExperience) score += 2;
-    score += Math.min(item.seller?.feedbackScore ?? 0, 5000) / 5000;
-
-    if (!best || score > best.score) {
-      best = { item, price, shippingCost, deliveryDays, score };
-    }
-  }
-  return best;
+/** Map an eBay condition string onto the codebase's offer conditions. */
+export function mapEbayCondition(raw: string | undefined): Offer["condition"] {
+  const condition = (raw ?? "").toLowerCase();
+  if (condition.startsWith("new")) return "New";
+  if (condition.includes("certified refurbished")) return "Certified refurbished";
+  if (condition.includes("open box") || condition.includes("open-box")) return "Open-box";
+  return "Refurbished";
 }
 
 /* ------------------------------------------------------------------ */
 /* Offer construction                                                  */
 /* ------------------------------------------------------------------ */
 
-function toOffer(picked: PickedListing, retrievedAt: string): Offer {
-  const { item, price, shippingCost, deliveryDays } = picked;
+/**
+ * Build an Offer from one listing and its parsed figures. Used by the
+ * catalog adapter (primary NEW listing) and by free-form live search
+ * (lib/live-search.ts), so both paths apply identical honesty rules.
+ */
+export function buildEbayOffer(
+  item: EbayItemSummary,
+  parsed: { price: number; shippingCost: number; deliveryDays: number },
+  retrievedAt: string,
+): Offer {
+  const { price, shippingCost, deliveryDays } = parsed;
   const username = item.seller?.username ?? "eBay seller";
   const seller = item.topRatedBuyingExperience
     ? `${username} (eBay Top Rated Plus)`
@@ -411,7 +403,7 @@ function toOffer(picked: PickedListing, retrievedAt: string): Offer {
     merchant: "eBay",
     seller,
     channel: "eBay",
-    condition: "New",
+    condition: mapEbayCondition(item.condition),
     price,
     shippingCost,
     deliveryDays,
@@ -442,47 +434,27 @@ function toOffer(picked: PickedListing, retrievedAt: string): Offer {
 }
 
 /* ------------------------------------------------------------------ */
-/* Public entry point                                                  */
+/* Raw Browse API search (shared by the catalog adapter + live search) */
 /* ------------------------------------------------------------------ */
 
-const cache = new Map<string, { fetchedAt: number; offers: Offer[] }>();
-
 /**
- * Fetch the primary live eBay offer for a catalog product, or [] when the
- * API route is disabled, the policy gate does not allow it, credentials
- * are missing, auth/search fails, or no NEW listing matches honestly.
- * Never throws.
+ * One Buy Browse item-summary search (EBAY_US). Returns the raw summaries
+ * (possibly empty) — [] also on disabled credentials, auth rejection,
+ * network failure, or a non-200 response. Results are NEVER cached:
+ * every call fetches live in the request that needs the data. Never
+ * throws, never logs credentials or tokens.
  */
-export async function fetchLiveEbayOffers(
-  product: Product,
-): Promise<Offer[]> {
+export async function searchEbayItems(
+  query: string,
+  limit = 20,
+): Promise<EbayItemSummary[]> {
   if (!ebayApiEnabled()) return [];
 
-  const policy = getMerchantPolicy("eBay");
-  if (
-    policy.status !== "api-only" ||
-    !policy.allowedAcquisitionMethods.includes("api")
-  ) {
-    console.warn(
-      `[ebay-api] policy gate does not allow the API route for eBay (status ${policy.status}); returning no live offers.`,
-    );
-    return [];
-  }
-
-  const query = `${product.brand} ${product.model}`;
-  const cached = cache.get(query);
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-    return cached.offers;
-  }
-
   const token = await getApplicationToken();
-  if (!token) {
-    cache.set(query, { fetchedAt: Date.now(), offers: [] });
-    return [];
-  }
+  if (!token) return [];
 
-  const url = `${SEARCH_URL}?q=${encodeURIComponent(query)}&limit=10`;
-  let items: EbayItemSummary[] | null = null;
+  const url = `${SEARCH_URL}?q=${encodeURIComponent(query)}&limit=${limit}`;
+  let items: EbayItemSummary[] = [];
   try {
     const response = await fetch(url, {
       method: "GET",
@@ -514,14 +486,8 @@ export async function fetchLiveEbayOffers(
     }
   } catch (error) {
     console.warn("[ebay-api] search request failed:", String(error));
-    items = null;
+    items = [];
   }
 
-  const offers: Offer[] = [];
-  if (items) {
-    const picked = pickPrimaryItem(product, items);
-    if (picked) offers.push(toOffer(picked, new Date().toISOString()));
-  }
-  cache.set(query, { fetchedAt: Date.now(), offers });
-  return offers;
+  return items;
 }

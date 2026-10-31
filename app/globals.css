@@ -812,6 +812,45 @@ img {
   margin-bottom: 8px;
 }
 
+/* Live-data flag: same pill family as the winner pill, pine instead of
+   coral, used on live search rows, live product titles, and live offer
+   rows inside a comparison table. */
+.livePill {
+  display: inline-flex;
+  background: var(--pine);
+  color: var(--butter);
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border-radius: 999px;
+  line-height: 1;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.livePillSmall {
+  margin-left: 0;
+  margin-top: 6px;
+  font-size: 10px;
+  padding: 4px 8px;
+}
+
+.resultMeta {
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.liveLine {
+  font-size: 13.5px;
+  color: var(--success);
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
 .merchantName {
   font-weight: 900;
   color: var(--pine);

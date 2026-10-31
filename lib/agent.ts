@@ -1,5 +1,4 @@
 import { getPolicyGateEntries } from "./adapters";
-import { PRODUCTS } from "./data";
 import type { AgentActivity, AgentStep, Priority, ReturnCost } from "./types";
 
 /**
@@ -201,18 +200,14 @@ export async function interpretQuery(
   const query = rawQuery.trim();
   if (!query || !getMetaModelConfig().liveConfigured) return null;
 
-  const catalog = PRODUCTS.map(
-    (p) => `${p.name} (brand: ${p.brand}, category: ${p.category})`,
-  ).join("; ");
   const raw = await callMetaModel(
     [
       {
         role: "system",
         content:
-          "You are the search interpreter for 'Not Delivered in the Blue Truck', a shopping comparison app. " +
-          "Convert the shopper's words into structured search terms for the app's catalog. " +
-          `The catalog contains only these products: ${catalog}. ` +
-          "Map the request onto this catalog's vocabulary. Never invent products, brands, prices, or offers that are not in the catalog. " +
+          "You are the search interpreter for 'Not Delivered in the Blue Truck', a shopping comparison app whose search runs LIVE against retailer sources. " +
+          "Convert the shopper's words into a clean structured search phrase for those live sources. " +
+          "Keep the brand and model the shopper named (fixing obvious spelling only); do not restrict the request to any fixed list of products, and never invent products, brands, prices, or offers the shopper did not name. " +
           'Return ONLY a JSON object (no markdown, no commentary) with this shape: {"canonical_query": string, "category": string|null, "brand": string|null, "model_keywords": string[], "priority_hint": "cheapest"|"fastest"|"returns"|null}. ' +
           "canonical_query is the clean product search phrase. priority_hint is set only when the shopper's words clearly lean toward lowest price, fastest delivery, or easiest returns.",
       },
@@ -258,7 +253,7 @@ function offerFacts(label: string, o: ExplainOfferFacts): string {
     `${label}: seller ${o.seller} (${o.merchant}), total ${money(o.totalCost)} ` +
     `(sticker ${money(o.price)} + shipping ${o.shippingCost === 0 ? "free" : money(o.shippingCost)}), ` +
     `arrives in ${o.deliveryDays} days, returns: ${o.returnCost} within ${o.returnWindowDays} days, ` +
-    `warranty ${o.warrantyMonths} months, seller rating ${o.sellerRating.toFixed(1)}, score ${o.score}/100.`
+    `warranty ${o.warrantyMonths > 0 ? `${o.warrantyMonths} months` : "not stated by seller"}, seller rating ${o.sellerRating.toFixed(1)}, score ${o.score}/100.`
   );
 }
 
@@ -292,7 +287,7 @@ export async function explainRecommendation(
           "You write the recommendation explanation for 'Not Delivered in the Blue Truck', a shopping comparison app. " +
           "The app has already scored the offers deterministically; you are given those facts. " +
           "Use ONLY the numbers and facts provided — never invent prices, discounts, features, delivery promises, or policies. " +
-          "Write 2-3 plain-language sentences for the shopper explaining why the recommended offer wins for their priority, " +
+          "Write 2-3 plain-language sentences for the shopper explaining why the recommended offer is the best whole deal for their priority, " +
           "including the trade-off against the cheapest-sticker offer when they differ. No markdown, no bullet points, no preamble.",
       },
       {
@@ -419,7 +414,7 @@ export function buildAgentActivity(input: AgentActivityInput): AgentActivity {
     {
       id: "gather",
       title: STEP_TITLES.gather,
-      detail: `Collected ${input.totalOffers} sample offers (${gatherSummary}). Records are labelled sample data; in production the same routes carry live offers.`,
+      detail: `Collected ${input.totalOffers} live offers (${gatherSummary}), fetched in this request through each merchant's policy-approved route.`,
       engine: engineFor("gather"),
       status: "done",
     },
@@ -443,7 +438,7 @@ export function buildAgentActivity(input: AgentActivityInput): AgentActivity {
       title: STEP_TITLES.explain,
       detail: liveSteps.includes("explain")
         ? `Muse Spark wrote the recommendation in plain language from the scored parameter deltas — the numbers come from the scoring step, never from the model.`
-        : `Explained why ${input.recommendationSeller} wins, in plain language, from the scored parameter deltas — the numbers come from the scoring step, never from the model.`,
+        : `Explained why ${input.recommendationSeller} is the best whole deal, in plain language, from the scored parameter deltas — the numbers come from the scoring step, never from the model.`,
       engine: engineFor("explain"),
       status: "done",
     },

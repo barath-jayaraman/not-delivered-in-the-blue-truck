@@ -1,11 +1,9 @@
-import { PRODUCTS } from "./data";
 import type {
   AcquisitionMethod,
   Merchant,
   Offer,
   OfferProvenance,
   PolicyGateEntry,
-  Product,
 } from "./types";
 
 /**
@@ -44,7 +42,10 @@ import type {
  * application) and bar extraction of prices/listings. Target is never
  * browsed or scraped here, and its internal "Redsky" API is not used.
  *
- * The current adapters return local sample records only and make no calls.
+ * Live acquisition lives in lib/live-search.ts (search) and the adapters
+ * under lib/adapters/ (eBay Buy Browse API; Walmart search-page fetch).
+ * No stored listings or prices are ever served: every figure is fetched
+ * in the request that displays it.
  *
  * Every live result must preserve OfferProvenance: source merchant,
  * acquisition method, source URL, retrieved timestamp, and policy status.
@@ -193,72 +194,6 @@ export function getMerchantPolicy(merchant: Merchant | string): MerchantPolicy {
 export function requiresConsentGate(merchant: Merchant | string): boolean {
   return getMerchantPolicy(merchant).consentGateRequired;
 }
-
-export interface MerchantAdapter {
-  merchant: Merchant;
-  mode: "sample" | "live";
-  acquisitionMethod: AcquisitionMethod;
-  policy: MerchantPolicy;
-  searchProducts(query: string): Promise<Product[]>;
-  getOffers(productId: string): Promise<Offer[]>;
-}
-
-abstract class SampleMerchantAdapter implements MerchantAdapter {
-  abstract merchant: Merchant;
-  readonly mode = "sample" as const;
-  readonly acquisitionMethod: AcquisitionMethod = "api";
-
-  get policy(): MerchantPolicy {
-    return getMerchantPolicy(this.merchant);
-  }
-
-  async searchProducts(query: string): Promise<Product[]> {
-    const normalized = query.toLowerCase();
-    return PRODUCTS.filter(
-      (product) =>
-        product.offers.some((offer) => offer.merchant === this.merchant) &&
-        [product.name, product.brand, product.model, product.category, ...product.keywords]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalized),
-    );
-  }
-
-  async getOffers(productId: string): Promise<Offer[]> {
-    return (
-      PRODUCTS.find((product) => product.id === productId)?.offers.filter(
-        (offer) => offer.merchant === this.merchant,
-      ) ?? []
-    );
-  }
-}
-
-/**
- * Future implementation target: the Walmart browser adapter. Production
- * route is backend-controlled browsing under the Agentic Access Terms
- * website tier (see the BrowserAdapter notes below); checkout always stops
- * at the Human Consent Gate. This sample adapter performs no browsing.
- */
-export class SampleWalmartAdapter extends SampleMerchantAdapter {
-  readonly merchant = "Walmart" as const;
-  override readonly acquisitionMethod = "browser" as const;
-}
-
-/** Future implementation target: official eBay Browse API only. */
-export class SampleEbayAdapter extends SampleMerchantAdapter {
-  readonly merchant = "eBay" as const;
-}
-
-/** Future implementation target: official Best Buy Products API only. */
-export class SampleBestBuyAdapter extends SampleMerchantAdapter {
-  readonly merchant = "Best Buy" as const;
-}
-
-export const merchantAdapters: MerchantAdapter[] = [
-  new SampleWalmartAdapter(),
-  new SampleBestBuyAdapter(),
-  new SampleEbayAdapter(),
-];
 
 /**
  * FUTURE BROWSER ADAPTER — interface/stub only. Do not implement a crawler in

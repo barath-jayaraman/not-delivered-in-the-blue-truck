@@ -1,13 +1,9 @@
 import type {
   DecideRequest,
-  DecideResponse,
   Offer,
   Priority,
   ScoredOffer,
 } from "./types";
-import { findProduct, getProductById } from "./data";
-import { getPolicyGateEntries } from "./adapters";
-import { buildAgentActivity } from "./agent";
 
 /**
  * LOCAL SCORING ENGINE (v1).
@@ -116,6 +112,17 @@ function returnsPhrase(o: ScoredOffer): string {
   return `${o.returnCost === "free" ? "free" : "buyer-paid"} ${o.returnWindowDays}-day returns`;
 }
 
+/**
+ * Warranty prose for explanations. warrantyMonths 0 means the source
+ * stated no warranty period — an absence of data that must never be
+ * phrased as "0 months" / "no warranty".
+ */
+function warrantyPhrase(o: ScoredOffer): string {
+  return o.warrantyMonths > 0
+    ? `${o.warrantyMonths} months of warranty`
+    : "no warranty stated by the seller";
+}
+
 export function buildExplanation(
   winner: ScoredOffer,
   cheapest: ScoredOffer,
@@ -131,12 +138,12 @@ export function buildExplanation(
 
   if (winner.id === cheapest.id) {
     return (
-      `The cheapest sticker price is also the right buy here. ${winner.seller} wins on ${priorityLabel}: ` +
+      `The cheapest sticker price is also the right buy here. ${winner.seller} is the best whole deal on ${priorityLabel}: ` +
       `${money(winner.totalCost)} all-in (${money(winner.price)} + ${winner.shippingCost === 0 ? "free shipping" : money(winner.shippingCost) + " shipping"}), ` +
       `arrives in ${winner.deliveryDays} day${winner.deliveryDays === 1 ? "" : "s"}, ${returnsPhrase(winner)}, ` +
-      `${winner.warrantyMonths} months of warranty, and a ${winner.sellerRating.toFixed(1)}-star rated seller. ` +
+      `${warrantyPhrase(winner)}, and a ${winner.sellerRating.toFixed(1)}-star rated seller. ` +
       (winner.deliveryDays > needByDays
-        ? `One warning: no offer in the sample prototype data makes your ${needByDays}-day deadline — this is the closest option. `
+        ? `One warning: no live offer in this comparison makes your ${needByDays}-day deadline — this is the closest option. `
         : "") +
       `No trade-off to explain — the lowest price and the best decision are the same offer this time.`
     );
@@ -162,7 +169,7 @@ export function buildExplanation(
       winner.deliveryDays < cheapest.deliveryDays
         ? `arrives ${cheapest.deliveryDays - winner.deliveryDays} day${cheapest.deliveryDays - winner.deliveryDays === 1 ? "" : "s"} sooner (${winner.deliveryDays} vs ${cheapest.deliveryDays} days)`
         : winner.deliveryDays > needByDays
-          ? `arrives ${winner.deliveryDays - cheapest.deliveryDays} day${winner.deliveryDays - cheapest.deliveryDays === 1 ? "" : "s"} later and misses your ${needByDays}-day deadline — it still wins on everything else`
+          ? `arrives ${winner.deliveryDays - cheapest.deliveryDays} day${winner.deliveryDays - cheapest.deliveryDays === 1 ? "" : "s"} later and misses your ${needByDays}-day deadline — it is still the best whole deal on everything else`
           : `arrives ${winner.deliveryDays - cheapest.deliveryDays} day${winner.deliveryDays - cheapest.deliveryDays === 1 ? "" : "s"} later, still inside your deadline`,
     );
   }
@@ -179,7 +186,11 @@ export function buildExplanation(
   }
   if (winner.warrantyMonths !== cheapest.warrantyMonths) {
     parts.push(
-      `${winner.warrantyMonths} months of warranty vs ${cheapest.warrantyMonths} from the cheapest seller`,
+      winner.warrantyMonths > 0 && cheapest.warrantyMonths > 0
+        ? `${winner.warrantyMonths} months of warranty vs ${cheapest.warrantyMonths} from the cheapest seller`
+        : winner.warrantyMonths > 0
+          ? `${winner.warrantyMonths} months of warranty vs none stated by the cheapest seller`
+          : `no warranty stated by its seller vs ${cheapest.warrantyMonths} months from the cheapest seller`,
     );
   }
   if (winner.sellerRating > cheapest.sellerRating) {
@@ -194,60 +205,3 @@ export function buildExplanation(
   );
 }
 
-export function decide(req: DecideRequest): DecideResponse | null {
-  const product = req.productId
-    ? getProductById(req.productId)
-    : req.query
-      ? findProduct(req.query)
-      : null;
-  if (!product) return null;
-
-  const allOffers = scoreOffers(product.offers, req);
-  const offers = allOffers.slice(0, 5);
-  const recommendation = offers[0];
-  const cheapestSticker = [...allOffers].sort((a, b) => a.price - b.price)[0];
-  const prices = product.offers.map((offer) => offer.price);
-
-  const gathered = [...new Set(product.offers.map((offer) => offer.merchant))].map(
-    (merchant) => ({
-      merchant,
-      route:
-        merchant === "Walmart"
-          ? "planned browsing route (Agentic Access Terms)"
-          : "official API route",
-      offerCount: product.offers.filter((offer) => offer.merchant === merchant).length,
-    }),
-  );
-
-  return {
-    product: { id: product.id, name: product.name, category: product.category },
-    priority: req.priority,
-    needByDays: req.needByDays,
-    budget: req.budget ?? null,
-    offers,
-    recommendation,
-    cheapestSticker,
-    explanation: buildExplanation(
-      recommendation,
-      cheapestSticker,
-      req.priority,
-      req.needByDays,
-    ),
-    priceRange: { lowest: Math.min(...prices), highest: Math.max(...prices) },
-    fastestDeliveryDays: Math.min(...product.offers.map((offer) => offer.deliveryDays)),
-    dataSource: "sample",
-    sourceMerchants: [...new Set(product.offers.map((offer) => offer.merchant))],
-    acquisitionMethod: "sample",
-    retrievedAt: null,
-    policyStatus: "sample-mixed-routes",
-    policyGate: getPolicyGateEntries(),
-    agentActivity: buildAgentActivity({
-      productName: product.name,
-      priority: req.priority,
-      needByDays: req.needByDays,
-      gathered,
-      totalOffers: product.offers.length,
-      recommendationSeller: recommendation.seller,
-    }),
-  };
-}

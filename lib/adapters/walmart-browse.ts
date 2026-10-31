@@ -22,8 +22,8 @@ import type { Offer, Product } from "../types";
  *   server-rendered state (`__NEXT_DATA__`) with deterministic parsing.
  *   No headless browser, no JS execution, no cookie tricks.
  * - Serializes requests behind a rate limiter (minimum ~2s between page
- *   fetches, one page per lookup) and caches a lookup for a few minutes so
- *   repeated decide calls do not re-fetch.
+ *   fetches, one page per lookup). Nothing is cached: every lookup
+ *   fetches live in the request that needs it.
  *
  * Feasibility findings from 2026-10-29 (this machine, honest UA):
  * - Search-results pages ARE served (HTTP 200) with full listing data in
@@ -46,7 +46,6 @@ const USER_AGENT =
 
 const MIN_INTERVAL_MS = 2_000;
 const FETCH_TIMEOUT_MS = 15_000;
-const CACHE_TTL_MS = 5 * 60_000;
 /** Walmart's published free-shipping threshold for non-Walmart+ orders. */
 const FREE_SHIPPING_THRESHOLD = 35;
 /** Walmart's published return window for electronics (curated policy). */
@@ -90,7 +89,7 @@ interface WmFulfillment {
   deliveryDate?: string | null;
 }
 
-interface WmSearchItem {
+export interface WmSearchItem {
   name?: string;
   usItemId?: string | number;
   sellerName?: string;
@@ -99,6 +98,8 @@ interface WmSearchItem {
   numberOfReviews?: number;
   price?: number;
   canonicalUrl?: string;
+  image?: string;
+  thumbnailUrl?: string;
   priceInfo?: {
     shipPrice?: string;
     currentPrice?: { price?: number };
@@ -147,7 +148,15 @@ function extractSearchItems(html: string): WmSearchItem[] | null {
   return items;
 }
 
-async function fetchSearchItems(query: string): Promise<WmSearchItem[] | null> {
+/**
+ * Fetch and parse ONE Walmart search-results page for an arbitrary query.
+ * Shared by free-form live search (lib/live-search.ts). Same stop
+ * rules: any redirect, non-200, or challenge marker yields null — the
+ * caller degrades silently. Callers own the enablement/policy checks.
+ */
+export async function fetchWalmartSearchItems(
+  query: string,
+): Promise<WmSearchItem[] | null> {
   const url = `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
   return rateLimited(async () => {
     let response: Response;
@@ -226,6 +235,119 @@ function tokens(text: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Category/spec/filler words that appear in catalog model strings but carry
+ * no model identity — a listing matching only these (plus the brand and
+ * generic words like "robot"/"vacuum") is NOT the same product.
+ */
+const GENERIC_MODEL_TOKENS = new Set([
+  "headphones",
+  "headphone",
+  "wireless",
+  "running",
+  "shoes",
+  "shoe",
+  "tv",
+  "robot",
+  "vacuum",
+  "vacuums",
+  "espresso",
+  "machine",
+  "inch",
+  "inches",
+  "crystal",
+  "uhd",
+  "oled",
+  "evo",
+  "smart",
+  "series",
+  "gen",
+  "generation",
+  "edition",
+  "the",
+  "with",
+  "and",
+  "for",
+]);
+
+/**
+ * Generation markers (e.g. "(2nd Gen)"). A listing may write the same
+ * generation as an ordinal, a roman numeral, or a bare digit, so a product's
+ * marker is satisfied by any member of its class appearing as a listing
+ * token. Triggered only by ordinal/roman product tokens — bare digits in a
+ * model string (Pegasus "41", Ultraboost "5") stay plain required tokens.
+ */
+const GENERATION_CLASSES: string[][] = [
+  ["1st", "i", "1"],
+  ["2nd", "ii", "2"],
+  ["3rd", "iii", "3"],
+  ["4th", "iv", "4"],
+  ["5th", "v", "5"],
+];
+const ORDINAL_TOKENS = new Set([
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th",
+  "i",
+  "ii",
+  "iii",
+  "iv",
+  "v",
+]);
+
+interface ModelGate {
+  /** Distinctive model tokens the listing must carry (e.g. "s8", "u8000f"). */
+  required: string[];
+  /** Generation class the listing must satisfy, or null when the model has none. */
+  generation: string[] | null;
+}
+
+export function modelGate(product: Product): ModelGate {
+  const brand = product.brand.toLowerCase();
+  const required: string[] = [];
+  let generation: string[] | null = null;
+  for (const token of tokens(product.model)) {
+    if (token === brand || GENERIC_MODEL_TOKENS.has(token)) continue;
+    if (ORDINAL_TOKENS.has(token)) {
+      generation =
+        GENERATION_CLASSES.find((cls) => cls.includes(token)) ?? [token];
+      continue;
+    }
+    if (!required.includes(token)) required.push(token);
+  }
+  return { required, generation };
+}
+
+/**
+ * Model-identity gate (added Oct 29, 2026 after the Roborock defect, where a
+ * Q10 X5 listing was accepted for the S8 on brand + "robot"/"vacuum" overlap
+ * alone): a candidate listing is eligible only if it carries the product's
+ * distinctive model tokens. A token counts when it appears as a whole
+ * listing token, or — for the joined model string of length >= 4 — as a
+ * substring of the listing's squashed token string (covers "WH-1000XM6"
+ * written "WH1000XM6", and SKUs like "UN55U8000F"). Short tokens ("s8",
+ * "c5", "41") are whole-token only, so they cannot match inside unrelated
+ * strings. Conservative by design: no match beats a wrong match.
+ */
+export function passesModelGate(product: Product, itemTokens: string[]): boolean {
+  const { required, generation } = modelGate(product);
+  if (
+    generation &&
+    !generation.some((token) => itemTokens.includes(token))
+  ) {
+    return false;
+  }
+  if (required.length === 0) return true;
+  if (required.every((token) => itemTokens.includes(token))) return true;
+  const joined = required.join("");
+  if (joined.length >= 4 && itemTokens.join("").includes(joined)) {
+    return true;
+  }
+  return false;
+}
+
 function extractPrice(item: WmSearchItem): number | null {
   const lines = item.priceInfo?.priceDetails?.priceLines ?? [];
   for (const line of lines) {
@@ -261,56 +383,42 @@ function extractDeliveryDays(item: WmSearchItem): number | null {
   return null;
 }
 
-function pickPrimaryItem(
-  product: Product,
-  items: WmSearchItem[],
-): { item: WmSearchItem; price: number; deliveryDays: number } | null {
-  const productTokens = new Set(tokens(product.name));
-  let best: {
-    item: WmSearchItem;
-    price: number;
-    deliveryDays: number;
-    score: number;
-  } | null = null;
+/**
+ * The figures a Walmart search item must actually display to become an
+ * offer: a price and a delivery date. Null when either is absent —
+ * nothing is estimated or invented.
+ */
+export function parseWalmartItem(item: WmSearchItem): {
+  price: number;
+  deliveryDays: number;
+} | null {
+  const price = extractPrice(item);
+  if (price == null) return null;
+  const deliveryDays = extractDeliveryDays(item);
+  if (deliveryDays == null) return null;
+  return { price, deliveryDays };
+}
 
-  for (const item of items) {
-    if (!item.name || item.usItemId == null) continue;
-    if (item.availabilityStatus && item.availabilityStatus !== "IN_STOCK") {
-      continue;
-    }
-    const itemTokens = tokens(item.name);
-    if (!itemTokens.includes(product.brand.toLowerCase())) continue;
-    const overlap = [...productTokens].filter((t) => itemTokens.includes(t));
-    if (overlap.length < Math.min(2, productTokens.size)) continue;
-    const price = extractPrice(item);
-    if (price == null) continue;
-    const deliveryDays = extractDeliveryDays(item);
-    if (deliveryDays == null) continue;
-
-    let score = overlap.length * 10;
-    for (const token of itemTokens) {
-      if (QUALIFIER_TOKENS.has(token) && !productTokens.has(token)) score -= 3;
-    }
-    if (item.sellerName === "Walmart" || item.sellerName === "Walmart.com") {
-      score += 2;
-    }
-    score += Math.min(item.numberOfReviews ?? 0, 5000) / 5000;
-
-    if (!best || score > best.score) best = { item, price, deliveryDays, score };
-  }
-  return best;
+/** The listing image URL the search state carries for an item, if any. */
+export function walmartItemImage(item: WmSearchItem): string | null {
+  return item.image ?? item.thumbnailUrl ?? null;
 }
 
 /* ------------------------------------------------------------------ */
 /* Offer construction                                                  */
 /* ------------------------------------------------------------------ */
 
-function toOffer(
-  product: Product,
-  picked: { item: WmSearchItem; price: number; deliveryDays: number },
+/**
+ * Build an Offer from one Walmart search item and its parsed figures.
+ * Used by the catalog adapter and by free-form live search
+ * (lib/live-search.ts), so both paths apply identical honesty rules.
+ */
+export function buildWalmartOffer(
+  item: WmSearchItem,
+  parsed: { price: number; deliveryDays: number },
   searchUrl: string,
 ): Offer {
-  const { item, price, deliveryDays } = picked;
+  const { price, deliveryDays } = parsed;
   const usItemId = String(item.usItemId);
   const sellerName = item.sellerName ?? "Walmart";
   const seller = sellerName === "Walmart.com" ? "Walmart" : sellerName;
@@ -376,48 +484,4 @@ function toOffer(
         `listing's displayed average review rating for this first-party offer.`,
     },
   };
-}
-
-/* ------------------------------------------------------------------ */
-/* Public entry point                                                  */
-/* ------------------------------------------------------------------ */
-
-const cache = new Map<string, { fetchedAt: number; offers: Offer[] }>();
-
-/**
- * Fetch the primary live Walmart offer for a catalog product, or [] when
- * browsing is disabled, the policy gate does not allow it, the page is not
- * served, or no listing matches. Never throws.
- */
-export async function fetchLiveWalmartOffers(
-  product: Product,
-): Promise<Offer[]> {
-  if (!walmartBrowseEnabled()) return [];
-
-  const policy = getMerchantPolicy("Walmart");
-  if (
-    policy.status !== "browser-allowed-under-terms" ||
-    !policy.allowedAcquisitionMethods.includes("browser")
-  ) {
-    console.warn(
-      `[walmart-browse] policy gate does not allow browsing Walmart (status ${policy.status}); returning no live offers.`,
-    );
-    return [];
-  }
-
-  const query = `${product.brand} ${product.model}`;
-  const cached = cache.get(query);
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-    return cached.offers;
-  }
-
-  const searchUrl = `https://www.walmart.com/search?q=${encodeURIComponent(query)}`;
-  const items = await fetchSearchItems(query);
-  const offers: Offer[] = [];
-  if (items) {
-    const picked = pickPrimaryItem(product, items);
-    if (picked) offers.push(toOffer(product, picked, searchUrl));
-  }
-  cache.set(query, { fetchedAt: Date.now(), offers });
-  return offers;
 }
