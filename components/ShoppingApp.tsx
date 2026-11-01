@@ -666,7 +666,7 @@ export default function ShoppingApp() {
               <strong>No products to show</strong>
               <p>
                 {total === 0
-                  ? `Nothing matched “${searchMeta?.query}” — live search at eBay, Walmart, and the UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty) returned nothing for it. Try headphones, a 55 inch TV, running shoes, leggings, a sweater, a carry-on, sneakers, a chef's knife, or lip gloss.`
+                  ? `Nothing matched “${searchMeta?.query}” — live search at eBay, Walmart, and the UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty, Lord & Taylor, Stein Mart, Scandinavian Designs, Slumberland, Pier 1, Vitacost, ShopLC, The Lakeside Collection, LTD Commodities, SkyMall, Mast General Store, Kane's Furniture, Steinhafels, Schneiderman's Furniture, FYE, DTLR, Beach Camera, Turtle Beach, Evo, FAO Schwarz) returned nothing for it. Try headphones, a 55 inch TV, running shoes, leggings, a sweater, a carry-on, sneakers, a chef's knife, lip gloss, a sofa, a mattress, a camera, a snowboard, or a plush toy.`
                   : "No products match the selected filters. Loosen a filter to see more."}
               </p>
             </div>

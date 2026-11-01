@@ -134,9 +134,11 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
   },
   // UCP stores: each publishes a public UCP profile at
   // /.well-known/ucp declaring catalog.search over MCP — the merchant's
-  // own authorized agent channel (see lib/adapters/ucp.ts). All nine
-  // were verified live with real priced catalog responses on
-  // Oct 31, 2026. Catalog reads only; no cart/checkout calls.
+  // own authorized agent channel (see lib/adapters/ucp.ts). The first
+  // nine were verified live with real priced catalog responses on
+  // Oct 31, 2026; the twenty Wave-1 additions (sweep winners, broad
+  // assortment first) were verified the same way on Nov 1, 2026.
+  // Catalog reads only; no cart/checkout calls.
   ...[
     "Steve Madden",
     "Gymshark",
@@ -147,6 +149,26 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     "Misen",
     "SKIMS",
     "Fenty Beauty",
+    "Lord & Taylor",
+    "Stein Mart",
+    "Scandinavian Designs",
+    "Slumberland",
+    "Pier 1",
+    "Vitacost",
+    "ShopLC",
+    "The Lakeside Collection",
+    "LTD Commodities",
+    "SkyMall",
+    "Mast General Store",
+    "Kane's Furniture",
+    "Steinhafels",
+    "Schneiderman's Furniture",
+    "FYE",
+    "DTLR",
+    "Beach Camera",
+    "Turtle Beach",
+    "Evo",
+    "FAO Schwarz",
   ].map(
     (merchant): MerchantPolicy => ({
       merchant,

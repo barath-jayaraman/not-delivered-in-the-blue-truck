@@ -13,7 +13,27 @@ export type Merchant =
   | "Kith"
   | "Misen"
   | "SKIMS"
-  | "Fenty Beauty";
+  | "Fenty Beauty"
+  | "Lord & Taylor"
+  | "Stein Mart"
+  | "Scandinavian Designs"
+  | "Slumberland"
+  | "Pier 1"
+  | "Vitacost"
+  | "ShopLC"
+  | "The Lakeside Collection"
+  | "LTD Commodities"
+  | "SkyMall"
+  | "Mast General Store"
+  | "Kane's Furniture"
+  | "Steinhafels"
+  | "Schneiderman's Furniture"
+  | "FYE"
+  | "DTLR"
+  | "Beach Camera"
+  | "Turtle Beach"
+  | "Evo"
+  | "FAO Schwarz";
 /** "live" marks records retrieved from a merchant for this request (see lib/live-search.ts). */
 export type DataMode = "sample" | "live";
 export type ReturnCost = "free" | "buyer-paid" | "final-sale";

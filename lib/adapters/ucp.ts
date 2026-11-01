@@ -47,11 +47,13 @@ import type { Merchant, Offer } from "../types";
  * experimentation); set UCP_AGENT_PROFILE to a self-hosted profile URL
  * to use it. Requests also carry the project's self-identifying UA.
  *
- * Store inclusion evidence (all verified live, Oct 31, 2026): profile
+ * Store inclusion evidence (all verified live): profile
  * HTTP 200 + catalog.search declared + a real priced catalog response —
  * Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen,
  * SKIMS, and Fenty Beauty (whose endpoint timed out during the Oct 30
- * sweep and answered on the single Oct 31 retry, per instructions).
+ * sweep and answered on the single Oct 31 retry, per instructions),
+ * verified Oct 31, 2026; plus the twenty Wave-1 sweep winners noted
+ * inline below (broad assortment first), verified Nov 1, 2026.
  */
 
 const USER_AGENT =
@@ -218,6 +220,302 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "lip gloss", "lipstick", "gloss", "foundation", "makeup", "beauty",
       "mascara", "gloss bomb",
+    ],
+    prefixBrand: true,
+  },
+  /* ---------------------------------------------------------------- */
+  /* Wave 1 (Nov 1, 2026) — Top-1000 sweep UCP-live winners, broad     */
+  /* assortment first. Every store below passed the same evidence bar  */
+  /* as the original nine: live profile (HTTP 200, catalog.search      */
+  /* declared), MCP endpoint read from the profile, initialize         */
+  /* handshake, tools/list discovery, and one catalog search that      */
+  /* returned a real priced product (noted per store).                 */
+  /* ---------------------------------------------------------------- */
+  {
+    // Verified: "'Bauletto' handbag" — USD 2683.90
+    merchant: "Lord & Taylor",
+    profileHost: "lordandtaylor.com",
+    brand: "Lord & Taylor",
+    fallbackEndpoint: "https://lordandtaylor.myshopify.com/api/ucp/mcp",
+    category: "Department Store",
+    brandAliases: ["lord and taylor", "lord taylor"],
+    keywords: [
+      "handbag", "handbags", "purse", "purses", "designer dress",
+      "evening gown", "gown", "gowns",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Noir Tulle Black Knit Maxi Dress" — USD 98
+    merchant: "Stein Mart",
+    profileHost: "steinmart.com",
+    brand: "Stein Mart",
+    fallbackEndpoint: "https://steinmart-prod.myshopify.com/api/ucp/mcp",
+    category: "Department Store",
+    brandAliases: ["stein mart"],
+    keywords: [
+      "maxi dress", "maxi dresses", "off price clothing",
+      "discount clothing", "discount dresses",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Maeve Sofa" — USD 1499
+    merchant: "Scandinavian Designs",
+    profileHost: "scandinaviandesigns.com",
+    brand: "Scandinavian Designs",
+    fallbackEndpoint: "https://scandinaviandesigns1963.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["scandinavian designs"],
+    keywords: [
+      "sofa", "sofas", "couch", "couches", "scandinavian furniture",
+      "mid century furniture", "dining table", "dining tables",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Nectar Classic Hybrid Mattress" — USD 499
+    merchant: "Slumberland",
+    profileHost: "slumberland.com",
+    brand: "Slumberland",
+    fallbackEndpoint: "https://ca59ae-5.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["slumberland"],
+    keywords: [
+      "mattress", "mattresses", "bed frame", "bed frames",
+      "adjustable bed", "adjustable beds",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Adjustable Height Arched Floor Lamp with Double Drum
+    // Shade and 3 Color Temperatures" — USD 144.95
+    merchant: "Pier 1",
+    profileHost: "pier1.com",
+    brand: "Pier 1",
+    fallbackEndpoint: "https://p1-dev.myshopify.com/api/ucp/mcp",
+    category: "Home",
+    brandAliases: ["pier 1", "pier one"],
+    keywords: [
+      "lamp", "lamps", "floor lamp", "floor lamps", "home decor",
+      "throw pillow", "throw pillows", "candle", "candles",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Pure Encapsulations, Vitamin D3, 125 mcg (5,000 IU),
+    // 120 Capsules" — USD 36
+    merchant: "Vitacost",
+    profileHost: "vitacost.com",
+    brand: "Vitacost",
+    fallbackEndpoint: "https://icost.myshopify.com/api/ucp/mcp",
+    category: "Health & Grocery",
+    brandAliases: ["vitacost"],
+    keywords: [
+      "vitamin", "vitamins", "vitamin d", "supplement", "supplements",
+      "probiotics", "protein powder",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "STT 925 Silver MI05 Ring" — USD 199.99
+    merchant: "ShopLC",
+    profileHost: "shoplc.com",
+    brand: "ShopLC",
+    fallbackEndpoint: "https://shoplcus.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["shoplc", "shop lc"],
+    keywords: [
+      "ring", "rings", "necklace", "necklaces", "jewelry",
+      "gemstone", "gemstones",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Mossy Oak Never Stop Exploring 50\" x 60\" Fleece
+    // Plush Throw" — USD 14.99
+    merchant: "The Lakeside Collection",
+    profileHost: "lakeside.com",
+    brand: "The Lakeside Collection",
+    fallbackEndpoint: "https://lakeside-asc.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["lakeside collection", "lakeside"],
+    keywords: [
+      "blanket", "blankets", "throw blanket", "throw blankets",
+      "fleece throw", "fleece throws",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Collapsible Storage Box" — USD 7.99
+    merchant: "LTD Commodities",
+    profileHost: "ltdcommodities.com",
+    brand: "LTD Commodities",
+    fallbackEndpoint: "https://et7vgr-3p.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["ltd commodities"],
+    keywords: [
+      "storage box", "storage boxes", "organizer", "organizers",
+      "closet organizer", "closet organizers",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Ritz Gear Gaming PC Bundle, 4-in-1 LED Gaming PC Kit
+    // with Keyboard, Mouse, Mouse Pad & Headset" — USD 39.99
+    merchant: "SkyMall",
+    profileHost: "skymall.com",
+    brand: "SkyMall",
+    fallbackEndpoint: "https://skywall.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["skymall", "sky mall"],
+    keywords: [
+      "gadget", "gadgets", "gaming bundle", "travel accessories",
+      "travel gadget", "travel gadgets",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Patagonia Men's Nomader Jacket" — USD 149.97
+    merchant: "Mast General Store",
+    profileHost: "mastgeneralstore.com",
+    brand: "Mast General Store",
+    fallbackEndpoint: "https://b424c7-09.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["mast general store", "mast general"],
+    keywords: [
+      "patagonia", "outdoor jacket", "outdoor jackets",
+      "outdoor apparel", "hiking apparel",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Bettie Sofa" — USD 499.99
+    merchant: "Kane's Furniture",
+    profileHost: "kanesfurniture.com",
+    brand: "Kane's Furniture",
+    fallbackEndpoint: "https://kanes-furniture.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["kanes furniture", "kane s furniture", "kanes"],
+    keywords: [
+      "sofa", "sofas", "sectional", "sectionals", "recliner",
+      "recliners", "bedroom set", "bedroom sets",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Jenny Sofa" — USD 899.99
+    merchant: "Steinhafels",
+    profileHost: "steinhafels.com",
+    brand: "Steinhafels",
+    fallbackEndpoint: "https://jnwr2j-dq.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["steinhafels"],
+    keywords: [
+      "sofa", "sofas", "sectional", "sectionals", "mattress",
+      "mattresses", "dining set", "dining sets",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Renegade Sofa" — USD 1349
+    merchant: "Schneiderman's Furniture",
+    profileHost: "schneidermans.com",
+    brand: "Schneiderman's Furniture",
+    fallbackEndpoint: "https://schneidermans.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: [
+      "schneidermans furniture", "schneiderman s furniture", "schneidermans",
+    ],
+    keywords: [
+      "sofa", "sofas", "sectional", "sectionals", "recliner",
+      "recliners", "loveseat", "loveseats",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Little Richard - The Rill Thing (Opaque Pink Vinyl)"
+    // — USD 31.99
+    merchant: "FYE",
+    profileHost: "fye.com",
+    brand: "FYE",
+    fallbackEndpoint: "https://2428392.myshopify.com/api/ucp/mcp",
+    category: "Entertainment",
+    brandAliases: ["fye"],
+    keywords: [
+      "vinyl", "vinyl record", "vinyl records", "record", "records",
+      "lp", "album", "albums",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Nike Air Trainer Huarache" — USD 89.98
+    merchant: "DTLR",
+    profileHost: "dtlr.com",
+    brand: "DTLR",
+    fallbackEndpoint: "https://dtlrvilla.myshopify.com/api/ucp/mcp",
+    category: "Shoes",
+    brandAliases: ["dtlr"],
+    keywords: [
+      "sneakers", "sneaker", "athletic shoes", "nike shoes",
+      "jordan shoes",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Kodak PIXPRO FZ55 Digital Camera Black with Lexar
+    // 64GB Memory Card" — USD 169.95
+    merchant: "Beach Camera",
+    profileHost: "beachcamera.com",
+    brand: "Beach Camera",
+    fallbackEndpoint: "https://beachcamera-com.myshopify.com/api/ucp/mcp",
+    category: "Electronics",
+    brandAliases: ["beach camera"],
+    keywords: [
+      "camera", "cameras", "digital camera", "digital cameras",
+      "camcorder", "camcorders", "binoculars",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Stealth™ 700 Headset (Gen 3)" — USD 199.99
+    merchant: "Turtle Beach",
+    profileHost: "turtlebeach.com",
+    brand: "Turtle Beach",
+    fallbackEndpoint: "https://turtle-beach-usa.myshopify.com/api/ucp/mcp",
+    category: "Electronics",
+    brandAliases: ["turtle beach"],
+    keywords: [
+      "gaming headset", "gaming headsets", "headset", "headsets",
+      "xbox headset", "playstation headset",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Rome Ravine Snowboard 2026" — USD 414.95
+    merchant: "Evo",
+    profileHost: "evo.com",
+    brand: "Evo",
+    fallbackEndpoint: "https://qe10ec-cr.myshopify.com/api/ucp/mcp",
+    category: "Sporting Goods",
+    brandAliases: ["evo"],
+    keywords: [
+      "snowboard", "snowboards", "skis", "ski boots",
+      "mountain bike", "mountain bikes",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "16\" Toy Soldier Plush Bear" — USD 45
+    merchant: "FAO Schwarz",
+    profileHost: "faoschwarz.com",
+    brand: "FAO Schwarz",
+    fallbackEndpoint: "https://fao-schwarz.myshopify.com/api/ucp/mcp",
+    category: "Toys",
+    brandAliases: ["fao schwarz", "fao"],
+    keywords: [
+      "toy", "toys", "plush", "plush toy", "plush toys",
+      "stuffed animal", "stuffed animals", "teddy bear", "teddy bears",
     ],
     prefixBrand: true,
   },

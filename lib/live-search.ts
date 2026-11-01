@@ -33,9 +33,10 @@ import type { Merchant, Offer, ProductSummary } from "./types";
  *   Agentic Access Terms website tier (lib/adapters/walmart-browse.ts) —
  *   self-identifying agent, serialized rate limiting, stop-on-block; a
  *   redirect/challenge simply yields no Walmart results for that search.
- * - UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith,
- *   Misen, SKIMS, Fenty Beauty), through each store's own published UCP
- *   profile and MCP catalog (lib/adapters/ucp.ts) — the merchant's
+ * - UCP stores (the original nine — Steve Madden, Gymshark, Everlane,
+ *   Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty — plus the twenty
+ *   Wave-1 sweep winners in lib/adapters/ucp.ts), through each store's
+ *   own published UCP profile and MCP catalog — the merchant's
  *   authorized agent channel. Only the stores whose assortment matches
  *   the query are called, in parallel with the other sources.
  *
