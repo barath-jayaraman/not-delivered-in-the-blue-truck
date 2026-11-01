@@ -184,6 +184,7 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     "Peak Design",
     "Woodcraft",
     "Arhaus",
+    "Bonobos",
   ].map(
     (merchant): MerchantPolicy => ({
       merchant,
@@ -199,6 +200,57 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
       consentGateRequired: false,
     }),
   ),
+  // Browsing-route stores (lib/adapters/browse-stores.ts): terms read
+  // in full on Nov 1, 2026 contain NO automated-access prohibition,
+  // and one honest search-results fetch with this app's
+  // self-identifying user agent returned real priced listings for
+  // each. Under the prohibition-based gate, policy silence permits
+  // the browsing route; any active block/challenge stops it, and an
+  // express prohibition would move a store to excluded-prohibited.
+  // Ulta Beauty was excluded at this gate on Nov 1, 2026: its terms
+  // bar "any collection and use of any product listings, descriptions,
+  // or prices" and "any use of data mining, robots, or similar data
+  // gathering and extraction tools."
+  {
+    merchant: "Micro Center",
+    allowedAcquisitionMethods: ["browser"],
+    preferredAcquisitionMethod: "browser",
+    status: "browser-permitted-unless-prohibited",
+    rationale:
+      "Micro Center's site terms (microcenter.com/site/customer-support/terms-conditions-site.aspx), read in full Nov 1, 2026, contain no robot/spider/scraper/data-mining or automated-access prohibition. Its search-results pages are server-rendered and served an honest fetch with real priced listings (e.g. Dell Latitude 7430, $599.99 in the Oct 31 sweep probe), so the browsing route is used under the prohibition-based gate: one search page per lookup, self-identifying agent, stop on any block or challenge.",
+    browserPurchasingAllowed: false,
+    consentGateRequired: false,
+  },
+  {
+    merchant: "Harbor Freight",
+    allowedAcquisitionMethods: ["browser"],
+    preferredAcquisitionMethod: "browser",
+    status: "browser-permitted-unless-prohibited",
+    rationale:
+      "Harbor Freight's Terms and Conditions (harborfreight.com/terms-and-conditions, updated Apr 2, 2026), read in full Nov 1, 2026, contain no robot/spider/scraper/data-mining or automated-access prohibition (the only harvesting clause covers other users' personal information). Its search pages serve their results state to an honest fetch with real priced listings, so the browsing route is used under the prohibition-based gate: one search page per lookup, self-identifying agent, stop on any block or challenge.",
+    browserPurchasingAllowed: false,
+    consentGateRequired: false,
+  },
+  {
+    merchant: "Carter's",
+    allowedAcquisitionMethods: ["browser"],
+    preferredAcquisitionMethod: "browser",
+    status: "browser-permitted-unless-prohibited",
+    rationale:
+      "Carter's terms (carters.com/disclaimer.html), read in full Nov 1, 2026, contain no automated-access prohibition. Its search pages serve an embedded results payload with real prices (e.g. bodysuit multipacks at $14.00–$18.00) to an honest fetch, so the browsing route is used under the prohibition-based gate: one search page per lookup, self-identifying agent, stop on any block or challenge.",
+    browserPurchasingAllowed: false,
+    consentGateRequired: false,
+  },
+  {
+    merchant: "Mattress Firm",
+    allowedAcquisitionMethods: ["browser"],
+    preferredAcquisitionMethod: "browser",
+    status: "browser-permitted-unless-prohibited",
+    rationale:
+      "Mattress Firm's Terms and Conditions (mattressfirm.com/terms.html), read Nov 1, 2026, contain no robot/spider/scraper/data-mining or automated-access prohibition. Its search pages are server-rendered with priced product cards (card price cross-verified against the product page's own JSON price, Nov 1, 2026), so the browsing route is used under the prohibition-based gate: one search page per lookup, self-identifying agent, stop on any block or challenge.",
+    browserPurchasingAllowed: false,
+    consentGateRequired: false,
+  },
 ];
 
 /** Compact gate outcomes for the UI policy-gate panel and API responses. */
@@ -230,6 +282,30 @@ export function getPolicyGateEntries(): PolicyGateEntry[] {
       outcomeLabel: "Authorized-channel only — not browsed",
       detail:
         "Target admits only approved Agentic Commerce Agents through partner channels (approval-gated, no public application), so the gate does not browse or scrape Target.",
+    },
+    "Micro Center": {
+      route: "browser",
+      outcomeLabel: "Browsing permitted — terms silent on automated access",
+      detail:
+        "Micro Center's site terms (read in full Nov 1, 2026) contain no automated-access prohibition, and its search pages serve real priced listings to an honest fetch, so prices are read live from its public search-results pages under the prohibition-based gate — one page per lookup, self-identifying agent, stop on any block.",
+    },
+    "Harbor Freight": {
+      route: "browser",
+      outcomeLabel: "Browsing permitted — terms silent on automated access",
+      detail:
+        "Harbor Freight's terms (read in full Nov 1, 2026) contain no automated-access prohibition, and its search pages serve real priced listings to an honest fetch, so prices are read live from its public search-results pages under the prohibition-based gate — one page per lookup, self-identifying agent, stop on any block.",
+    },
+    "Carter's": {
+      route: "browser",
+      outcomeLabel: "Browsing permitted — terms silent on automated access",
+      detail:
+        "Carter's terms (read in full Nov 1, 2026) contain no automated-access prohibition, and its search pages serve real priced listings to an honest fetch, so prices are read live from its public search-results pages under the prohibition-based gate — one page per lookup, self-identifying agent, stop on any block.",
+    },
+    "Mattress Firm": {
+      route: "browser",
+      outcomeLabel: "Browsing permitted — terms silent on automated access",
+      detail:
+        "Mattress Firm's terms (read Nov 1, 2026) contain no automated-access prohibition, and its search pages serve real priced listings to an honest fetch, so prices are read live from its public search-results pages under the prohibition-based gate — one page per lookup, self-identifying agent, stop on any block.",
     },
   };
   return MERCHANT_POLICY_REGISTRY.map((policy) => {

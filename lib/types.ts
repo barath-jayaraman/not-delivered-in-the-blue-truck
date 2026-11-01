@@ -44,7 +44,12 @@ export type Merchant =
   | "Sharper Image"
   | "Peak Design"
   | "Woodcraft"
-  | "Arhaus";
+  | "Arhaus"
+  | "Bonobos"
+  | "Micro Center"
+  | "Harbor Freight"
+  | "Carter's"
+  | "Mattress Firm";
 /** "live" marks records retrieved from a merchant for this request (see lib/live-search.ts). */
 export type DataMode = "sample" | "live";
 export type ReturnCost = "free" | "buyer-paid" | "final-sale";

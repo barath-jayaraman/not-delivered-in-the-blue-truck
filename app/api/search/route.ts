@@ -11,9 +11,12 @@ export const maxDuration = 60;
  * GET /api/search?q=...
  *
  * EVERY query goes LIVE, at request time (Barath's rule, Oct 31, 2026 —
- * no stored listings or prices anywhere). The search runs over the two
- * sources the policy gate allows — the eBay Buy Browse API and one
- * Walmart search-results page fetch under the Agentic Access Terms —
+ * no stored listings or prices anywhere). The search runs over the
+ * sources the policy gate allows — the eBay Buy Browse API, a Walmart
+ * search-results page fetch under the Agentic Access Terms, each
+ * assortment-matching UCP store's published catalog, and each
+ * assortment-matching browsing-route store's search-results page
+ * (terms silent on automated access; prohibition-based gate) —
  * via lib/live-search.ts. Listings are grouped by model identity
  * (different models never merge), flagged dataSource "live", and carry
  * per-listing provenance with this request's retrieval time. When the

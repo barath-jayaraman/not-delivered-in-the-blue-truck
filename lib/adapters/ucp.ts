@@ -688,6 +688,24 @@ export const UCP_STORES: UcpStore[] = [
     ],
     prefixBrand: true,
   },
+  /* ---------------------------------------------------------------- */
+  /* Wave 3 (Nov 1, 2026) — Top-1000 sweep UCP-live winners, third    */
+  /* batch, verified to the same evidence bar (see per-store notes).  */
+  /* ---------------------------------------------------------------- */
+  {
+    // Verified: "Performance Link Pants" — USD 129
+    merchant: "Bonobos",
+    profileHost: "bonobos.com",
+    brand: "Bonobos",
+    fallbackEndpoint: "https://h45hqs-bx.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["bonobos"],
+    keywords: [
+      "chinos", "pants", "dress shirt", "dress shirts", "menswear",
+      "mens pants", "golf pants",
+    ],
+    prefixBrand: true,
+  },
 ];
 
 const MAX_UCP_STORES_PER_QUERY = 4;
@@ -702,24 +720,29 @@ export function selectUcpStores(query: string): UcpStore[] {
   if (!ucpEnabled()) return [];
   const normalized = ` ${normalizeSearch(query)} `;
   const matches = (phrase: string) => normalized.includes(` ${phrase} `);
-  const selected: UcpStore[] = [];
-  for (const store of UCP_STORES) {
+  const cleared = UCP_STORES.filter((store) => {
     const policy = getMerchantPolicy(store.merchant);
-    if (
-      policy.status !== "ucp-authorized-channel" ||
-      !policy.allowedAcquisitionMethods.includes("api")
-    ) {
-      continue;
-    }
-    if (
-      store.brandAliases.some(matches) ||
-      store.keywords.some(matches)
-    ) {
-      selected.push(store);
-    }
-    if (selected.length >= MAX_UCP_STORES_PER_QUERY) break;
-  }
-  return selected;
+    return (
+      policy.status === "ucp-authorized-channel" &&
+      policy.allowedAcquisitionMethods.includes("api")
+    );
+  });
+  // Brand-named queries route to the named store FIRST: a single pass
+  // in registry order lets generic assortment keywords from earlier
+  // stores fill the per-query cap before a named brand's own store is
+  // reached (e.g. "arhaus sofa" selected four other furniture stores
+  // and never Arhaus, which sits last in the registry).
+  const brandMatches = cleared.filter((store) =>
+    store.brandAliases.some(matches),
+  );
+  const keywordMatches = cleared.filter(
+    (store) =>
+      !brandMatches.includes(store) && store.keywords.some(matches),
+  );
+  return [...brandMatches, ...keywordMatches].slice(
+    0,
+    MAX_UCP_STORES_PER_QUERY,
+  );
 }
 
 /* ------------------------------------------------------------------ */

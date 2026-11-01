@@ -12,6 +12,11 @@ import {
   selectUcpStores,
 } from "./adapters/ucp";
 import {
+  buildBrowseOffer,
+  searchBrowseStore,
+  selectBrowseStores,
+} from "./adapters/browse-stores";
+import {
   buildWalmartOffer,
   fetchWalmartSearchItems,
   parseWalmartItem,
@@ -40,6 +45,13 @@ import type { Merchant, Offer, ProductSummary } from "./types";
  *   own published UCP profile and MCP catalog — the merchant's
  *   authorized agent channel. Only the stores whose assortment matches
  *   the query are called, in parallel with the other sources.
+ * - Browsing-route stores (Micro Center, Harbor Freight, Carter's,
+ *   Mattress Firm — lib/adapters/browse-stores.ts): first-party stores
+ *   whose terms contain no automated-access prohibition (the
+ *   prohibition-based gate) and whose public search-results pages
+ *   serve real priced listings to an honest fetch. Like the UCP
+ *   stores, only assortment-matching stores are called, one search
+ *   page per lookup, stop on any block or challenge.
  *
  * NO STORED LISTINGS OR PRICES ANYWHERE (Barath's rule, Oct 31, 2026):
  * nothing in this module — or anywhere in the app — keeps search results
@@ -546,6 +558,40 @@ async function collectUcpCandidates(query: string): Promise<Candidate[]> {
   return candidates;
 }
 
+/**
+ * Browsing-route candidates: for each store whose assortment matches
+ * the query, fetch its public search-results page live
+ * (lib/adapters/browse-stores.ts) and map the priced listings it
+ * returns. The store's own search engine matched the query within the
+ * assortment we routed to it, so — as with UCP candidates — literal
+ * query-token overlap is not required; model-identity grouping still
+ * applies unchanged. A store that does not answer (or is blocked)
+ * contributes nothing.
+ */
+async function collectBrowseCandidates(query: string): Promise<Candidate[]> {
+  const stores = selectBrowseStores(query);
+  if (!stores.length) return [];
+  const retrievedAt = new Date().toISOString();
+  const perStore = await Promise.allSettled(
+    stores.map((store) => searchBrowseStore(store, query)),
+  );
+  const candidates: Candidate[] = [];
+  stores.forEach((store, i) => {
+    const result = perStore[i];
+    if (result.status !== "fulfilled") return;
+    const searchUrl = store.searchUrl(query);
+    for (const product of result.value) {
+      candidates.push({
+        offer: buildBrowseOffer(store, product, retrievedAt, searchUrl),
+        title: product.title,
+        imageUrl: product.imageUrl,
+        trustedRelevance: true,
+      });
+    }
+  });
+  return candidates;
+}
+
 /* ------------------------------------------------------------------ */
 /* Public search — live every time, in-flight dedupe only              */
 /* ------------------------------------------------------------------ */
@@ -564,15 +610,18 @@ export interface LiveSearchResult {
 const inflight = new Map<string, Promise<LiveSearchResult>>();
 
 async function runLiveSearch(query: string): Promise<LiveSearchResult> {
-  const [ebayResult, walmartResult, ucpResult] = await Promise.allSettled([
-    collectEbayCandidates(query),
-    collectWalmartCandidates(query),
-    collectUcpCandidates(query),
-  ]);
+  const [ebayResult, walmartResult, ucpResult, browseResult] =
+    await Promise.allSettled([
+      collectEbayCandidates(query),
+      collectWalmartCandidates(query),
+      collectUcpCandidates(query),
+      collectBrowseCandidates(query),
+    ]);
   const candidates = [
     ...(ebayResult.status === "fulfilled" ? ebayResult.value : []),
     ...(walmartResult.status === "fulfilled" ? walmartResult.value : []),
     ...(ucpResult.status === "fulfilled" ? ucpResult.value : []),
+    ...(browseResult.status === "fulfilled" ? browseResult.value : []),
   ];
   const groups = groupListings(query, candidates);
   const summaries = groups.map((group) => summarizeGroup(group, query));

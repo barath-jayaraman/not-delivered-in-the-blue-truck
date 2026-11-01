@@ -28,7 +28,8 @@ import type {
  *
  * NO STORED LISTINGS OR PRICES (Barath's rule, Oct 31, 2026): every
  * decide request fetches its offers live, in that request, through
- * lib/live-search.ts (eBay Buy Browse API + Walmart search-page fetch).
+ * lib/live-search.ts (eBay Buy Browse API, Walmart + browsing-route
+ * search-page fetches, and UCP merchant catalogs).
  * There is no catalog of sample offers to fall back to and no relay
  * document is read: when the live sources return nothing for the
  * requested product, this returns null and the route answers with the
@@ -101,31 +102,41 @@ async function buildLiveComparison(
       cheapestSticker: toExplainFacts(cheapestSticker),
       sameOffer: recommendation.id === cheapestSticker.id,
     });
-    // Honesty backstop: a UCP catalog states no shipping charge, so any
-    // model text claiming "free shipping" for a comparison involving a
-    // UCP offer is rejected whole and the local explanation stands.
-    const involvesUcp = [recommendation, cheapestSticker].some(
-      (o) => o.provenance.policyStatus === "ucp-public-profile",
+    // Honesty backstop: a UCP catalog states no shipping charge, and a
+    // browsing-route search page states none either, so any model text
+    // claiming "free shipping" for a comparison involving such an
+    // offer is rejected whole and the local explanation stands.
+    const involvesUnstatedShipping = [recommendation, cheapestSticker].some(
+      (o) =>
+        o.provenance.policyStatus === "ucp-public-profile" ||
+        o.provenance.policyStatus === "browser-permitted-unless-prohibited",
     );
     if (
       liveExplanation &&
-      !(involvesUcp && /free shipping/i.test(liveExplanation))
+      !(involvesUnstatedShipping && /free shipping/i.test(liveExplanation))
     ) {
       explanation = liveExplanation;
       liveSteps.push("explain");
     }
   }
 
-  const gathered = group.merchants.map((merchant) => ({
-    merchant,
-    route:
-      merchant === "Walmart"
-        ? "browsing route (Agentic Access Terms)"
-        : merchant === "eBay"
-          ? "official API route"
-          : "UCP catalog via merchant-published profile (MCP)",
-    offerCount: group.offers.filter((o) => o.merchant === merchant).length,
-  }));
+  const gathered = group.merchants.map((merchant) => {
+    const status = group.offers.find(
+      (o) => o.merchant === merchant,
+    )?.provenance.policyStatus;
+    return {
+      merchant,
+      route:
+        status === "browse-allowed-agentic-access-terms"
+          ? "browsing route (Agentic Access Terms)"
+          : status === "browser-permitted-unless-prohibited"
+            ? "browsing route (terms silent — prohibition-based gate)"
+            : status === "api-only"
+              ? "official API route"
+              : "UCP catalog via merchant-published profile (MCP)",
+      offerCount: group.offers.filter((o) => o.merchant === merchant).length,
+    };
+  });
   const agentActivity = buildAgentActivity({
     productName: group.name,
     priority: req.priority,
