@@ -53,7 +53,9 @@ import type { Merchant, Offer } from "../types";
  * SKIMS, and Fenty Beauty (whose endpoint timed out during the Oct 30
  * sweep and answered on the single Oct 31 retry, per instructions),
  * verified Oct 31, 2026; plus the twenty Wave-1 sweep winners noted
- * inline below (broad assortment first), verified Nov 1, 2026.
+ * inline below (broad assortment first), verified Nov 1, 2026; plus
+ * the ten Wave-2 stores noted inline below (Wave 1's verified-but-
+ * deferred set), re-verified live Nov 1, 2026 before registering.
  */
 
 const USER_AGENT =
@@ -516,6 +518,173 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "toy", "toys", "plush", "plush toy", "plush toys",
       "stuffed animal", "stuffed animals", "teddy bear", "teddy bears",
+    ],
+    prefixBrand: true,
+  },
+  /* ---------------------------------------------------------------- */
+  /* Wave 2 (Nov 1, 2026) — the ten stores Wave 1 verified end-to-end */
+  /* but deferred at its 20-store cap. Each was RE-verified live on   */
+  /* Nov 1, 2026 before registering (profile HTTP 200, catalog.search */
+  /* declared, endpoint read from the live profile, initialize        */
+  /* handshake, tools/list discovery, one catalog search returning a  */
+  /* real priced product — noted per store). Fallback endpoints below */
+  /* are exactly what each store's live profile declared at that      */
+  /* re-verification.                                                 */
+  /* ---------------------------------------------------------------- */
+  {
+    // Verified: "Element Mattress" — USD 445
+    merchant: "Casper",
+    profileHost: "casper.com",
+    brand: "Casper",
+    fallbackEndpoint: "https://e75063-e5.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["casper"],
+    keywords: [
+      "mattress", "mattresses", "pillow", "pillows", "bedding",
+      "foam mattress",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "The Carry-On in Olive Green" — USD 275
+    merchant: "Away",
+    profileHost: "awaytravel.com",
+    brand: "Away",
+    fallbackEndpoint: "https://766ad1-ab.myshopify.com/api/ucp/mcp",
+    category: "Luggage",
+    brandAliases: ["away", "away travel"],
+    keywords: [
+      "luggage", "carry on", "carryon", "suitcase", "suitcases",
+      "travel bag",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Hybrid Fry Pan, 12\"" — USD 179
+    merchant: "HexClad",
+    profileHost: "hexclad.com",
+    brand: "HexClad",
+    fallbackEndpoint: "https://hexclad-cookware.myshopify.com/api/ucp/mcp",
+    category: "Kitchen",
+    brandAliases: ["hexclad", "hex clad"],
+    keywords: [
+      "frying pan", "fry pan", "pan", "pans", "wok", "cookware",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Classic Cast Iron Skillets" — USD 12.95
+    merchant: "Lodge Cast Iron",
+    profileHost: "lodgecastiron.com",
+    brand: "Lodge Cast Iron",
+    fallbackEndpoint: "https://lodgecastiron-us.myshopify.com/api/ucp/mcp",
+    category: "Kitchen",
+    brandAliases: ["lodge cast iron", "lodge"],
+    keywords: [
+      "cast iron skillet", "cast iron skillets", "cast iron", "skillet",
+      "skillets", "dutch oven", "griddle",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "RadRunner™ Plus Electric Cargo Utility Bike" — USD 1799
+    merchant: "Rad Power Bikes",
+    profileHost: "radpowerbikes.com",
+    brand: "Rad Power Bikes",
+    fallbackEndpoint: "https://rad-power-bikes.myshopify.com/api/ucp/mcp",
+    category: "Sporting Goods",
+    brandAliases: ["rad power bikes", "rad power"],
+    keywords: [
+      "electric bike", "electric bikes", "e bike", "ebike", "e-bike",
+      "cargo bike", "fat tire bike",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Monstera Thai Constellation" — USD 99
+    merchant: "The Sill",
+    profileHost: "thesill.com",
+    brand: "The Sill",
+    fallbackEndpoint: "https://the-sill.myshopify.com/api/ucp/mcp",
+    category: "Home",
+    brandAliases: ["the sill", "sill"],
+    keywords: [
+      "plant", "plants", "houseplant", "houseplants", "monstera",
+      "potted plant", "planter", "planters",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "3D Shiatsu Heating Back and Neck Massager" — USD 69.99
+    merchant: "Brookstone",
+    profileHost: "brookstone.com",
+    brand: "Brookstone",
+    fallbackEndpoint: "https://brookstone-prod.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["brookstone"],
+    keywords: [
+      "massager", "massagers", "neck massager", "foot massager",
+      "massage chair",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "PowerBoost Pro Plus Hot and Cold Compact Massage Gun
+    // by Sharper Image" — USD 179.99
+    merchant: "Sharper Image",
+    profileHost: "sharperimage.com",
+    brand: "Sharper Image",
+    fallbackEndpoint: "https://30786c.myshopify.com/api/ucp/mcp",
+    category: "General",
+    brandAliases: ["sharper image"],
+    keywords: [
+      "massage gun", "massage guns", "percussion massager",
+      "air purifier", "air purifiers",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Travel Backpack | 45L | Black" — USD 299.95
+    merchant: "Peak Design",
+    profileHost: "peakdesign.com",
+    brand: "Peak Design",
+    fallbackEndpoint: "https://peakdesignstore.myshopify.com/api/ucp/mcp",
+    category: "Luggage",
+    brandAliases: ["peak design"],
+    keywords: [
+      "backpack", "backpacks", "camera bag", "camera bags",
+      "travel backpack", "everyday backpack",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Single Bevel Straight Chisel" — USD 46.99
+    merchant: "Woodcraft",
+    profileHost: "woodcraft.com",
+    brand: "Woodcraft",
+    fallbackEndpoint: "https://woodcraft-supply.myshopify.com/api/ucp/mcp",
+    category: "Tools",
+    brandAliases: ["woodcraft"],
+    keywords: [
+      "chisel", "chisels", "woodworking", "woodworking tools",
+      "hand plane", "wood carving",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified Nov 1, 2026 on re-verification (its first pass failed
+    // the initialize handshake): "Kipton Wide Arm Elevated Sofa" —
+    // USD 6200
+    merchant: "Arhaus",
+    profileHost: "arhaus.com",
+    brand: "Arhaus",
+    fallbackEndpoint: "https://arhausllc.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["arhaus"],
+    keywords: [
+      "sofa", "sofas", "couch", "couches", "sectional", "sectionals",
+      "armchair", "armchairs", "furniture", "coffee table",
+      "dining table", "dining tables",
     ],
     prefixBrand: true,
   },

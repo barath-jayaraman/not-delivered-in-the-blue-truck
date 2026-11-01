@@ -137,7 +137,11 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
   // own authorized agent channel (see lib/adapters/ucp.ts). The first
   // nine were verified live with real priced catalog responses on
   // Oct 31, 2026; the twenty Wave-1 additions (sweep winners, broad
-  // assortment first) were verified the same way on Nov 1, 2026.
+  // assortment first) were verified the same way on Nov 1, 2026, as
+  // were the ten Wave-2 additions (Wave 1's verified-but-deferred set,
+  // re-verified live before registering, also Nov 1, 2026). Arhaus was
+  // re-verified to the same bar on Nov 1, 2026 after a first-pass
+  // handshake failure, and registered with this wave.
   // Catalog reads only; no cart/checkout calls.
   ...[
     "Steve Madden",
@@ -169,6 +173,17 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     "Turtle Beach",
     "Evo",
     "FAO Schwarz",
+    "Casper",
+    "Away",
+    "HexClad",
+    "Lodge Cast Iron",
+    "Rad Power Bikes",
+    "The Sill",
+    "Brookstone",
+    "Sharper Image",
+    "Peak Design",
+    "Woodcraft",
+    "Arhaus",
   ].map(
     (merchant): MerchantPolicy => ({
       merchant,

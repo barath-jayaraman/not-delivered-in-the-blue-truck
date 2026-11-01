@@ -33,7 +33,18 @@ export type Merchant =
   | "Beach Camera"
   | "Turtle Beach"
   | "Evo"
-  | "FAO Schwarz";
+  | "FAO Schwarz"
+  | "Casper"
+  | "Away"
+  | "HexClad"
+  | "Lodge Cast Iron"
+  | "Rad Power Bikes"
+  | "The Sill"
+  | "Brookstone"
+  | "Sharper Image"
+  | "Peak Design"
+  | "Woodcraft"
+  | "Arhaus";
 /** "live" marks records retrieved from a merchant for this request (see lib/live-search.ts). */
 export type DataMode = "sample" | "live";
 export type ReturnCost = "free" | "buyer-paid" | "final-sale";
