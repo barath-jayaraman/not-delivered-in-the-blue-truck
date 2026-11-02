@@ -55,6 +55,13 @@ const TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token";
 const SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search";
 const BROWSE_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const FETCH_TIMEOUT_MS = 15_000;
+/**
+ * Ceiling for the item-summary search call itself (Nov 2, 2026 —
+ * search-speed work). The token request keeps the 15s ceiling above;
+ * a healthy Browse search answers in ~0.5–1.5s, and a stalled one
+ * must not hold the whole fan-out for the token's budget.
+ */
+const SEARCH_TIMEOUT_MS = 10_000;
 /** Far inside eBay's 6-hour display-freshness limit for listing data. */
 /** Refresh the application token this long before its stated expiry. */
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
@@ -464,7 +471,7 @@ export async function searchEbayItems(
         Accept: "application/json",
       },
       cache: "no-store",
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
     });
     if (response.status === 401 || response.status === 403) {
       // A rejected token must not be replayed from cache.

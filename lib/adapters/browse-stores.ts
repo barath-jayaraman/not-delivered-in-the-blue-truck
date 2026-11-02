@@ -42,9 +42,10 @@ import type { Merchant, Offer } from "../types";
  *   Harbor Freight's Apollo search state, Carter's embedded search
  *   payload, Mattress Firm's product cards). No headless browser, no
  *   JS execution, no cookie tricks.
- * - Serializes all browsing-route fetches behind one rate limiter
- *   (minimum ~1.5s between page fetches). Nothing is cached: every
- *   lookup fetches live in the request that needs it.
+ * - Serializes each HOST's page fetches behind its own rate limiter
+ *   (minimum ~1.5s between one store's fetches; different stores run
+ *   in parallel). Nothing is cached: every lookup fetches live in the
+ *   request that needs it.
  * - Any non-200, any redirect into a blocked path, and any challenge
  *   marker in the body yields NO offers for that store in that request.
  *   The benign reCAPTCHA footer widget some stores ship site-wide is
@@ -66,7 +67,7 @@ const USER_AGENT =
   "NotDeliveredInTheBlueTruck/0.1 (shopping comparison prototype; contact barath.jayaraman@gmail.com)";
 
 const MIN_INTERVAL_MS = 1_500;
-const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_TIMEOUT_MS = 10_000;
 const MAX_PRODUCTS_PER_STORE = 12;
 const MAX_BROWSE_STORES_PER_QUERY = 3;
 /** Standard ground service estimate used when a page states no delivery time (as in the UCP adapter). */
@@ -79,24 +80,47 @@ export function browseStoresEnabled(): boolean {
 }
 
 /* ------------------------------------------------------------------ */
-/* Rate limiter: serialize page fetches, minimum interval between them */
+/* Rate limiter: PER-HOST serialization, minimum interval between a   */
+/* host's own page fetches. Each store keeps its own queue and its    */
+/* own ~1.5s spacing — the politeness constraint is per merchant —    */
+/* while DIFFERENT stores' pages fetch in parallel (Nov 2, 2026 —     */
+/* search-speed work: one shared cross-host queue previously         */
+/* serialized every browsing-route store behind every other, so a     */
+/* three-store query paid three full page fetches back to back).      */
 /* ------------------------------------------------------------------ */
 
-let lastFetchAt = 0;
-let queue: Promise<void> = Promise.resolve();
+interface HostLimiter {
+  lastFetchAt: number;
+  queue: Promise<void>;
+}
 
-async function rateLimited<T>(fn: () => Promise<T>): Promise<T> {
+const hostLimiters = new Map<string, HostLimiter>();
+
+function limiterFor(host: string): HostLimiter {
+  let limiter = hostLimiters.get(host);
+  if (!limiter) {
+    limiter = { lastFetchAt: 0, queue: Promise.resolve() };
+    hostLimiters.set(host, limiter);
+  }
+  return limiter;
+}
+
+async function rateLimited<T>(host: string, fn: () => Promise<T>): Promise<T> {
+  const limiter = limiterFor(host);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const previous = queue;
-  queue = previous.then(() => gate);
+  const previous = limiter.queue;
+  limiter.queue = previous.then(() => gate);
   await previous;
   try {
-    const wait = Math.max(0, MIN_INTERVAL_MS - (Date.now() - lastFetchAt));
+    const wait = Math.max(
+      0,
+      MIN_INTERVAL_MS - (Date.now() - limiter.lastFetchAt),
+    );
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    lastFetchAt = Date.now();
+    limiter.lastFetchAt = Date.now();
     return await fn();
   } finally {
     release();
@@ -111,7 +135,13 @@ const CHALLENGE_MARKERS =
   /robot or human|px-captcha|press\s*(?:&amp;|&|and)\s*hold|verify you are human|are you a robot|kasada|access denied/i;
 
 async function fetchBrowsePage(url: string): Promise<string | null> {
-  return rateLimited(async () => {
+  let host = "unknown";
+  try {
+    host = new URL(url).host;
+  } catch {
+    /* keep the shared fallback bucket for an unparseable URL */
+  }
+  return rateLimited(host, async () => {
     let response: Response;
     try {
       response = await fetch(url, {

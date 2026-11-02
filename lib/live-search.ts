@@ -81,16 +81,21 @@ const MAX_EBAY_OFFERS_PER_GROUP = 4;
 const MAX_WALMART_OFFERS_PER_GROUP = 2;
 
 /**
- * Per-store response budgets (added Nov 2, 2026 — search-speed work).
- * Sources fan out in parallel, so without a budget the slowest store
- * sets the whole response time, and a fully stalled handshake chain
- * could hold a search past the route's 60s cap and fail it outright.
+ * Per-store response budgets (added Nov 2, 2026 — search-speed work;
+ * tightened the same day after measurement). Sources fan out in
+ * parallel, so without a budget the slowest store sets the whole
+ * response time. Measured healthy latencies: a warm UCP catalog call
+ * is ~0.5s and a full cold handshake chain is 1.7–3.9s, so 10s is
+ * more than double the healthy worst case — while a stalled store
+ * (the historical tail: one store's stall held searches for its full
+ * 25–30s transport timeout) now costs the search at most 10s, and a
+ * fully stalled fan-out can no longer approach the route's 60s cap.
  * A store that exceeds its budget contributes nothing to THIS request
  * (partial results); its underlying fetch settles in the background
  * and its outcome is never stored or served later.
  */
-const UCP_STORE_DEADLINE_MS = 30_000;
-const BROWSE_STORE_DEADLINE_MS = 20_000;
+const UCP_STORE_DEADLINE_MS = 10_000;
+const BROWSE_STORE_DEADLINE_MS = 10_000;
 
 /** Race a promise against a deadline, yielding `fallback` on timeout. */
 function withDeadline<T>(

@@ -72,9 +72,9 @@ export const AGENT_PROFILE =
   process.env.UCP_AGENT_PROFILE ??
   "https://shopify.dev/ucp/agent-profiles/2026-04-08/valid-with-capabilities.json";
 
-const PROFILE_TIMEOUT_MS = 8_000;
-const HANDSHAKE_TIMEOUT_MS = 10_000;
-const CATALOG_TIMEOUT_MS = 25_000;
+const PROFILE_TIMEOUT_MS = 6_000;
+const HANDSHAKE_TIMEOUT_MS = 8_000;
+const CATALOG_TIMEOUT_MS = 10_000;
 const CATALOG_LIMIT = 5;
 /**
  * How long a store's resolved session (profile endpoint, MCP session

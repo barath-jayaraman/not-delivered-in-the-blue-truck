@@ -45,7 +45,10 @@ const USER_AGENT =
   "NotDeliveredInTheBlueTruck/0.1 (shopping comparison prototype; contact barath.jayaraman@gmail.com)";
 
 const MIN_INTERVAL_MS = 2_000;
-const FETCH_TIMEOUT_MS = 15_000;
+/* Page-fetch ceiling (lowered 15s → 10s, Nov 2, 2026 — search-speed
+ * work): a stalled Walmart page must not hold the whole fan-out; a
+ * healthy search page answers in ~1-3s. */
+const FETCH_TIMEOUT_MS = 10_000;
 /** Walmart's published free-shipping threshold for non-Walmart+ orders. */
 const FREE_SHIPPING_THRESHOLD = 35;
 /** Walmart's published return window for electronics (curated policy). */

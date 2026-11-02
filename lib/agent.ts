@@ -49,12 +49,16 @@ const LIVE_MAX_TOKENS = 2500;
 const LIVE_TIMEOUT_MS = 20_000;
 /**
  * Per-step budgets (Nov 2, 2026 — search-speed work). The interpret
- * step runs BEFORE the live search on every /api/search and free-form
- * decide request, so its ceiling is the search's floor: 8s is several
- * times the observed live latency, and the fallback for a slow call is
- * simply the shopper's raw query — the same result a failed call gives
- * today. The explain step writes from already-scored facts; past 12s
- * the local explanation (identical numbers, local words) stands.
+ * step used to run BEFORE the live search on every /api/search, so its
+ * latency was a serial tax on every search. The search route now runs
+ * interpretation CONCURRENTLY with a live search on the raw query and
+ * only waits for it up to SEARCH_INTERPRET_BUDGET_MS (inside the
+ * route); this 8s default remains the transport ceiling for the
+ * decide path, where interpretation is a fallback, not a gate. The
+ * fallback for a slow call is simply the shopper's raw query — the
+ * same result a failed call gives today. The explain step writes from
+ * already-scored facts; past 12s the local explanation (identical
+ * numbers, local words) stands.
  */
 const INTERPRET_TIMEOUT_MS = 8_000;
 const EXPLAIN_TIMEOUT_MS = 12_000;
@@ -208,6 +212,7 @@ function parseInterpretation(raw: string): InterpretedQuery | null {
  */
 export async function interpretQuery(
   rawQuery: string,
+  timeoutMs: number = INTERPRET_TIMEOUT_MS,
 ): Promise<InterpretedQuery | null> {
   const query = rawQuery.trim();
   if (!query || !getMetaModelConfig().liveConfigured) return null;
@@ -226,7 +231,7 @@ export async function interpretQuery(
       { role: "user", content: query },
     ],
     0,
-    INTERPRET_TIMEOUT_MS,
+    timeoutMs,
   );
   return raw ? parseInterpretation(raw) : null;
 }
