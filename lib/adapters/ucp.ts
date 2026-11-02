@@ -10,16 +10,23 @@ import type { Merchant, Offer } from "../types";
  * dev.ucp.shopping.catalog.search capability over an MCP transport
  * (JSON-RPC / streamable HTTP). That profile is the merchant's own
  * published, authorized channel for agents — the policy registry marks
- * these merchants "ucp-authorized-channel" (route: api). Public catalog
- * reads only: no auth, no cart/checkout calls are made here.
+ * these merchants "ucp-authorized-channel" (route: api). This module
+ * performs public catalog reads only: no auth, and no cart/checkout
+ * calls are made here — searching never creates a checkout. Checkout
+ * lives in lib/adapters/ucp-checkout.ts and runs over this same
+ * published profile only when a buyer explicitly starts it.
  *
- * LIVE-ONLY (Barath's rule, Oct 31, 2026): every search runs the full
- * protocol flow IN THIS REQUEST — read the store's live profile, MCP
- * initialize handshake, tools/list discovery (the catalog tool is found
- * in the server's own tool list, never hardcoded), one catalog search —
- * and maps ONLY the figures the merchant's response carries. Nothing is
- * cached or stored between requests; a store that does not answer
- * yields no offers, never a stored or invented price.
+ * LIVE-ONLY (Barath's rule, Oct 31, 2026): every search runs ONE live
+ * catalog call IN THIS REQUEST and maps ONLY the figures the merchant's
+ * response carries. Catalog results and prices are never cached or
+ * stored between requests; a store that does not answer yields no
+ * offers, never a stored or invented price. The only reuse is the
+ * protocol's handshake state — the profile's declared endpoint, the
+ * MCP session id, and the catalog tool found by tools/list discovery
+ * (never hardcoded) — held in memory for minutes (see
+ * SESSION_CACHE_TTL_MS below). It contains no catalog data, and any
+ * failed call discards it and re-runs the full flow (live profile,
+ * initialize handshake, tools/list discovery) inside that request.
  *
  * What the UCP catalog does NOT state (verified from live responses,
  * Oct 31, 2026): shipping charges, delivery estimates, return terms,
@@ -61,14 +68,30 @@ import type { Merchant, Offer } from "../types";
 const USER_AGENT =
   "NotDeliveredInTheBlueTruck/0.1 (UCP MCP client; contact barath.jayaraman@gmail.com)";
 
-const AGENT_PROFILE =
+export const AGENT_PROFILE =
   process.env.UCP_AGENT_PROFILE ??
   "https://shopify.dev/ucp/agent-profiles/2026-04-08/valid-with-capabilities.json";
 
 const PROFILE_TIMEOUT_MS = 8_000;
-const HANDSHAKE_TIMEOUT_MS = 15_000;
-const CATALOG_TIMEOUT_MS = 40_000;
+const HANDSHAKE_TIMEOUT_MS = 10_000;
+const CATALOG_TIMEOUT_MS = 25_000;
 const CATALOG_LIMIT = 5;
+/**
+ * How long a store's resolved session (profile endpoint, MCP session
+ * id, discovered catalog tool + argument shape) may be reused before
+ * the full handshake runs again. This caches HANDSHAKE STATE ONLY —
+ * it holds no products, prices, or catalog data of any kind, so a
+ * reused session can never serve a stale price: every catalog call
+ * still goes to the merchant live, in the request that displays it.
+ * Measured Nov 2, 2026: the profile fetch + initialize + initialized
+ * notification + tools/list chain costs 1.7–3.9s per store while the
+ * catalog call itself is ~0.5s — re-running the chain per request was
+ * the search's main latency. Shopify's UCP endpoints proved stateless
+ * in probing (a catalog call with no session at all succeeds; issued
+ * sessions stay valid well past a minute), and any hot-path failure
+ * invalidates the entry and rebuilds via the full flow below.
+ */
+const SESSION_CACHE_TTL_MS = 10 * 60_000;
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const CATALOG_SEARCH_CAP = "dev.ucp.shopping.catalog.search";
 
@@ -708,6 +731,11 @@ export const UCP_STORES: UcpStore[] = [
   },
 ];
 
+/** Registry lookup by merchant display name (checkout routing). */
+export function findUcpStore(merchant: string): UcpStore | undefined {
+  return UCP_STORES.find((store) => store.merchant === merchant);
+}
+
 const MAX_UCP_STORES_PER_QUERY = 4;
 
 /**
@@ -794,7 +822,7 @@ function parseMcpBody(text: string, wantId?: number): McpMessage | null {
   return fallback;
 }
 
-async function mcpPost(
+export async function mcpPost(
   endpoint: string,
   sessionId: string | null,
   payload: Record<string, unknown> & { id?: number },
@@ -820,7 +848,7 @@ async function mcpPost(
 }
 
 /** Read the store's published profile; returns the MCP endpoint it declares. */
-async function readProfileEndpoint(store: UcpStore): Promise<{
+export async function readProfileEndpoint(store: UcpStore): Promise<{
   endpoint: string;
   ucpVersion: string | null;
 }> {
@@ -883,18 +911,28 @@ export interface UcpProduct {
   available: boolean | null;
   /** Store product id (Shopify gid tail) — stable per product. */
   productKey: string;
+  /**
+   * The purchasable item id for checkout line items: the gid of the
+   * variant whose price this product carries (the product's own gid
+   * only when the catalog returned no variant ids).
+   */
+  itemId: string | null;
+  /** Title of that variant (e.g. a color), when the catalog gave one. */
+  variantTitle: string | null;
 }
 
 const CURRENCY_EXPONENTS: Record<string, number> = {
   JPY: 0, KRW: 0, VND: 0, BHD: 3, JOD: 3, KWD: 3, OMR: 3, TND: 3,
 };
 
-function moneyFromMinor(amount: number, currency: string): number {
+export function moneyFromMinor(amount: number, currency: string): number {
   const exponent = CURRENCY_EXPONENTS[currency] ?? 2;
   return amount / 10 ** exponent;
 }
 
 interface RawUcpVariant {
+  id?: string;
+  title?: string;
   price?: { amount?: number; currency?: string };
   availability?: { available?: boolean };
   media?: { type?: string; url?: string }[];
@@ -925,6 +963,7 @@ function normalizeUcpProduct(raw: RawUcpProduct): UcpProduct | null {
     (v) => typeof v?.price?.amount === "number" && v.price.currency === "USD",
   );
   let price: number | null = null;
+  const pricedVariant = availablePriced ?? anyPriced;
   if (availablePriced?.price?.amount != null) {
     price = moneyFromMinor(availablePriced.price.amount, "USD");
   } else if (anyPriced?.price?.amount != null) {
@@ -936,6 +975,14 @@ function normalizeUcpProduct(raw: RawUcpProduct): UcpProduct | null {
     price = moneyFromMinor(raw.price_range.min.amount, "USD");
   }
   if (price == null || price <= 0) return null;
+  // The checkout item is the variant whose price is shown; fall back to
+  // any variant id the catalog returned, then the product's own id.
+  const itemId =
+    (typeof pricedVariant?.id === "string" ? pricedVariant.id : null) ??
+    variants.find((v) => typeof v?.id === "string")?.id ??
+    (typeof raw.id === "string" ? raw.id : null);
+  const variantTitle =
+    typeof pricedVariant?.title === "string" ? pricedVariant.title : null;
 
   let available: boolean | null = null;
   if (variants.length > 0) {
@@ -959,6 +1006,8 @@ function normalizeUcpProduct(raw: RawUcpProduct): UcpProduct | null {
     imageUrl,
     available,
     productKey,
+    itemId,
+    variantTitle,
   };
 }
 
@@ -984,122 +1033,248 @@ function extractUcpProducts(result: Record<string, unknown>): UcpProduct[] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Session state — handshake reuse, never catalog data                 */
+/* ------------------------------------------------------------------ */
+
+/** Which optional argument groups the discovered tool's schema declares. */
+interface UcpToolShape {
+  catalog: boolean;
+  query: boolean;
+  pagination: boolean;
+  limit: boolean;
+  context: boolean;
+}
+
+interface UcpSession {
+  endpoint: string;
+  sessionId: string | null;
+  toolName: string;
+  shape: UcpToolShape;
+  expiresAt: number;
+}
+
+/** Resolved sessions by profile host. Handshake state only — see the
+ *  SESSION_CACHE_TTL_MS note above. In-memory per server instance. */
+const sessionCache = new Map<string, UcpSession>();
+/** In-flight establishments, so concurrent queries share one handshake. */
+const sessionInflight = new Map<string, Promise<UcpSession | null>>();
+
+function getCachedSession(store: UcpStore): UcpSession | null {
+  const session = sessionCache.get(store.profileHost);
+  if (!session) return null;
+  if (Date.now() >= session.expiresAt) {
+    sessionCache.delete(store.profileHost);
+    return null;
+  }
+  return session;
+}
+
+/**
+ * Run the full protocol flow's discovery half for one store, live:
+ * read the store's live profile, MCP initialize handshake,
+ * tools/list discovery (the catalog tool is found in the server's own
+ * tool list, never hardcoded). On success the resolved session is
+ * cached for SESSION_CACHE_TTL_MS. Returns null when the store does
+ * not answer or declares no catalog tool.
+ */
+async function establishSessionInner(store: UcpStore): Promise<UcpSession | null> {
+  const { endpoint } = await readProfileEndpoint(store);
+
+  // MCP initialize handshake (one timeout retry — Shopify endpoints
+  // have been observed to stall a cold first request, POC Oct 30).
+  const initializeOnce = () =>
+    mcpPost(
+      endpoint,
+      null,
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: MCP_PROTOCOL_VERSION,
+          capabilities: {},
+          clientInfo: {
+            name: "NotDeliveredInTheBlueTruck UCP client",
+            version: "0.1.0",
+          },
+        },
+      },
+      HANDSHAKE_TIMEOUT_MS,
+    );
+  let sessionId: string | null = null;
+  try {
+    let init;
+    try {
+      init = await initializeOnce();
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") throw error;
+      await sleep(2_000);
+      init = await initializeOnce();
+    }
+    sessionId = init.sessionId;
+    if (init.message?.result) {
+      // Protocol courtesy notification. It is given a short grace
+      // window only: a slow notification acknowledgement must never
+      // stall discovery (probing, Nov 2 2026, showed these endpoints
+      // answer catalog calls even with no handshake at all).
+      const notification = mcpPost(
+        endpoint,
+        sessionId,
+        { jsonrpc: "2.0", method: "notifications/initialized" },
+        HANDSHAKE_TIMEOUT_MS,
+      ).catch(() => null);
+      await Promise.race([notification, sleep(2_000)]);
+    }
+  } catch {
+    /* stateless fallback: proceed to tools/list without a session */
+  }
+
+  // Tool discovery — the catalog tool comes from the server's list.
+  const list = await mcpPost(
+    endpoint,
+    sessionId,
+    { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
+    HANDSHAKE_TIMEOUT_MS,
+  );
+  sessionId = list.sessionId ?? sessionId;
+  const tools = (
+    list.message?.result as { tools?: { name: string; inputSchema?: { properties?: Record<string, unknown> } }[] }
+  )?.tools;
+  if (!Array.isArray(tools)) return null;
+  const searchTool =
+    tools.find((t) => t.name === "search_catalog") ??
+    tools.find((t) => /catalog/i.test(t.name) && /search/i.test(t.name)) ??
+    tools.find((t) => /search/i.test(t.name) && !/lookup/i.test(t.name)) ??
+    null;
+  if (!searchTool) return null;
+
+  // Argument shape follows the tool's own inputSchema.
+  const schemaProps = searchTool.inputSchema?.properties ?? {};
+  const session: UcpSession = {
+    endpoint,
+    sessionId,
+    toolName: searchTool.name,
+    shape: {
+      catalog: "catalog" in schemaProps,
+      query: "query" in schemaProps,
+      pagination: "pagination" in schemaProps,
+      limit: "limit" in schemaProps,
+      context: "context" in schemaProps,
+    },
+    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
+  };
+  sessionCache.set(store.profileHost, session);
+  return session;
+}
+
+function establishSession(store: UcpStore): Promise<UcpSession | null> {
+  const existing = sessionInflight.get(store.profileHost);
+  if (existing) return existing;
+  const promise = establishSessionInner(store)
+    .catch(() => null)
+    .finally(() => {
+      sessionInflight.delete(store.profileHost);
+    });
+  sessionInflight.set(store.profileHost, promise);
+  return promise;
+}
+
+/** Build the catalog-call arguments from the tool's discovered shape. */
+function buildCatalogArgs(
+  shape: UcpToolShape,
+  query: string,
+): Record<string, unknown> {
+  const args: Record<string, unknown> = {
+    meta: { "ucp-agent": { profile: AGENT_PROFILE } },
+  };
+  if (shape.catalog) {
+    args.catalog = { query, pagination: { limit: CATALOG_LIMIT } };
+  } else if (shape.query) {
+    args.query = query;
+    if (shape.pagination) args.pagination = { limit: CATALOG_LIMIT };
+    if (shape.limit) args.limit = CATALOG_LIMIT;
+  } else {
+    args.catalog = { query, pagination: { limit: CATALOG_LIMIT } };
+  }
+  if (shape.context) {
+    args.context = { address_country: "US", currency: "USD" };
+  }
+  return args;
+}
+
+/**
+ * One LIVE catalog call on an established session. `ok: false` marks a
+ * failed call (transport, HTTP, protocol error, error result) — as
+ * opposed to a successful call that honestly matched nothing, which is
+ * `ok: true` with an empty product list.
+ */
+async function callCatalog(
+  session: UcpSession,
+  query: string,
+): Promise<{ ok: boolean; products: UcpProduct[] }> {
+  let call;
+  try {
+    call = await mcpPost(
+      session.endpoint,
+      session.sessionId,
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: {
+          name: session.toolName,
+          arguments: buildCatalogArgs(session.shape, query),
+        },
+      },
+      CATALOG_TIMEOUT_MS,
+    );
+  } catch {
+    return { ok: false, products: [] };
+  }
+  if (call.sessionId) session.sessionId = call.sessionId;
+  if (call.status >= 400) return { ok: false, products: [] };
+  if (!call.message?.result || call.message.error) {
+    return { ok: false, products: [] };
+  }
+  const result = call.message.result;
+  if ((result as { isError?: boolean }).isError) {
+    return { ok: false, products: [] };
+  }
+  return { ok: true, products: extractUcpProducts(result) };
+}
+
+/* ------------------------------------------------------------------ */
 /* One live catalog search against one store                           */
 /* ------------------------------------------------------------------ */
 
 /**
- * Run the full UCP flow for one store, live, in this request. Returns
- * the priced products the store's catalog returned for `query` — []
- * on any failure (profile, handshake, discovery, or catalog). Never
- * throws, never caches, never invents.
+ * Search one store's catalog for `query`, live, in this request.
+ * Returns the priced products the store's catalog returned — [] on
+ * any failure (profile, handshake, discovery, or catalog). Never
+ * throws, never serves stored data, never invents.
+ *
+ * Fast path: a session resolved within SESSION_CACHE_TTL_MS (endpoint,
+ * session id, discovered tool — handshake state only) makes this a
+ * single live catalog call. Any fast-path failure discards the cached
+ * session and re-runs the full discovery flow inside this request
+ * before calling again, exactly as every request behaved before the
+ * cache existed.
  */
 export async function searchUcpStore(
   store: UcpStore,
   query: string,
 ): Promise<UcpProduct[]> {
   try {
-    const { endpoint } = await readProfileEndpoint(store);
-
-    // MCP initialize handshake (one timeout retry — Shopify endpoints
-    // have been observed to stall a cold first request, POC Oct 30).
-    const initializeOnce = () =>
-      mcpPost(
-        endpoint,
-        null,
-        {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "initialize",
-          params: {
-            protocolVersion: MCP_PROTOCOL_VERSION,
-            capabilities: {},
-            clientInfo: {
-              name: "NotDeliveredInTheBlueTruck UCP client",
-              version: "0.1.0",
-            },
-          },
-        },
-        HANDSHAKE_TIMEOUT_MS,
-      );
-    let sessionId: string | null = null;
-    try {
-      let init;
-      try {
-        init = await initializeOnce();
-      } catch (error) {
-        if ((error as Error)?.name !== "AbortError") throw error;
-        await sleep(2_000);
-        init = await initializeOnce();
-      }
-      sessionId = init.sessionId;
-      if (init.message?.result) {
-        try {
-          await mcpPost(
-            endpoint,
-            sessionId,
-            { jsonrpc: "2.0", method: "notifications/initialized" },
-            HANDSHAKE_TIMEOUT_MS,
-          );
-        } catch {
-          /* fire-and-forget */
-        }
-      }
-    } catch {
-      /* stateless fallback: proceed to tools/list without a session */
+    const cached = getCachedSession(store);
+    if (cached) {
+      const hot = await callCatalog(cached, query);
+      if (hot.ok) return hot.products;
+      sessionCache.delete(store.profileHost);
     }
-
-    // Tool discovery — the catalog tool comes from the server's list.
-    const list = await mcpPost(
-      endpoint,
-      sessionId,
-      { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
-      HANDSHAKE_TIMEOUT_MS,
-    );
-    sessionId = list.sessionId ?? sessionId;
-    const tools = (
-      list.message?.result as { tools?: { name: string; inputSchema?: { properties?: Record<string, unknown> } }[] }
-    )?.tools;
-    if (!Array.isArray(tools)) return [];
-    const searchTool =
-      tools.find((t) => t.name === "search_catalog") ??
-      tools.find((t) => /catalog/i.test(t.name) && /search/i.test(t.name)) ??
-      tools.find((t) => /search/i.test(t.name) && !/lookup/i.test(t.name)) ??
-      null;
-    if (!searchTool) return [];
-
-    // Argument shape follows the tool's own inputSchema.
-    const schemaProps = searchTool.inputSchema?.properties ?? {};
-    const args: Record<string, unknown> = {
-      meta: { "ucp-agent": { profile: AGENT_PROFILE } },
-    };
-    if ("catalog" in schemaProps) {
-      args.catalog = { query, pagination: { limit: CATALOG_LIMIT } };
-    } else if ("query" in schemaProps) {
-      args.query = query;
-      if ("pagination" in schemaProps) args.pagination = { limit: CATALOG_LIMIT };
-      if ("limit" in schemaProps) args.limit = CATALOG_LIMIT;
-    } else {
-      args.catalog = { query, pagination: { limit: CATALOG_LIMIT } };
-    }
-    if ("context" in schemaProps) {
-      args.context = { address_country: "US", currency: "USD" };
-    }
-
-    const call = await mcpPost(
-      endpoint,
-      sessionId,
-      {
-        jsonrpc: "2.0",
-        id: 3,
-        method: "tools/call",
-        params: { name: searchTool.name, arguments: args },
-      },
-      CATALOG_TIMEOUT_MS,
-    );
-    if (!call.message?.result || call.message.error) return [];
-    const result = call.message.result;
-    if ((result as { isError?: boolean }).isError) return [];
-    return extractUcpProducts(result);
+    const session = await establishSession(store);
+    if (!session) return [];
+    const cold = await callCatalog(session, query);
+    return cold.ok ? cold.products : [];
   } catch (error) {
     console.warn(
       `[ucp] ${store.merchant} catalog search failed:`,
@@ -1139,6 +1314,7 @@ export function buildUcpOffer(
     returnPolicySource: "Curated retailer-policy sample",
     warrantyMonths: 0,
     sellerRating: 0,
+    checkoutItemId: product.itemId,
     sampleListingLabel: `Live ${store.merchant} UCP listing`,
     provenance: {
       sourceMerchant: store.merchant,
@@ -1150,8 +1326,10 @@ export function buildUcpOffer(
         `Live price retrieved ${retrievedAt} from ${store.merchant}'s published UCP profile ` +
         `(https://${store.profileHost}/.well-known/ucp) — the merchant's own authorized agent ` +
         `channel — via its declared MCP catalog (catalog.search, tool discovered by MCP ` +
-        `tools/list after an initialize handshake; public catalog read only, no cart/checkout ` +
-        `calls). The price is the merchant's own live figure. The UCP catalog does not state ` +
+        `tools/list after an initialize handshake; the search itself is a public catalog ` +
+        `read and creates no cart or checkout — a checkout session is created only when the ` +
+        `buyer starts checkout, over this same published profile). The price is the ` +
+        `merchant's own live figure. The UCP catalog does not state ` +
         `a shipping charge (shipping is calculated by the merchant at checkout and is not ` +
         `included in the total), a delivery estimate (a ${SERVICE_DELIVERY_DAYS}-day standard ` +
         `ground service estimate is used for scoring), return terms (a conservative curated ` +

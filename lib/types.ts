@@ -155,6 +155,13 @@ export interface Offer {
   /** Sample-only listing label. This is deliberately not a live purchase URL. */
   sampleListingLabel: string;
   provenance: OfferProvenance;
+  /**
+   * The merchant's own purchasable item id for this offer (for UCP
+   * stores, the catalog variant id), carried so the cart can start a
+   * real checkout session for exactly the item that was priced. Null
+   * for routes that check out on the merchant's own site instead.
+   */
+  checkoutItemId?: string | null;
 }
 
 export interface Product {
@@ -275,42 +282,82 @@ export interface CartItem {
   returnWindowDays: number;
   returnCost: ReturnCost;
   quantity: number;
+  /** Merchant item id for in-app checkout (UCP stores); null otherwise. */
+  checkoutItemId?: string | null;
+  /** The listing's own page at the merchant — the handoff destination. */
+  sourceUrl?: string | null;
+  policyStatus: OfferPolicyStatus;
 }
 
-export type ReturnMethod = "UPS drop-off" | "UPS pickup";
+/* ------------------------------------------------------------------ */
+/* Real checkout (UCP stores)                                          */
+/* ------------------------------------------------------------------ */
 
-export interface PrototypeReturn {
-  method: ReturnMethod;
-  requestedAt: string;
-  labelNumber: string;
-  status: "Sample return label created";
+/** One totals line exactly as the selling store's checkout returned it. */
+export interface CheckoutTotalLine {
+  /** The store's own totals type, e.g. "subtotal", "shipping", "tax", "total". */
+  type: string;
+  /** Major-unit amount (e.g. dollars), converted from the store's minor units. */
+  amount: number;
+  /** The store's own display label for the line. */
+  displayText: string;
 }
 
-export interface PrototypeOrder {
-  confirmationNumber: string;
-  productId: string;
-  productName: string;
-  /** Merchant-supplied image for live-search products; null for catalog items. */
-  imageUrl?: string | null;
-  offerId: string;
-  merchant: Merchant;
-  seller: string;
-  condition: Offer["condition"];
+export interface CheckoutLineItemSummary {
+  title: string;
   quantity: number;
+  /** Major-unit unit price as the store's checkout returned it. */
   price: number;
-  shippingCost: number;
-  totalCost: number;
-  deliveryDays: number;
-  estimatedArrival: string;
-  purchasedAt: string;
-  returnWindowDays: number;
-  returnCost: ReturnCost;
-  returnDeadline: string | null;
-  guestName: string;
-  guestEmail: string;
-  /** True when the guest passed the Walmart Human Consent Gate at checkout. */
-  consentGateConfirmed?: boolean;
-  status: "Sample order confirmed" | "Sample return initiated";
-  returnRequest?: PrototypeReturn;
-  dataSource: DataMode;
+}
+
+/**
+ * A live checkout session at ONE UCP store, created in the request that
+ * displays it. Every figure is the store's own response; nothing here
+ * is stored server-side — the browser carries the session id and asks
+ * the server to re-read the session from the store when it needs it.
+ */
+export interface CheckoutSessionSummary {
+  merchant: Merchant;
+  checkoutId: string;
+  /** Session status string exactly as the store reported it. */
+  status: string;
+  currency: string;
+  totals: CheckoutTotalLine[];
+  items: CheckoutLineItemSummary[];
+  /**
+   * The store's own hosted continuation for this session (its payment
+   * step, served by the store's declared payment handlers). Null when
+   * the store returned none.
+   */
+  continueUrl: string | null;
+  expiresAt: string | null;
+  /** Buyer-actionable messages the store returned, verbatim. */
+  messages: { code: string; content: string; severity: string }[];
+  /** The store's own policy pages, as linked from its checkout session. */
+  policyLinks: { type: string; title: string; url: string }[];
+  /** True when the store accepted the guest's delivery destination. */
+  destinationAccepted: boolean;
+}
+
+/**
+ * A real order, confirmed by the selling store's own checkout system.
+ * Every field is copied from the store's response — this app never
+ * synthesizes an order, a confirmation number, or a status.
+ */
+export interface StoreOrder {
+  merchant: Merchant;
+  /** The store's checkout session id that produced this order. */
+  checkoutId: string;
+  /** Order id exactly as the store returned it. */
+  orderId: string;
+  /** The store's order page / permalink, when it returned one. */
+  orderUrl: string | null;
+  /** Status string exactly as the store reported it, when it gave one. */
+  status: string | null;
+  items: CheckoutLineItemSummary[];
+  totals: CheckoutTotalLine[];
+  currency: string;
+  buyerEmail: string;
+  /** When this app observed the store's confirmation (retrieval time). */
+  confirmedAt: string;
 }

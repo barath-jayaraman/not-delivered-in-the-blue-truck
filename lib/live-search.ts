@@ -80,6 +80,36 @@ const MAX_OFFERS_PER_GROUP = 6;
 const MAX_EBAY_OFFERS_PER_GROUP = 4;
 const MAX_WALMART_OFFERS_PER_GROUP = 2;
 
+/**
+ * Per-store response budgets (added Nov 2, 2026 — search-speed work).
+ * Sources fan out in parallel, so without a budget the slowest store
+ * sets the whole response time, and a fully stalled handshake chain
+ * could hold a search past the route's 60s cap and fail it outright.
+ * A store that exceeds its budget contributes nothing to THIS request
+ * (partial results); its underlying fetch settles in the background
+ * and its outcome is never stored or served later.
+ */
+const UCP_STORE_DEADLINE_MS = 30_000;
+const BROWSE_STORE_DEADLINE_MS = 20_000;
+
+/** Race a promise against a deadline, yielding `fallback` on timeout. */
+function withDeadline<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([
+    promise.finally(() => {
+      if (timer) clearTimeout(timer);
+    }),
+    timeout,
+  ]);
+}
+
 /* ------------------------------------------------------------------ */
 /* Text utilities                                                      */
 /* ------------------------------------------------------------------ */
@@ -535,7 +565,9 @@ async function collectUcpCandidates(query: string): Promise<Candidate[]> {
   if (!stores.length) return [];
   const retrievedAt = new Date().toISOString();
   const perStore = await Promise.allSettled(
-    stores.map((store) => searchUcpStore(store, query)),
+    stores.map((store) =>
+      withDeadline(searchUcpStore(store, query), UCP_STORE_DEADLINE_MS, []),
+    ),
   );
   const candidates: Candidate[] = [];
   stores.forEach((store, i) => {
@@ -573,7 +605,13 @@ async function collectBrowseCandidates(query: string): Promise<Candidate[]> {
   if (!stores.length) return [];
   const retrievedAt = new Date().toISOString();
   const perStore = await Promise.allSettled(
-    stores.map((store) => searchBrowseStore(store, query)),
+    stores.map((store) =>
+      withDeadline(
+        searchBrowseStore(store, query),
+        BROWSE_STORE_DEADLINE_MS,
+        [],
+      ),
+    ),
   );
   const candidates: Candidate[] = [];
   stores.forEach((store, i) => {

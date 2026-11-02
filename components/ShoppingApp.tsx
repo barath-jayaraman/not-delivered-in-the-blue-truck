@@ -3,18 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   CartItem,
+  CheckoutSessionSummary,
   DecideResponse,
+  Merchant,
   Priority,
   ProductSummary,
-  PrototypeOrder,
-  ReturnMethod,
   ScoredOffer,
   SearchResponse,
+  StoreOrder,
 } from "@/lib/types";
 import { BRAND } from "@/lib/config";
 import { CATEGORY_IMAGES, CATEGORY_TILES, productImage } from "@/lib/images";
 
-const ORDER_STORAGE_KEY = "not-delivered-in-the-blue-truck-prototype-orders-v1";
+/**
+ * Confirmed REAL orders (store-returned data only), remembered in the
+ * shopper's own browser. The retired v1 key held sandbox sample
+ * orders; those were never real and are simply no longer read.
+ */
+const ORDER_STORAGE_KEY = "not-delivered-in-the-blue-truck-orders-v2";
 
 /** The comparison always asks for delivery within a week in this prototype. */
 const NEED_BY_DAYS = 7;
@@ -87,35 +93,16 @@ function warrantyLabel(offer: ScoredOffer): string {
   return `${offer.warrantyMonths}-month warranty`;
 }
 
-function countdown(order: PrototypeOrder, now: number) {
-  if (order.returnCost === "final-sale" || !order.returnDeadline) {
-    return {
-      label: "Final sale — returns are not available for this sample order.",
-      canReturn: false,
-      expired: true,
-    };
-  }
-  const remainingMs = new Date(order.returnDeadline).getTime() - now;
-  if (remainingMs <= 0) {
-    return {
-      label: `Return window closed on ${formatDate(order.returnDeadline)}.`,
-      canReturn: false,
-      expired: true,
-    };
-  }
-  const totalMinutes = Math.floor(remainingMs / 60000);
-  const days = Math.floor(totalMinutes / 1440);
-  const hours = Math.floor((totalMinutes % 1440) / 60);
-  const minutes = totalMinutes % 60;
-  return {
-    label: `${days} day${days === 1 ? "" : "s"}, ${hours} hr, ${minutes} min left — return by ${formatDate(order.returnDeadline)}`,
-    canReturn: true,
-    expired: false,
-  };
+/** A cart item checks out inside this app only when its offer came
+ *  from a UCP store and carries the merchant's purchasable item id. */
+function isInAppCheckout(item: CartItem): boolean {
+  return item.policyStatus === "ucp-public-profile" && !!item.checkoutItemId;
 }
 
-function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 6).toUpperCase();
+/** Store total line for an order/session, as the store labeled it. */
+function orderTotal(order: { totals: StoreOrder["totals"] }): number | null {
+  const total = order.totals.find((line) => line.type === "total");
+  return total ? total.amount : null;
 }
 
 /** Live-group categories that differ from the stored category-art keys. */
@@ -164,30 +151,47 @@ export default function ShoppingApp() {
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
-  const [guestAddress, setGuestAddress] = useState("");
-  const [demoCard, setDemoCard] = useState("4242 4242 4242 4242");
-  const [demoExpiry, setDemoExpiry] = useState("12/30");
-  const [demoCvc, setDemoCvc] = useState("123");
-  const [walmartConsent, setWalmartConsent] = useState(false);
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestStreet, setGuestStreet] = useState("");
+  const [guestExtended, setGuestExtended] = useState("");
+  const [guestCity, setGuestCity] = useState("");
+  const [guestRegion, setGuestRegion] = useState("");
+  const [guestPostal, setGuestPostal] = useState("");
+  const [accessCode, setAccessCode] = useState("");
+  const [buyerConsent, setBuyerConsent] = useState(false);
 
-  const [orders, setOrders] = useState<PrototypeOrder[]>([]);
+  /** Per-merchant live checkout state, keyed by merchant name. The
+   *  session itself lives at the store; this is only its last summary. */
+  const [checkoutSessions, setCheckoutSessions] = useState<
+    Record<
+      string,
+      {
+        busy?: boolean;
+        error?: string;
+        fallbackUrl?: string;
+        session?: CheckoutSessionSummary;
+        statusBusy?: boolean;
+        statusNote?: string;
+      }
+    >
+  >({});
+
+  const [orders, setOrders] = useState<StoreOrder[]>([]);
   const [ordersLoaded, setOrdersLoaded] = useState(false);
-  const [placedOrders, setPlacedOrders] = useState<PrototypeOrder[]>([]);
-  const [returnMethods, setReturnMethods] = useState<Record<string, ReturnMethod>>({});
-  const [labelOrderNumber, setLabelOrderNumber] = useState<string | null>(null);
-  const [now, setNow] = useState(0);
+  const [placedOrders, setPlacedOrders] = useState<StoreOrder[]>([]);
 
-  /* ----- order history persistence (local to the browser) ----- */
+  /* ----- order history persistence (local to the browser) -----
+     Only orders a store itself confirmed are ever written here, with
+     the store's own figures; see StoreOrder in lib/types.ts. */
   useEffect(() => {
-    setNow(Date.now());
     try {
       const raw = window.localStorage.getItem(ORDER_STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as PrototypeOrder[];
+        const parsed = JSON.parse(raw) as StoreOrder[];
         if (Array.isArray(parsed)) setOrders(parsed);
       }
     } catch {
-      // A corrupted local prototype record should not break the shopping flow.
+      // A corrupted local record should not break the shopping flow.
     } finally {
       setOrdersLoaded(true);
     }
@@ -202,28 +206,35 @@ export default function ShoppingApp() {
     }
   }, [orders, ordersLoaded]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30000);
-    return () => window.clearInterval(timer);
-  }, []);
-
   /* ----- featured products for the home view: LIVE category searches.
      Every figure on these cards was fetched live when the page loaded;
      nothing is stored or re-shown from an earlier fetch. ----- */
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const byId = new Map<string, ProductSummary>();
-      for (const term of ["headphones", "tv", "coffee", "vacuum", "running shoes"]) {
-        try {
-          const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
-          if (!res.ok) continue;
-          const data = (await res.json()) as SearchResponse;
-          for (const product of data.products) {
-            if (!byId.has(product.id)) byId.set(product.id, product);
+      // The five category probes run CONCURRENTLY (Nov 2, 2026 —
+      // search-speed work): sequentially awaited, they stacked five
+      // full live searches end-to-end on every home-page load. The
+      // merge below still applies them in the same term order with
+      // the same first-wins rule, so the grid is unchanged.
+      const FEATURED_TERMS = ["headphones", "tv", "coffee", "vacuum", "running shoes"];
+      const perTerm = await Promise.all(
+        FEATURED_TERMS.map(async (term) => {
+          try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
+            if (!res.ok) return [] as ProductSummary[];
+            const data = (await res.json()) as SearchResponse;
+            return data.products;
+          } catch {
+            // A failed category probe just leaves that product out of the grid.
+            return [] as ProductSummary[];
           }
-        } catch {
-          // A failed category probe just leaves that product out of the grid.
+        }),
+      );
+      const byId = new Map<string, ProductSummary>();
+      for (const products of perTerm) {
+        for (const product of products) {
+          if (!byId.has(product.id)) byId.set(product.id, product);
         }
       }
       if (!cancelled) {
@@ -245,12 +256,6 @@ export default function ShoppingApp() {
     };
   }, []);
 
-  // Any cart change voids a previously given Walmart consent: the guest must
-  // re-review exactly what they are authorizing.
-  useEffect(() => {
-    setWalmartConsent(false);
-  }, [cart]);
-
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [view]);
@@ -266,9 +271,28 @@ export default function ShoppingApp() {
     };
   }, [cart]);
 
-  const cartHasWalmart = cart.some((item) => item.merchant === "Walmart");
-  const walmartCartItems = cart.filter((item) => item.merchant === "Walmart");
-  const labelOrder = orders.find((order) => order.confirmationNumber === labelOrderNumber);
+  /** Merchants whose cart items check out inside this app (UCP). */
+  const checkoutMerchants = useMemo(() => {
+    const seen: Merchant[] = [];
+    for (const item of cart) {
+      if (isInAppCheckout(item) && !seen.includes(item.merchant)) {
+        seen.push(item.merchant);
+      }
+    }
+    return seen;
+  }, [cart]);
+  const handoffItems = useMemo(
+    () => cart.filter((item) => !isInAppCheckout(item)),
+    [cart],
+  );
+  const guestDetailsValid =
+    guestName.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim()) &&
+    guestPhone.trim().length >= 5 &&
+    guestStreet.trim().length > 0 &&
+    guestCity.trim().length > 0 &&
+    /^[A-Za-z]{2}$/.test(guestRegion.trim()) &&
+    /^\d{5}(-\d{4})?$/.test(guestPostal.trim());
 
   const resultBrands = useMemo(
     () => (searchMeta ? [...new Set(searchMeta.products.map((p) => p.brand))].sort() : []),
@@ -322,7 +346,7 @@ export default function ShoppingApp() {
       setResult(data as DecideResponse);
       setView("product");
     } catch {
-      setError("Could not reach the prototype comparison engine. Try again.");
+      setError("Could not reach the comparison service. Try again.");
     } finally {
       setLoading(false);
     }
@@ -368,7 +392,7 @@ export default function ShoppingApp() {
       setSearchMeta({ query: q, products: data.products });
       setView("results");
     } catch {
-      setError("Could not reach prototype search. Try again.");
+      setError("Could not reach search. Try again.");
     } finally {
       setLoading(false);
     }
@@ -410,6 +434,9 @@ export default function ShoppingApp() {
       returnWindowDays: offer.returnWindowDays,
       returnCost: offer.returnCost,
       quantity: 1,
+      checkoutItemId: offer.checkoutItemId ?? null,
+      sourceUrl: offer.provenance.sourceUrl,
+      policyStatus: offer.provenance.policyStatus,
     };
     setCart((previous) => {
       const existing = previous.find((entry) => entry.offerId === offer.id);
@@ -428,75 +455,148 @@ export default function ShoppingApp() {
     setCart((previous) => previous.filter((item) => item.offerId !== offerId));
   }
 
-  function completeSandboxCheckout(e: React.FormEvent) {
-    e.preventDefault();
-    if (cart.length === 0) return;
-    // Walmart Human Consent Gate: no consent, no checkout — even in sandbox.
-    if (cartHasWalmart && !walmartConsent) return;
-
-    const purchasedAt = new Date();
-    const base = purchasedAt.getTime().toString(36).toUpperCase();
-    const newOrders: PrototypeOrder[] = cart.map((item, index) => {
-      const estimatedArrival = new Date(purchasedAt);
-      estimatedArrival.setDate(estimatedArrival.getDate() + item.deliveryDays);
-      const returnDeadline =
-        item.returnCost === "final-sale"
-          ? null
-          : new Date(purchasedAt.getTime() + item.returnWindowDays * 86400000).toISOString();
-      return {
-        confirmationNumber: `NDBT-${base}-${index + 1}${randomSuffix()}`,
-        productId: item.productId,
-        productName: item.productName,
-        imageUrl: item.imageUrl ?? null,
-        offerId: item.offerId,
-        merchant: item.merchant,
-        seller: item.seller,
-        condition: item.condition,
-        quantity: item.quantity,
-        price: item.price,
-        shippingCost: item.shippingCost,
-        totalCost: item.totalCost * item.quantity,
-        deliveryDays: item.deliveryDays,
-        estimatedArrival: estimatedArrival.toISOString(),
-        purchasedAt: purchasedAt.toISOString(),
-        returnWindowDays: item.returnWindowDays,
-        returnCost: item.returnCost,
-        returnDeadline,
-        guestName,
-        guestEmail,
-        consentGateConfirmed: item.merchant === "Walmart" ? walmartConsent : undefined,
-        status: "Sample order confirmed",
-        dataSource: "sample",
-      };
-    });
-
-    setOrders((previous) => [...newOrders, ...previous]);
-    setPlacedOrders(newOrders);
-    setCart([]);
-    setCartNotice(null);
-    setNow(Date.now());
-    setView("confirmation");
+  function setCheckoutState(
+    merchant: Merchant,
+    patch: Partial<{
+      busy: boolean;
+      error: string;
+      fallbackUrl: string;
+      session: CheckoutSessionSummary;
+      statusBusy: boolean;
+      statusNote: string;
+    }>,
+  ) {
+    setCheckoutSessions((previous) => ({
+      ...previous,
+      [merchant]: { ...previous[merchant], ...patch },
+    }));
   }
 
-  function initiateReturn(order: PrototypeOrder) {
-    const method = returnMethods[order.confirmationNumber] ?? "UPS drop-off";
-    const updated: PrototypeOrder = {
-      ...order,
-      status: "Sample return initiated",
-      returnRequest: {
-        method,
-        requestedAt: new Date().toISOString(),
-        labelNumber: `SAMPLE-${randomSuffix()}-${order.confirmationNumber.slice(-4)}`,
-        status: "Sample return label created",
-      },
-    };
-    setOrders((previous) =>
-      previous.map((entry) => (entry.confirmationNumber === order.confirmationNumber ? updated : entry)),
+  /**
+   * Start a REAL checkout session at one UCP store for that store's
+   * cart items. The server validates the access code before creating
+   * anything; the session, totals, and messages shown afterwards are
+   * the store's own response. No order exists until the store confirms
+   * one (see checkStoreOrder).
+   */
+  async function startStoreCheckout(merchant: Merchant) {
+    const items = cart.filter(
+      (item) => item.merchant === merchant && isInAppCheckout(item),
     );
-    setPlacedOrders((previous) =>
-      previous.map((entry) => (entry.confirmationNumber === order.confirmationNumber ? updated : entry)),
-    );
-    setLabelOrderNumber(order.confirmationNumber);
+    if (items.length === 0) return;
+    setCheckoutState(merchant, { busy: true, error: undefined, statusNote: undefined });
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "start",
+          accessCode,
+          merchant,
+          items: items.map((item) => ({
+            itemId: item.checkoutItemId,
+            quantity: item.quantity,
+          })),
+          buyer: { name: guestName, email: guestEmail, phone: guestPhone },
+          address: {
+            street: guestStreet,
+            extended: guestExtended,
+            city: guestCity,
+            region: guestRegion,
+            postal: guestPostal,
+          },
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        fallbackUrl?: string;
+        session?: CheckoutSessionSummary;
+      };
+      if (!res.ok || !data.ok || !data.session) {
+        setCheckoutState(merchant, {
+          busy: false,
+          error: data.error ?? `Could not start checkout at ${merchant}.`,
+          fallbackUrl: data.fallbackUrl,
+          session: undefined,
+        });
+        return;
+      }
+      setCheckoutState(merchant, { busy: false, session: data.session });
+    } catch {
+      setCheckoutState(merchant, {
+        busy: false,
+        error: `Could not reach checkout at ${merchant}. Try again.`,
+        session: undefined,
+      });
+    }
+  }
+
+  /**
+   * Ask the store whether the session has produced an order. Only a
+   * store-returned order is recorded — anything else is reported as
+   * "not confirmed yet", never dressed up as a purchase.
+   */
+  async function checkStoreOrder(merchant: Merchant) {
+    const session = checkoutSessions[merchant]?.session;
+    if (!session) return;
+    setCheckoutState(merchant, { statusBusy: true, statusNote: undefined });
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "status",
+          accessCode,
+          merchant,
+          checkoutId: session.checkoutId,
+          buyerEmail: guestEmail,
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        session?: CheckoutSessionSummary | null;
+        order?: StoreOrder | null;
+        note?: string;
+      };
+      if (!res.ok || !data.ok) {
+        setCheckoutState(merchant, {
+          statusBusy: false,
+          statusNote: data.error ?? `Could not read the session at ${merchant}.`,
+        });
+        return;
+      }
+      if (data.session) {
+        setCheckoutState(merchant, { session: data.session });
+      }
+      if (data.order) {
+        const order = data.order;
+        setOrders((previous) => [
+          order,
+          ...previous.filter((entry) => entry.orderId !== order.orderId),
+        ]);
+        setPlacedOrders([order]);
+        setCart((previous) =>
+          previous.filter((item) => item.merchant !== merchant),
+        );
+        setCheckoutState(merchant, { statusBusy: false, session: undefined });
+        setView("confirmation");
+        return;
+      }
+      setCheckoutState(merchant, {
+        statusBusy: false,
+        statusNote:
+          data.note ??
+          (`${merchant} has not confirmed an order for this session yet. ` +
+            `Finish the payment step on ${merchant}'s page, then check again.`),
+      });
+    } catch {
+      setCheckoutState(merchant, {
+        statusBusy: false,
+        statusNote: `Could not reach ${merchant} to check the order. Try again.`,
+      });
+    }
   }
 
   /* ----- views ----- */
@@ -816,13 +916,28 @@ export default function ShoppingApp() {
                     <td data-label="Return cost">{returnCostLabel(offer)}</td>
                     <td data-label="Warranty">{warrantyLabel(offer)}</td>
                     <td data-label="Action">
-                      <button
-                        type="button"
-                        className={`addBtn ${isWinner ? "btnCoral" : "btnOutline"}`}
-                        onClick={() => addToCart(offer)}
-                      >
-                        Add to cart
-                      </button>
+                      {offer.provenance.policyStatus === "ucp-public-profile" ? (
+                        <button
+                          type="button"
+                          className={`addBtn ${isWinner ? "btnCoral" : "btnOutline"}`}
+                          onClick={() => addToCart(offer)}
+                        >
+                          Add to cart
+                        </button>
+                      ) : offer.provenance.sourceUrl ? (
+                        <a
+                          className={`addBtn ${isWinner ? "btnCoral" : "btnOutline"}`}
+                          href={offer.provenance.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Buy at {offer.merchant} ↗
+                        </a>
+                      ) : (
+                        <span className="mutedText">
+                          Sold by {offer.merchant} on its own site
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -898,97 +1013,307 @@ export default function ShoppingApp() {
 
             <div className="totalsBox">
               <span>Subtotal {money(cartTotals.subtotal)}</span>
-              <span>Shipping {cartTotals.shipping === 0 ? "Free" : money(cartTotals.shipping)}</span>
+              <span>Shipping {cartTotals.shipping === 0 ? "Calculated at checkout" : money(cartTotals.shipping)}</span>
               <strong>Total {money(cartTotals.total)}</strong>
             </div>
+            <p className="mutedText">
+              Comparison totals are estimates from live listings. At checkout, the
+              selling store computes the binding totals — including its shipping
+              charge and tax — and shows them before you pay.
+            </p>
 
-            <form className="checkoutForm" onSubmit={completeSandboxCheckout}>
-              <h4>Sandbox guest checkout — no login</h4>
-              <p className="warningText">
-                Do not enter a real payment card. These fields stay in this page, are not
-                transmitted or stored, and completing checkout creates only a local sample
-                order. It does not place an order with eBay, Best Buy, or any retailer.
-              </p>
-              <div className="formGrid">
-                <label className="field">
-                  <span>Guest name</span>
-                  <input value={guestName} onChange={(e) => setGuestName(e.target.value)} autoComplete="name" required />
-                </label>
-                <label className="field">
-                  <span>Guest email</span>
-                  <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} autoComplete="email" required />
-                </label>
-                <label className="field formWide">
-                  <span>Delivery address (prototype only)</span>
-                  <input value={guestAddress} onChange={(e) => setGuestAddress(e.target.value)} autoComplete="street-address" required />
-                </label>
-                <label className="field">
-                  <span>Demo card number</span>
-                  <input value={demoCard} onChange={(e) => setDemoCard(e.target.value)} inputMode="numeric" autoComplete="off" required />
-                </label>
-                <label className="field">
-                  <span>Demo expiry</span>
-                  <input value={demoExpiry} onChange={(e) => setDemoExpiry(e.target.value)} autoComplete="off" required />
-                </label>
-                <label className="field">
-                  <span>Demo CVC</span>
-                  <input value={demoCvc} onChange={(e) => setDemoCvc(e.target.value)} inputMode="numeric" autoComplete="off" required />
-                </label>
-              </div>
-
-              {cartHasWalmart && (
-                <section className="consentGate" aria-labelledby="consent-gate-heading">
-                  <p className="label">Human Consent Gate — required for Walmart</p>
-                  <h4 id="consent-gate-heading">Review and authorize the Walmart purchase</h4>
-                  <p>
-                    Walmart&apos;s Agentic Access Terms require a person to approve every
-                    purchase: the agent never checks out on its own, and your
-                    payment-card details are never shared with the agent. This sandbox
-                    mirrors that rule — review the Walmart item below, then confirm to
-                    continue.
-                  </p>
-                  <ul className="consentReview">
-                    {walmartCartItems.map((item) => (
-                      <li key={item.offerId}>
-                        <strong>{item.productName}</strong> · Ships from and sold by{" "}
-                        {item.seller} · {money(item.totalCost * item.quantity)} all-in ·
-                        estimated arrival {arrivalDate(item.deliveryDays)} ·{" "}
-                        {item.returnWindowDays}-day sample return window
-                      </li>
-                    ))}
-                  </ul>
-                  <label className="consentCheck">
-                    <input
-                      type="checkbox"
-                      checked={walmartConsent}
-                      onChange={(e) => setWalmartConsent(e.target.checked)}
-                      required
-                    />
-                    <span>
-                      <strong>I authorize this purchase</strong> — I reviewed the merchant,
-                      item, total, and delivery above and approve this Walmart checkout.
-                    </span>
-                  </label>
-                </section>
-              )}
-
-              <button
-                className="btnCoral btnBlock"
-                type="submit"
-                disabled={cartHasWalmart && !walmartConsent}
-              >
-                Complete sandbox checkout — no charge
-              </button>
-              {cartHasWalmart && !walmartConsent && (
-                <p className="consentHint">
-                  The Walmart consent gate above must be confirmed before checkout can
-                  complete.
+            {handoffItems.length > 0 && (
+              <section aria-label="Buy on the store's site">
+                <h4>Buy on the store&apos;s site</h4>
+                <p className="mutedText">
+                  These stores complete purchases on their own sites — the button
+                  takes you straight to the listing.
                 </p>
-              )}
-            </form>
+                <div className="cartList">
+                  {handoffItems.map((item) => (
+                    <article className="cartItem" key={`handoff-${item.offerId}`}>
+                      <div className="cartItemBody">
+                        <strong>{item.productName}</strong>
+                        <p>Ships from and sold by {item.seller}</p>
+                      </div>
+                      {item.sourceUrl ? (
+                        <a
+                          className="btnOutline"
+                          href={item.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Buy at {item.merchant} ↗
+                        </a>
+                      ) : (
+                        <span className="mutedText">Available at {item.merchant}</span>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {checkoutMerchants.length > 0 && (
+              <section className="checkoutForm" aria-label="Checkout">
+                <h4>Checkout — invite-only</h4>
+                <p className="warningText">
+                  Checkout here is real, and currently limited to invited guests:
+                  it takes an access code, and each store below is checked out
+                  separately with that store. Your details go to the selling
+                  store to fulfill your order and are not stored by this site.
+                  Payment is taken by the store&apos;s own payment provider on
+                  the store&apos;s secure payment step — never enter a card
+                  number on this site.
+                </p>
+                <div className="formGrid">
+                  <label className="field">
+                    <span>Access code</span>
+                    <input
+                      className="codeInput"
+                      type="password"
+                      value={accessCode}
+                      onChange={(e) => setAccessCode(e.target.value)}
+                      autoComplete="off"
+                      placeholder="Required to check out"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Guest name</span>
+                    <input value={guestName} onChange={(e) => setGuestName(e.target.value)} autoComplete="name" />
+                  </label>
+                  <label className="field">
+                    <span>Guest email</span>
+                    <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} autoComplete="email" />
+                  </label>
+                  <label className="field">
+                    <span>Phone</span>
+                    <input type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} autoComplete="tel" />
+                  </label>
+                  <label className="field formWide">
+                    <span>Street address</span>
+                    <input value={guestStreet} onChange={(e) => setGuestStreet(e.target.value)} autoComplete="street-address" />
+                  </label>
+                  <label className="field">
+                    <span>Apt / suite (optional)</span>
+                    <input value={guestExtended} onChange={(e) => setGuestExtended(e.target.value)} autoComplete="address-line2" />
+                  </label>
+                  <label className="field">
+                    <span>City</span>
+                    <input value={guestCity} onChange={(e) => setGuestCity(e.target.value)} autoComplete="address-level2" />
+                  </label>
+                  <label className="field">
+                    <span>State (2-letter)</span>
+                    <input value={guestRegion} onChange={(e) => setGuestRegion(e.target.value)} autoComplete="address-level1" maxLength={2} />
+                  </label>
+                  <label className="field">
+                    <span>ZIP code</span>
+                    <input value={guestPostal} onChange={(e) => setGuestPostal(e.target.value)} autoComplete="postal-code" inputMode="numeric" />
+                  </label>
+                </div>
+
+                <label className="consentCheck">
+                  <input
+                    type="checkbox"
+                    checked={buyerConsent}
+                    onChange={(e) => setBuyerConsent(e.target.checked)}
+                  />
+                  <span>
+                    <strong>I agree</strong> — send my name, email, phone, and
+                    delivery address to the selling store so it can take payment
+                    through its own payment provider and fulfill my order, under
+                    the store&apos;s policies (linked in the checkout below).
+                  </span>
+                </label>
+
+                {checkoutMerchants.map((merchant) => {
+                  const state = checkoutSessions[merchant] ?? {};
+                  const session = state.session;
+                  const merchantItems = cart.filter(
+                    (item) => item.merchant === merchant && isInAppCheckout(item),
+                  );
+                  const fallbackItem = merchantItems.find((item) => item.sourceUrl);
+                  return (
+                    <section className="checkoutPanel" key={merchant} aria-label={`Checkout at ${merchant}`}>
+                      <h4>{merchant}</h4>
+                      <p className="mutedText">
+                        {merchantItems.length} item{merchantItems.length === 1 ? "" : "s"} ·{" "}
+                        {money(
+                          merchantItems.reduce(
+                            (sum, item) => sum + item.price * item.quantity,
+                            0,
+                          ),
+                        )}{" "}
+                        before shipping and tax, which {merchant} calculates in its checkout.
+                      </p>
+
+                      {state.error && (
+                        <div className="errorBox" role="alert">
+                          <p>{state.error}</p>
+                          {(fallbackItem?.sourceUrl || state.fallbackUrl) && (
+                            <p>
+                              <a
+                                href={fallbackItem?.sourceUrl ?? state.fallbackUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Buy it at {merchant} instead ↗
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {!session ? (
+                        <button
+                          type="button"
+                          className="btnCoral btnBlock"
+                          disabled={
+                            state.busy ||
+                            !accessCode.trim() ||
+                            !guestDetailsValid ||
+                            !buyerConsent
+                          }
+                          onClick={() => void startStoreCheckout(merchant)}
+                        >
+                          {state.busy
+                            ? `Starting checkout at ${merchant}…`
+                            : `Start checkout at ${merchant}`}
+                        </button>
+                      ) : (
+                        <div>
+                          <p>
+                            <strong>Checkout started at {merchant}.</strong>{" "}
+                            {session.destinationAccepted
+                              ? "Your delivery address was accepted. "
+                              : "Confirm your delivery address on the store's payment step. "}
+                            {merchant} reports the session status as “{session.status}”.
+                          </p>
+                          <div className="sessionTotals" aria-label={`${merchant} totals`}>
+                            {session.totals.map((line) => (
+                              <div
+                                className={`totalsRow ${line.type === "total" ? "grand" : ""}`}
+                                key={`${line.type}-${line.displayText}`}
+                              >
+                                <span>{line.displayText}</span>
+                                <span>{money(line.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {session.messages.length > 0 && (
+                            <ul className="sessionMessages">
+                              {session.messages.map((message, index) => (
+                                <li key={`${message.code}-${index}`}>{message.content}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {session.policyLinks.length > 0 && (
+                            <div className="policyLinkList">
+                              {session.policyLinks.map((link) => (
+                                <a key={link.url} href={link.url} target="_blank" rel="noreferrer">
+                                  {merchant} {link.title} ↗
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          {session.continueUrl ? (
+                            <div className="viewActions">
+                              <a
+                                className="btnCoral"
+                                href={session.continueUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Pay at {merchant} ↗
+                              </a>
+                              <button
+                                type="button"
+                                className="btnOutline"
+                                disabled={state.statusBusy}
+                                onClick={() => void checkStoreOrder(merchant)}
+                              >
+                                {state.statusBusy
+                                  ? "Checking…"
+                                  : "I've paid — check for my order"}
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="mutedText">
+                              {merchant} did not return a payment step for this
+                              session. Use the store link in the cart above to buy
+                              the item on its site instead.
+                            </p>
+                          )}
+                          {state.statusNote && <p className="mutedText">{state.statusNote}</p>}
+                          {session.expiresAt && (
+                            <p className="mutedText">
+                              This checkout session expires {formatDateTime(session.expiresAt)}.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {!accessCode.trim() && (
+                        <p className="consentHint">
+                          Enter your access code above to enable checkout.
+                        </p>
+                      )}
+                    </section>
+                  );
+                })}
+              </section>
+            )}
           </div>
         )}
       </main>
+    );
+  }
+
+  function renderOrderCard(order: StoreOrder) {
+    const total = orderTotal(order);
+    return (
+      <article className="orderCard" key={order.orderId}>
+        <div className="orderHead">
+          <div className="orderMain">
+            <p className="orderNumber">{order.orderId}</p>
+            <h4>{order.merchant}</h4>
+            <small>
+              Confirmed by {order.merchant} · {formatDateTime(order.confirmedAt)} · Guest:{" "}
+              {order.buyerEmail}
+            </small>
+          </div>
+          {order.status && <span className="statusBadge">{order.status}</span>}
+        </div>
+        <div className="cartList">
+          {order.items.map((item, index) => (
+            <div className="cartItem" key={`${item.title}-${index}`}>
+              <div className="cartItemBody">
+                <strong>{item.title}</strong>
+                <small>Qty {item.quantity}</small>
+              </div>
+              <div className="cartPriceCol">
+                <strong>{money(item.price * item.quantity)}</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+        {total !== null && (
+          <p className="confirmationMeta">
+            Total charged by {order.merchant}: {money(total)} {order.currency}
+          </p>
+        )}
+        <p className="confirmationMeta">
+          Delivery, tracking, and returns are handled by {order.merchant} under its own
+          policies.
+          {order.orderUrl && (
+            <>
+              {" "}
+              <a href={order.orderUrl} target="_blank" rel="noreferrer">
+                View this order at {order.merchant} ↗
+              </a>
+            </>
+          )}
+        </p>
+      </article>
     );
   }
 
@@ -998,47 +1323,12 @@ export default function ShoppingApp() {
         <h2 className="viewTitle">Order confirmed</h2>
         <div className="flowCard">
           <p>
-            Sample order confirmed — no real retailer order was placed. In the live product
-            design, the customer would receive both the retailer&apos;s confirmation and
-            our confirmation email. <strong>No email was sent by this prototype.</strong>
+            The selling store confirmed this order — the details below are exactly
+            what the store returned. The store will also email its own
+            confirmation to the guest email used at checkout.
           </p>
           <div className="confirmationGrid">
-            {placedOrders.map((order) => (
-              <article className="confirmationCard" key={order.confirmationNumber}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="cartThumb" src={recordImage(order)} alt={order.productName} />
-                <div>
-                  <dl>
-                    <div>
-                      <dt>Confirmation number</dt>
-                      <dd>{order.confirmationNumber}</dd>
-                    </div>
-                    <div>
-                      <dt>Product</dt>
-                      <dd>{order.productName}</dd>
-                    </div>
-                    <div>
-                      <dt>Seller</dt>
-                      <dd>Ships from and sold by {order.seller}</dd>
-                    </div>
-                    <div>
-                      <dt>Total</dt>
-                      <dd>{money(order.totalCost)}</dd>
-                    </div>
-                  </dl>
-                  <p className="confirmationMeta">
-                    Sample estimated arrival: {formatDate(order.estimatedArrival)} · Guest:{" "}
-                    {order.guestName} ({order.guestEmail})
-                  </p>
-                  {order.consentGateConfirmed && (
-                    <p className="confirmationMeta">
-                      Walmart Human Consent Gate: confirmed by the guest before checkout, as
-                      Walmart&apos;s Agentic Access Terms require.
-                    </p>
-                  )}
-                </div>
-              </article>
-            ))}
+            {placedOrders.map((order) => renderOrderCard(order))}
           </div>
           <div className="viewActions">
             <button type="button" className="btnPine" onClick={() => setView("orders")}>
@@ -1060,85 +1350,12 @@ export default function ShoppingApp() {
         {orders.length === 0 ? (
           <div className="flowCard">
             <p className="mutedText">
-              No sample orders yet. Completed sandbox checkouts will appear here with a live
-              return countdown.
+              No orders yet. When a store confirms an order from a checkout here,
+              it will appear with the store&apos;s own confirmation details.
             </p>
           </div>
         ) : (
-          <div className="orderList">
-            {orders.map((order) => {
-              const status = countdown(order, now);
-              const canInitiate = status.canReturn && !order.returnRequest;
-              return (
-                <article className="orderCard" key={order.confirmationNumber}>
-                  <div className="orderHead">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className="orderThumb" src={recordImage(order)} alt={order.productName} />
-                    <div className="orderMain">
-                      <p className="orderNumber">{order.confirmationNumber}</p>
-                      <h4>{order.productName}</h4>
-                      <p>Ships from and sold by {order.seller}</p>
-                      <small>
-                        Purchased {formatDateTime(order.purchasedAt)} · Sample arrival{" "}
-                        {formatDate(order.estimatedArrival)} · {money(order.totalCost)} · Qty{" "}
-                        {order.quantity}
-                      </small>
-                    </div>
-                    <span className={`statusBadge ${order.returnRequest ? "statusReturn" : ""}`}>
-                      {order.status}
-                    </span>
-                  </div>
-
-                  <div className={`countdownBox ${status.expired ? "countdownExpired" : ""}`}>
-                    <span>Live return countdown</span>
-                    <strong>{status.label}</strong>
-                    {order.returnDeadline && (
-                      <small>Deadline: {formatDateTime(order.returnDeadline)}</small>
-                    )}
-                  </div>
-
-                  {order.returnRequest ? (
-                    <div className="returnActions">
-                      <p>
-                        Sample return initiated via {order.returnRequest.method}. Label number{" "}
-                        {order.returnRequest.labelNumber}.
-                      </p>
-                      <button
-                        className="btnOutline"
-                        type="button"
-                        onClick={() => setLabelOrderNumber(order.confirmationNumber)}
-                      >
-                        View sample return label
-                      </button>
-                    </div>
-                  ) : canInitiate ? (
-                    <div className="returnActions">
-                      <label className="field returnMethodField">
-                        <span>Return method</span>
-                        <select
-                          value={returnMethods[order.confirmationNumber] ?? "UPS drop-off"}
-                          onChange={(e) =>
-                            setReturnMethods((previous) => ({
-                              ...previous,
-                              [order.confirmationNumber]: e.target.value as ReturnMethod,
-                            }))
-                          }
-                        >
-                          <option>UPS drop-off</option>
-                          <option>UPS pickup</option>
-                        </select>
-                      </label>
-                      <button className="btnOutline" type="button" onClick={() => initiateReturn(order)}>
-                        Initiate prototype return
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="mutedText">No prototype return can be initiated for this order.</p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
+          <div className="orderList">{orders.map((order) => renderOrderCard(order))}</div>
         )}
       </main>
     );
@@ -1200,63 +1417,16 @@ export default function ShoppingApp() {
           <div>
             <strong>{BRAND.name}</strong>
             <p>Built by {BRAND.company}.</p>
+            <nav className="footerLinks" aria-label="Policies">
+              <a href="/privacy">Privacy Policy</a>
+              <a href="/terms">Terms of Service</a>
+            </nav>
           </div>
-          <span className="prototypeTag">Live prices, fetched when you search · Prototype checkout.</span>
+          <span className="prototypeTag">
+            Live prices, fetched when you search · Checkout is invite-only.
+          </span>
         </div>
       </footer>
-
-      {labelOrder?.returnRequest && (
-        <div className="labelOverlay" role="dialog" aria-labelledby="label-heading">
-          <div className="labelCard">
-            <div className="labelWatermark" aria-hidden="true">
-              SAMPLE
-            </div>
-            <p className="labelWarning">SAMPLE RETURN LABEL — NOT A REAL UPS LABEL</p>
-            <h3 id="label-heading">Prototype return label</h3>
-            <p className="shipsLine">Return to: {labelOrder.seller}</p>
-            <dl>
-              <div>
-                <dt>From</dt>
-                <dd>{labelOrder.guestName}</dd>
-              </div>
-              <div>
-                <dt>Product</dt>
-                <dd>{labelOrder.productName}</dd>
-              </div>
-              <div>
-                <dt>Sold by</dt>
-                <dd>{labelOrder.seller}</dd>
-              </div>
-              <div>
-                <dt>Confirmation</dt>
-                <dd>{labelOrder.confirmationNumber}</dd>
-              </div>
-              <div>
-                <dt>Method</dt>
-                <dd>{labelOrder.returnRequest.method}</dd>
-              </div>
-              <div>
-                <dt>Sample tracking</dt>
-                <dd>{labelOrder.returnRequest.labelNumber}</dd>
-              </div>
-            </dl>
-            <div className="barcode" aria-hidden="true" />
-            <p className="labelFinePrint">
-              This label is generated locally for interface demonstration only. No retailer
-              return was created, no carrier shipment exists, and this label must not be used
-              to send an item.
-            </p>
-            <div className="labelButtons">
-              <button className="btnCoral" type="button" onClick={() => window.print()}>
-                Print sample label
-              </button>
-              <button className="btnOutline" type="button" onClick={() => setLabelOrderNumber(null)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

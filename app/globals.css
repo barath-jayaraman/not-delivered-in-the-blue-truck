@@ -1503,6 +1503,114 @@ img {
   position: relative;
 }
 
+/* ---------- Real checkout (invite-only, UCP stores) ---------- */
+a.btnPine,
+a.btnCoral,
+a.btnOutline {
+  text-decoration: none;
+}
+
+.checkoutPanel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 18px 0;
+  background: var(--surface);
+}
+
+.checkoutPanel h4 {
+  margin: 0 0 8px;
+  color: var(--pine);
+}
+
+.sessionTotals {
+  margin: 12px 0;
+}
+
+.sessionTotals .totalsRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 4px 0;
+  font-size: 14.5px;
+}
+
+.sessionTotals .totalsRow.grand {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 10px;
+  font-weight: 800;
+  color: var(--pine);
+  font-size: 16px;
+}
+
+.sessionMessages {
+  margin: 10px 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.policyLinkList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 10px 0;
+  font-size: 13.5px;
+}
+
+.policyLinkList a {
+  color: var(--pine-2);
+  font-weight: 700;
+}
+
+.codeInput {
+  letter-spacing: 0.08em;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.footerLinks a {
+  color: #d6e6dd;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ---------- Legal pages (privacy / terms) ---------- */
+.legalMain {
+  max-width: 760px;
+  padding-top: 26px;
+}
+
+.legalMain h1 {
+  color: var(--pine);
+  letter-spacing: -0.02em;
+  margin: 14px 0 4px;
+}
+
+.legalMain h2 {
+  color: var(--pine);
+  margin: 26px 0 6px;
+  font-size: 19px;
+}
+
+.legalMain p,
+.legalMain li {
+  line-height: 1.6;
+  font-size: 15.5px;
+}
+
+.legalUpdated {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin-top: 0;
+}
+
 /* ---------- Footer ---------- */
 .siteFooter {
   margin-top: 52px;

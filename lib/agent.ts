@@ -47,6 +47,17 @@ export const DEFAULT_META_MODEL_NAME = "muse-spark-1.1";
 const LIVE_MAX_TOKENS = 2500;
 /** Abort a live call after ~20s and fall back to the local pipeline. */
 const LIVE_TIMEOUT_MS = 20_000;
+/**
+ * Per-step budgets (Nov 2, 2026 — search-speed work). The interpret
+ * step runs BEFORE the live search on every /api/search and free-form
+ * decide request, so its ceiling is the search's floor: 8s is several
+ * times the observed live latency, and the fallback for a slow call is
+ * simply the shopper's raw query — the same result a failed call gives
+ * today. The explain step writes from already-scored facts; past 12s
+ * the local explanation (identical numbers, local words) stands.
+ */
+const INTERPRET_TIMEOUT_MS = 8_000;
+const EXPLAIN_TIMEOUT_MS = 12_000;
 
 export interface MetaModelConfig {
   /** True when META_MODEL_API_KEY is set (the endpoint has a default). */
@@ -87,6 +98,7 @@ interface ChatCompletionResponse {
 async function callMetaModel(
   messages: ChatMessage[],
   temperature: number,
+  timeoutMs: number = LIVE_TIMEOUT_MS,
 ): Promise<string | null> {
   const config = getMetaModelConfig();
   const apiKey = process.env.META_MODEL_API_KEY?.trim();
@@ -96,7 +108,7 @@ async function callMetaModel(
     const controller = new AbortController();
     const timer: ReturnType<typeof setTimeout> = setTimeout(
       () => controller.abort(),
-      LIVE_TIMEOUT_MS,
+      timeoutMs,
     );
     try {
       const response = await fetch(config.endpoint, {
@@ -214,6 +226,7 @@ export async function interpretQuery(
       { role: "user", content: query },
     ],
     0,
+    INTERPRET_TIMEOUT_MS,
   );
   return raw ? parseInterpretation(raw) : null;
 }
@@ -317,6 +330,7 @@ export async function explainRecommendation(
       },
     ],
     0.2,
+    EXPLAIN_TIMEOUT_MS,
   );
   if (!raw) return null;
 
