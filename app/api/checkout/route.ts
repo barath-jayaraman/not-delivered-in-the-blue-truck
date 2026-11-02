@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   checkoutStoreFor,
+  createStoreCartLink,
   createStoreCheckout,
   getStoreCheckoutStatus,
   type CheckoutAddressInput,
@@ -32,6 +33,11 @@ export const maxDuration = 60;
  * - "status": { accessCode, merchant, checkoutId, buyerEmail } →
  *   re-reads the session from the store; returns a StoreOrder ONLY
  *   when the store itself returns an order for the session.
+ * - "cartlink": { accessCode, merchant, items } → Path B: creates an
+ *   items-only session at the store (NO buyer details are collected
+ *   or sent) and returns the store's own continuation URL, which
+ *   lands the buyer on the store's site with the items already in
+ *   its cart to enter details and pay there. Same code gate.
  *
  * This app never receives a card number: payment is taken by the
  * store's own declared payment handlers on the store's continuation.
@@ -161,14 +167,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, session: result.session, order });
   }
 
-  if (body.action !== "start") {
+  if (body.action !== "start" && body.action !== "cartlink") {
     return NextResponse.json(
       { ok: false, error: "Unknown checkout action.", fallbackUrl },
       { status: 400 },
     );
   }
 
-  /* ----- validate the start payload ----- */
+  /* ----- validate the items payload (shared by start + cartlink) ----- */
   const rawItems = Array.isArray(body.items) ? body.items : [];
   const byItem = new Map<string, number>();
   for (const raw of rawItems.slice(0, 10)) {
@@ -189,6 +195,22 @@ export async function POST(request: Request) {
       { ok: false, error: "No purchasable items were supplied.", fallbackUrl },
       { status: 400 },
     );
+  }
+
+  /* ----- Path B: pre-loaded cart at the store, buyer finishes there ----- */
+  if (body.action === "cartlink") {
+    const link = await createStoreCartLink(store, items);
+    if (!link.ok) {
+      return NextResponse.json(
+        { ok: false, error: link.error, fallbackUrl },
+        { status: 502 },
+      );
+    }
+    return NextResponse.json({
+      ok: true,
+      continueUrl: link.continueUrl,
+      session: link.session,
+    });
   }
 
   const rawBuyer = (body.buyer ?? {}) as Record<string, unknown>;

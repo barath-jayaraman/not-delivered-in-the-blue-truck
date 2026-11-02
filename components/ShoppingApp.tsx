@@ -172,6 +172,10 @@ export default function ShoppingApp() {
         session?: CheckoutSessionSummary;
         statusBusy?: boolean;
         statusNote?: string;
+        cartBusy?: boolean;
+        cartUrl?: string;
+        cartNote?: string;
+        cartError?: string;
       }
     >
   >({});
@@ -464,6 +468,10 @@ export default function ShoppingApp() {
       session: CheckoutSessionSummary;
       statusBusy: boolean;
       statusNote: string;
+      cartBusy: boolean;
+      cartUrl: string;
+      cartNote: string;
+      cartError: string;
     }>,
   ) {
     setCheckoutSessions((previous) => ({
@@ -528,6 +536,64 @@ export default function ShoppingApp() {
         busy: false,
         error: `Could not reach checkout at ${merchant}. Try again.`,
         session: undefined,
+      });
+    }
+  }
+
+  /**
+   * Path B: ask the store to pre-load a cart with this merchant's
+   * items and hand back its own continuation link. No guest details
+   * are collected or sent — the buyer enters everything on the
+   * store's site. The returned link is rendered in the panel (popup
+   * blockers can't eat it) and also opened in a new tab.
+   */
+  async function continueAtStore(merchant: Merchant) {
+    const items = cart.filter(
+      (item) => item.merchant === merchant && isInAppCheckout(item),
+    );
+    if (items.length === 0) return;
+    setCheckoutState(merchant, { cartBusy: true, cartError: undefined, cartNote: undefined });
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cartlink",
+          accessCode,
+          merchant,
+          items: items.map((item) => ({
+            itemId: item.checkoutItemId,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        fallbackUrl?: string;
+        continueUrl?: string;
+      };
+      if (!res.ok || !data.ok || !data.continueUrl) {
+        setCheckoutState(merchant, {
+          cartBusy: false,
+          cartError:
+            data.error ?? `${merchant} could not prepare a cart. Use the product link instead.`,
+          fallbackUrl: data.fallbackUrl,
+        });
+        return;
+      }
+      window.open(data.continueUrl, "_blank", "noopener");
+      setCheckoutState(merchant, {
+        cartBusy: false,
+        cartUrl: data.continueUrl,
+        cartNote:
+          `Your items are in ${merchant}'s cart — the link opened in a new tab. ` +
+          `Enter your details and pay on ${merchant}'s site.`,
+      });
+    } catch {
+      setCheckoutState(merchant, {
+        cartBusy: false,
+        cartError: `Could not reach ${merchant} to prepare a cart. Try again.`,
       });
     }
   }
@@ -1147,6 +1213,8 @@ export default function ShoppingApp() {
                         before shipping and tax, which {merchant} calculates in its checkout.
                       </p>
 
+                      <p className="pathTag">Path A — check out here</p>
+
                       {state.error && (
                         <div className="errorBox" role="alert">
                           <p>{state.error}</p>
@@ -1252,6 +1320,56 @@ export default function ShoppingApp() {
                           )}
                         </div>
                       )}
+                      <div className="pathBlock">
+                        <p className="pathTag">Path B — continue at {merchant}</p>
+                        <p className="mutedText">
+                          Prefer the store&apos;s own checkout? We load these
+                          items into {merchant}&apos;s cart for you — you enter
+                          your details and pay on {merchant}&apos;s site.
+                          Nothing about you is sent from here.
+                        </p>
+                        {state.cartError && (
+                          <div className="errorBox" role="alert">
+                            <p>{state.cartError}</p>
+                            {(fallbackItem?.sourceUrl || state.fallbackUrl) && (
+                              <p>
+                                <a
+                                  href={fallbackItem?.sourceUrl ?? state.fallbackUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Open the product at {merchant} instead ↗
+                                </a>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="btnOutline btnBlock"
+                          disabled={state.cartBusy || !accessCode.trim()}
+                          onClick={() => void continueAtStore(merchant)}
+                        >
+                          {state.cartBusy
+                            ? `Preparing your cart at ${merchant}…`
+                            : `Continue at ${merchant} ↗`}
+                        </button>
+                        {state.cartUrl && (
+                          <p>
+                            <a
+                              className="btnCoral"
+                              href={state.cartUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Open your {merchant} cart ↗
+                            </a>
+                          </p>
+                        )}
+                        {state.cartNote && (
+                          <p className="mutedText">{state.cartNote}</p>
+                        )}
+                      </div>
                       {!accessCode.trim() && (
                         <p className="consentHint">
                           Enter your access code above to enable checkout.

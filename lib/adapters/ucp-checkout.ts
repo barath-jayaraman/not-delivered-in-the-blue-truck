@@ -510,6 +510,83 @@ export async function createStoreCheckout(
 }
 
 /* ------------------------------------------------------------------ */
+/* Path B: pre-load the store's own cart, buyer finishes there         */
+/* ------------------------------------------------------------------ */
+
+export type CartLinkResult =
+  | { ok: true; continueUrl: string; session: CheckoutSessionSummary }
+  | { ok: false; error: string };
+
+/**
+ * Create a checkout session holding ONLY the items — no buyer details
+ * at all — and return the store's own continuation URL for it. That
+ * URL is the store's cart/checkout permalink for the session (Monos's,
+ * for example, 301s from its myshopify host to monos.com/cart/c/<token>),
+ * so following it lands the buyer on the store's own site with these
+ * items already in the cart; the buyer enters details and pays there.
+ * Verified live at Monos (Nov 2, 2026): a buyer-less create succeeds
+ * and returns the continuation; the store notes a contact method is
+ * still needed, which the buyer supplies on the store's own step.
+ * A store whose profile declares no checkout create tool, or that
+ * returns no continuation, honestly has no pre-loaded-cart path.
+ */
+export async function createStoreCartLink(
+  store: UcpStore,
+  items: CheckoutItemInput[],
+): Promise<CartLinkResult> {
+  const session = await openCheckoutSession(store);
+  if (!session) {
+    return {
+      ok: false,
+      error: `${store.merchant} could not be reached to prepare a cart.`,
+    };
+  }
+  const createTool = session.tools.create;
+  if (!createTool) {
+    return {
+      ok: false,
+      error: `${store.merchant} does not offer a pre-loaded cart through its published UCP profile.`,
+    };
+  }
+  const meta = { "ucp-agent": { profile: AGENT_PROFILE } };
+  const createProps = createTool.inputSchema?.properties ?? {};
+  const checkoutPayload: Record<string, unknown> = {
+    line_items: items.map((item) => ({
+      item: { id: item.itemId },
+      quantity: item.quantity,
+    })),
+    context: { address_country: "US", currency: "USD" },
+  };
+  const createArgs: Record<string, unknown> = { meta };
+  if ("checkout" in createProps) createArgs.checkout = checkoutPayload;
+  else Object.assign(createArgs, checkoutPayload);
+  try {
+    const res = await callCheckoutTool(session, createTool, createArgs);
+    const created = asCheckout(res.payload);
+    if (res.isError || !created || typeof created.id !== "string") {
+      return {
+        ok: false,
+        error: `${store.merchant} could not prepare a cart for these items.`,
+      };
+    }
+    const summary = normalizeSummary(store, created, false);
+    if (!summary.continueUrl) {
+      return {
+        ok: false,
+        error: `${store.merchant} did not return a cart link for these items.`,
+      };
+    }
+    return { ok: true, continueUrl: summary.continueUrl, session: summary };
+  } catch (error) {
+    console.warn(`[ucp-checkout] ${store.merchant} cart link failed:`, String(error));
+    return {
+      ok: false,
+      error: `${store.merchant} could not prepare a cart for these items.`,
+    };
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Re-read a session: has the store confirmed an order?                */
 /* ------------------------------------------------------------------ */
 
