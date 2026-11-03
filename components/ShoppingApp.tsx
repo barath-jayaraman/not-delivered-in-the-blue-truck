@@ -26,7 +26,7 @@ const ORDER_STORAGE_KEY = "not-delivered-in-the-blue-truck-orders-v2";
 const NEED_BY_DAYS = 7;
 
 type View = "home" | "results" | "product" | "cart" | "confirmation" | "orders";
-type SortMode = "featured" | "price" | "fastest";
+type SortMode = "price" | "fastest";
 
 const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -135,7 +135,7 @@ export default function ShoppingApp() {
   const [error, setError] = useState<string | null>(null);
 
   const [searchMeta, setSearchMeta] = useState<{ query: string; products: ProductSummary[] } | null>(null);
-  const [sort, setSort] = useState<SortMode>("featured");
+  const [sort, setSort] = useState<SortMode>("price");
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [filterMaxDays, setFilterMaxDays] = useState<number | null>(null);
   /* Offer filters, shared by the results list and the comparison
@@ -515,7 +515,7 @@ export default function ShoppingApp() {
     setQuery(q);
     setLoading(true);
     setError(null);
-    setSort("featured");
+    setSort("price");
     setFilterBrands([]);
     setFilterMaxDays(null);
     clearOfferFilters();
@@ -890,7 +890,6 @@ export default function ShoppingApp() {
               value={sort}
               onChange={(e) => setSort(e.target.value as SortMode)}
             >
-              <option value="featured">Featured</option>
               <option value="price">Price: low to high</option>
               <option value="fastest">Fastest delivery</option>
             </select>
