@@ -485,6 +485,11 @@ function summarizeGroup(group: LiveProductGroup, query: string): ProductSummary 
     offerCount: group.offers.length,
     lowestPrice: Math.min(...prices),
     highestPrice: Math.max(...prices),
+    lowestTotal: Math.min(
+      ...group.offers.map((o) => o.price + o.shippingCost),
+    ),
+    hasFreeShipping: group.offers.some((o) => o.shippingCost === 0),
+    hasStatedWarranty: group.offers.some((o) => o.warrantyMonths > 0),
     fastestDeliveryDays: Math.min(...group.offers.map((o) => o.deliveryDays)),
     exactMatch: normalizeSearch(group.name).includes(normalizeSearch(query)),
     dataSource: "live",

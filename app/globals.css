@@ -580,6 +580,126 @@ img {
   margin: 0;
 }
 
+/* ---------- Offer filter bar (results list + comparison) ---------- */
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.filterBarLabel {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--muted);
+  margin-right: 2px;
+}
+
+.filterChipRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: var(--pine);
+  border: 1px solid var(--sage-2);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 8px 13px;
+  border-radius: 999px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.filterChip:hover {
+  background: var(--sage);
+}
+
+.filterChip.active {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: #fff;
+}
+
+.filterRange {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filterRange input {
+  width: 74px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 11px;
+}
+
+.filterRangeSign,
+.filterRangeDash {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.filterApply {
+  background: var(--coral);
+  color: #fff;
+  border: 1px solid var(--coral);
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 999px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.filterApply:hover {
+  filter: brightness(0.95);
+}
+
+.filterClear {
+  background: none;
+  border: none;
+  color: var(--coral);
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 6px 4px;
+  text-decoration: underline;
+}
+
+.filterCount {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+@media (max-width: 700px) {
+  .filterCount {
+    margin-left: 0;
+  }
+}
+
 .resultList {
   display: flex;
   flex-direction: column;

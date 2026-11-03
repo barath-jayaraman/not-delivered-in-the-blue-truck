@@ -46,6 +46,17 @@ export type Merchant =
   | "Woodcraft"
   | "Arhaus"
   | "Bonobos"
+  | "Dover Saddlery"
+  | "Fashion Nova"
+  | "Burrow"
+  | "ButcherBox"
+  | "Champion"
+  | "Eddie Bauer"
+  | "Faherty"
+  | "Johnnie-O"
+  | "Sperry"
+  | "True Classic"
+  | "UNTUCKit"
   | "Micro Center"
   | "Harbor Freight"
   | "Carter's"
@@ -189,6 +200,12 @@ export interface ProductSummary {
   offerCount: number;
   lowestPrice: number;
   highestPrice: number;
+  /** Lowest all-in total (item price + shipping) across the group's offers. */
+  lowestTotal: number;
+  /** True when at least one of the group's offers ships free. */
+  hasFreeShipping: boolean;
+  /** True when at least one of the group's offers states a warranty period. */
+  hasStatedWarranty: boolean;
   fastestDeliveryDays: number;
   exactMatch: boolean;
   dataSource: DataMode;

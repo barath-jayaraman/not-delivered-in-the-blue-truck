@@ -137,8 +137,15 @@ export default function ShoppingApp() {
   const [searchMeta, setSearchMeta] = useState<{ query: string; products: ProductSummary[] } | null>(null);
   const [sort, setSort] = useState<SortMode>("featured");
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
-  const [filterMaxPrice, setFilterMaxPrice] = useState<number | null>(null);
   const [filterMaxDays, setFilterMaxDays] = useState<number | null>(null);
+  /* Offer filters, shared by the results list and the comparison
+     table. Price always means the all-in total: item price + shipping. */
+  const [filterMinTotal, setFilterMinTotal] = useState<number | null>(null);
+  const [filterMaxTotal, setFilterMaxTotal] = useState<number | null>(null);
+  const [customMin, setCustomMin] = useState("");
+  const [customMax, setCustomMax] = useState("");
+  const [filterFreeShipping, setFilterFreeShipping] = useState(false);
+  const [filterWarrantyStated, setFilterWarrantyStated] = useState(false);
 
   const [result, setResult] = useState<DecideResponse | null>(null);
   const [priority, setPriority] = useState<Priority>("cheapest");
@@ -258,16 +265,169 @@ export default function ShoppingApp() {
     if (!searchMeta) return [];
     let list = searchMeta.products.filter((product) => {
       if (filterBrands.length > 0 && !filterBrands.includes(product.brand)) return false;
-      if (filterMaxPrice !== null && product.lowestPrice > filterMaxPrice) return false;
+      // Price filters judge a product by its best (lowest-total) offer.
+      if (filterMinTotal !== null && product.lowestTotal < filterMinTotal) return false;
+      if (filterMaxTotal !== null && product.lowestTotal > filterMaxTotal) return false;
+      if (filterFreeShipping && !product.hasFreeShipping) return false;
+      if (filterWarrantyStated && !product.hasStatedWarranty) return false;
       if (filterMaxDays !== null && product.fastestDeliveryDays > filterMaxDays) return false;
       return true;
     });
-    if (sort === "price") list = [...list].sort((a, b) => a.lowestPrice - b.lowestPrice);
+    if (sort === "price") list = [...list].sort((a, b) => a.lowestTotal - b.lowestTotal);
     if (sort === "fastest") {
       list = [...list].sort((a, b) => a.fastestDeliveryDays - b.fastestDeliveryDays);
     }
     return list;
-  }, [searchMeta, filterBrands, filterMaxPrice, filterMaxDays, sort]);
+  }, [searchMeta, filterBrands, filterMinTotal, filterMaxTotal, filterFreeShipping, filterWarrantyStated, filterMaxDays, sort]);
+
+  /* ----- offer filter helpers (results list + comparison table) ----- */
+
+  const anyFilterActive =
+    filterBrands.length > 0 ||
+    filterMaxDays !== null ||
+    filterMinTotal !== null ||
+    filterMaxTotal !== null ||
+    filterFreeShipping ||
+    filterWarrantyStated;
+
+  function clearOfferFilters() {
+    setFilterMinTotal(null);
+    setFilterMaxTotal(null);
+    setCustomMin("");
+    setCustomMax("");
+    setFilterFreeShipping(false);
+    setFilterWarrantyStated(false);
+  }
+
+  function clearAllFilters() {
+    clearOfferFilters();
+    setFilterBrands([]);
+    setFilterMaxDays(null);
+  }
+
+  function applyPricePreset(max: number | null) {
+    setFilterMinTotal(null);
+    setFilterMaxTotal(max);
+    setCustomMin("");
+    setCustomMax("");
+  }
+
+  function applyCustomRange(e: React.FormEvent) {
+    e.preventDefault();
+    const parse = (raw: string): number | null => {
+      const value = Number(raw.replace(/[^0-9.]/g, ""));
+      return raw.trim() !== "" && Number.isFinite(value) && value >= 0 ? value : null;
+    };
+    let min = parse(customMin);
+    let max = parse(customMax);
+    if (min !== null && max !== null && min > max) {
+      [min, max] = [max, min];
+    }
+    setFilterMinTotal(min);
+    setFilterMaxTotal(max);
+  }
+
+  /** Comparison-table filter: the offers themselves, by all-in total. */
+  function offerMatchesFilters(offer: ScoredOffer): boolean {
+    if (filterMinTotal !== null && offer.totalCost < filterMinTotal) return false;
+    if (filterMaxTotal !== null && offer.totalCost > filterMaxTotal) return false;
+    if (filterFreeShipping && offer.shippingCost !== 0) return false;
+    if (filterWarrantyStated && offer.warrantyMonths <= 0) return false;
+    return true;
+  }
+
+  function renderFilterBar(shown: number, totalCount: number) {
+    return (
+      <div className="filterBar" aria-label="Filter offers">
+        <span className="filterBarLabel">Filters</span>
+        <div className="filterChipRow" role="group" aria-label="Price, total including shipping">
+          <button
+            type="button"
+            className={`filterChip ${filterMinTotal === null && filterMaxTotal === null ? "active" : ""}`}
+            onClick={() => applyPricePreset(null)}
+          >
+            Any price
+          </button>
+          <button
+            type="button"
+            className={`filterChip ${filterMinTotal === null && filterMaxTotal === 200 ? "active" : ""}`}
+            onClick={() => applyPricePreset(200)}
+          >
+            Under $200
+          </button>
+          <button
+            type="button"
+            className={`filterChip ${filterMinTotal === null && filterMaxTotal === 500 ? "active" : ""}`}
+            onClick={() => applyPricePreset(500)}
+          >
+            Under $500
+          </button>
+        </div>
+        <form className="filterRange" onSubmit={applyCustomRange}>
+          <label className="sr-only" htmlFor="filter-min-total">
+            Minimum total price
+          </label>
+          <span className="filterRangeSign" aria-hidden="true">
+            $
+          </span>
+          <input
+            id="filter-min-total"
+            type="text"
+            inputMode="decimal"
+            placeholder="Min"
+            value={customMin}
+            onChange={(e) => setCustomMin(e.target.value)}
+          />
+          <span className="filterRangeDash" aria-hidden="true">
+            –
+          </span>
+          <label className="sr-only" htmlFor="filter-max-total">
+            Maximum total price
+          </label>
+          <span className="filterRangeSign" aria-hidden="true">
+            $
+          </span>
+          <input
+            id="filter-max-total"
+            type="text"
+            inputMode="decimal"
+            placeholder="Max"
+            value={customMax}
+            onChange={(e) => setCustomMax(e.target.value)}
+          />
+          <button type="submit" className="filterApply">
+            Apply
+          </button>
+        </form>
+        <button
+          type="button"
+          className={`filterChip ${filterFreeShipping ? "active" : ""}`}
+          aria-pressed={filterFreeShipping}
+          onClick={() => setFilterFreeShipping((value) => !value)}
+        >
+          Free shipping
+        </button>
+        <button
+          type="button"
+          className={`filterChip ${filterWarrantyStated ? "active" : ""}`}
+          aria-pressed={filterWarrantyStated}
+          onClick={() => setFilterWarrantyStated((value) => !value)}
+        >
+          Warranty stated
+        </button>
+        {anyFilterActive && (
+          <>
+            <button type="button" className="filterClear" onClick={clearAllFilters}>
+              Clear filters
+            </button>
+            <span className="filterCount">
+              {shown} of {totalCount}
+            </span>
+          </>
+        )}
+      </div>
+    );
+  }
 
   /* ----- data actions ----- */
 
@@ -315,8 +475,8 @@ export default function ShoppingApp() {
     setError(null);
     setSort("featured");
     setFilterBrands([]);
-    setFilterMaxPrice(null);
     setFilterMaxDays(null);
+    clearOfferFilters();
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       const data = (await res.json()) as SearchResponse & { error?: string };
@@ -695,6 +855,8 @@ export default function ShoppingApp() {
           </label>
         </div>
 
+        {total > 0 && renderFilterBar(visibleResults.length, total)}
+
         <div className={`resultsLayout ${total === 0 ? "noRail" : ""}`}>
           {total > 0 && (
             <aside className="filterRail" aria-label="Filters">
@@ -721,28 +883,6 @@ export default function ShoppingApp() {
                 </div>
               )}
               <div className="filterGroup">
-                <h3>Price</h3>
-                {(
-                  [
-                    [null, "Any price"],
-                    [200, "Under $200"],
-                    [300, "Under $300"],
-                    [500, "Under $500"],
-                    [1000, "Under $1,000"],
-                  ] as [number | null, string][]
-                ).map(([value, label]) => (
-                  <label className="filterOption" key={label}>
-                    <input
-                      type="radio"
-                      name="filter-price"
-                      checked={filterMaxPrice === value}
-                      onChange={() => setFilterMaxPrice(value)}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-              <div className="filterGroup">
                 <h3>Delivery speed</h3>
                 {(
                   [
@@ -768,11 +908,11 @@ export default function ShoppingApp() {
 
           {visibleResults.length === 0 ? (
             <div className="emptyBox">
-              <strong>No products to show</strong>
+              <strong>{total === 0 ? "No products to show" : "No offers match those filters"}</strong>
               <p>
                 {total === 0
                   ? `Nothing matched “${searchMeta?.query}” — live search at eBay, Walmart, and the UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty, Lord & Taylor, Stein Mart, Scandinavian Designs, Slumberland, Pier 1, Vitacost, ShopLC, The Lakeside Collection, LTD Commodities, SkyMall, Mast General Store, Kane's Furniture, Steinhafels, Schneiderman's Furniture, FYE, DTLR, Beach Camera, Turtle Beach, Evo, FAO Schwarz, Casper, Away, HexClad, Lodge Cast Iron, Rad Power Bikes, The Sill, Brookstone, Sharper Image, Peak Design, Woodcraft, Arhaus, Bonobos), and the browsing-route stores (Micro Center, Harbor Freight, Carter's, Mattress Firm) returned nothing for it. Try headphones, a 55 inch TV, running shoes, leggings, a sweater, a carry-on, sneakers, a chef's knife, lip gloss, a sofa, a mattress, a camera, a snowboard, a frying pan, an electric bike, a plush toy, a laptop, a drill, or a bodysuit.`
-                  : "No products match the selected filters. Loosen a filter to see more."}
+                  : "Loosen a filter to see more."}
               </p>
             </div>
           ) : (
@@ -818,6 +958,7 @@ export default function ShoppingApp() {
   function renderProduct() {
     if (!result) return null;
     const winnerId = result.recommendation.id;
+    const visibleOffers = result.offers.filter(offerMatchesFilters);
     return (
       <main className="wrap productMain">
         <button type="button" className="backLink" onClick={() => setView(searchMeta ? "results" : "home")}>
@@ -869,6 +1010,14 @@ export default function ShoppingApp() {
           ))}
         </div>
 
+        {renderFilterBar(visibleOffers.length, result.offers.length)}
+
+        {visibleOffers.length === 0 ? (
+          <div className="emptyBox">
+            <strong>No offers match those filters</strong>
+            <p>Loosen a filter to see the other offers for this product.</p>
+          </div>
+        ) : (
         <div className="compareWrap">
           <table className="compareTable">
             <thead>
@@ -885,7 +1034,7 @@ export default function ShoppingApp() {
               </tr>
             </thead>
             <tbody>
-              {result.offers.map((offer) => {
+              {visibleOffers.map((offer) => {
                 const isWinner = offer.id === winnerId;
                 return (
                   <tr key={offer.id} className={isWinner ? "winnerRow" : ""}>
@@ -950,6 +1099,7 @@ export default function ShoppingApp() {
             </tbody>
           </table>
         </div>
+        )}
 
         {cartNotice && (
           <p className="successNotice">
