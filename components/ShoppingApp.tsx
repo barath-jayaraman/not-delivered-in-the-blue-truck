@@ -13,7 +13,7 @@ import type {
   StoreOrder,
 } from "@/lib/types";
 import { BRAND } from "@/lib/config";
-import { CATEGORY_IMAGES, CATEGORY_TILES, productImage } from "@/lib/images";
+import { CATEGORY_IMAGES, productImage } from "@/lib/images";
 
 /**
  * Confirmed REAL orders (store-returned data only), remembered in the
@@ -134,8 +134,6 @@ export default function ShoppingApp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [featured, setFeatured] = useState<ProductSummary[]>([]);
-  const [featuredLoaded, setFeaturedLoaded] = useState(false);
   const [searchMeta, setSearchMeta] = useState<{ query: string; products: ProductSummary[] } | null>(null);
   const [sort, setSort] = useState<SortMode>("featured");
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
@@ -210,55 +208,8 @@ export default function ShoppingApp() {
     }
   }, [orders, ordersLoaded]);
 
-  /* ----- featured products for the home view: LIVE category searches.
-     Every figure on these cards was fetched live when the page loaded;
-     nothing is stored or re-shown from an earlier fetch. ----- */
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      // The five category probes run CONCURRENTLY (Nov 2, 2026 —
-      // search-speed work): sequentially awaited, they stacked five
-      // full live searches end-to-end on every home-page load. The
-      // merge below still applies them in the same term order with
-      // the same first-wins rule, so the grid is unchanged.
-      const FEATURED_TERMS = ["headphones", "tv", "coffee", "vacuum", "running shoes"];
-      const perTerm = await Promise.all(
-        FEATURED_TERMS.map(async (term) => {
-          try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(term)}`);
-            if (!res.ok) return [] as ProductSummary[];
-            const data = (await res.json()) as SearchResponse;
-            return data.products;
-          } catch {
-            // A failed category probe just leaves that product out of the grid.
-            return [] as ProductSummary[];
-          }
-        }),
-      );
-      const byId = new Map<string, ProductSummary>();
-      for (const products of perTerm) {
-        for (const product of products) {
-          if (!byId.has(product.id)) byId.set(product.id, product);
-        }
-      }
-      if (!cancelled) {
-        setFeatured([...byId.values()]);
-        // Featured cards open through the live decide path, re-fetching
-        // live under the product's own name.
-        setLiveGroups((previous) => {
-          const next = { ...previous };
-          for (const product of byId.values()) {
-            if (!next[product.id]) next[product.id] = product.name;
-          }
-          return next;
-        });
-        setFeaturedLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  /* The search-only home (wonder-v7) makes no live calls on load:
+     nothing is fetched until the shopper searches. */
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -669,66 +620,54 @@ export default function ShoppingApp() {
 
   function renderHome() {
     return (
-      <main className="wrap">
-        <section className="section homeCategories" aria-label="Categories">
-          <div className="categoryGrid">
-            {CATEGORY_TILES.map((tile) => (
-              <button
-                key={tile.label}
-                type="button"
-                className="categoryTile"
-                onClick={() => void runSearch(tile.searchTerm)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="catPhoto" src={tile.image} alt="" />
-                <strong>{tile.label}</strong>
-              </button>
-            ))}
-          </div>
-        </section>
+      <main className="wrap homeMain">
+        <h1 className="homeTitle">One app to shop them all.</h1>
+        <p className="homeSub">Search once. We do the comparing.</p>
 
-        <section className="section" aria-labelledby="featured-products">
-          <div className="sectionHead">
-            <h2 id="featured-products">Featured products</h2>
-          </div>
-          {featured.length === 0 ? (
-            <p className="loadingNote">
-              {featuredLoaded
-                ? "Live picks are unavailable right now — search above to compare live offers."
-                : "Loading live products…"}
+        <form className="heroSearch" onSubmit={onHeaderSearch} role="search">
+          <label className="sr-only" htmlFor="home-search">
+            Search for a product
+          </label>
+          <input
+            id="home-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="What are you looking for?"
+            autoComplete="off"
+          />
+          <button type="submit" disabled={loading}>
+            {loading ? "Searching…" : "Search"}
+          </button>
+        </form>
+        <p className="heroHint">Try a sofa, running shoes, a coffee maker — anything.</p>
+
+        <div className="homeSteps">
+          <div className="homeStep">
+            <span className="stepNum">1</span>
+            <p>
+              <strong>Search for the product.</strong>
+              <br />
+              Type what you want, just like any store.
             </p>
-          ) : (
-            <div className="productGrid">
-              {featured.map((product) => (
-                <article className="productCard" key={product.id}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="productPhoto" src={summaryImage(product)} alt={product.name} />
-                  <div className="productBody">
-                    <h3>
-                      {product.name}
-                      {product.dataSource === "live" && (
-                        <span className="livePill">Live</span>
-                      )}
-                    </h3>
-                    <div className="fromPrice">
-                      From<strong>{money(product.lowestPrice)}</strong>
-                    </div>
-                    <p className="arrivalLine">
-                      Arrives in as fast as {product.fastestDeliveryDays} days
-                    </p>
-                    <button
-                      type="button"
-                      className="btnPine"
-                      onClick={() => void openProduct(product.id)}
-                    >
-                      View
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+          </div>
+          <div className="homeStep">
+            <span className="stepNum">2</span>
+            <p>
+              <strong>See it across different stores and compare.</strong>
+              <br />
+              Price, delivery, return policy and warranty — all in one place.
+            </p>
+          </div>
+          <div className="homeStep">
+            <span className="stepNum">3</span>
+            <p>
+              <strong>Buy it right here.</strong>
+              <br />
+              See the best whole deal, then check out.
+            </p>
+          </div>
+        </div>
       </main>
     );
   }
@@ -1486,31 +1425,35 @@ export default function ShoppingApp() {
           <button type="button" className="wordmark" onClick={goHome} aria-label="Not Delivered in the Blue Truck — home">
             Not Delivered in the <span>Blue Truck</span>
           </button>
-          <form className="headerSearch" onSubmit={onHeaderSearch} role="search">
-            <label className="sr-only" htmlFor="site-search">
-              Search products
-            </label>
-            <input
-              id="site-search"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products"
-              autoComplete="off"
-            />
-            <button type="submit" disabled={loading}>
-              {loading ? "Searching…" : "Search"}
-            </button>
-          </form>
-          <nav className="headerNav" aria-label="Account">
-            <button type="button" className="headerNavBtn" onClick={() => setView("orders")}>
-              Orders
-            </button>
-            <button type="button" className="headerNavBtn" onClick={() => setView("cart")}>
-              Cart
-              {cartTotals.count > 0 && <span className="cartBadge">{cartTotals.count}</span>}
-            </button>
-          </nav>
+          {view !== "home" && (
+            <>
+              <form className="headerSearch" onSubmit={onHeaderSearch} role="search">
+                <label className="sr-only" htmlFor="site-search">
+                  Search products
+                </label>
+                <input
+                  id="site-search"
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search products"
+                  autoComplete="off"
+                />
+                <button type="submit" disabled={loading}>
+                  {loading ? "Searching…" : "Search"}
+                </button>
+              </form>
+              <nav className="headerNav" aria-label="Account">
+                <button type="button" className="headerNavBtn" onClick={() => setView("orders")}>
+                  Orders
+                </button>
+                <button type="button" className="headerNavBtn" onClick={() => setView("cart")}>
+                  Cart
+                  {cartTotals.count > 0 && <span className="cartBadge">{cartTotals.count}</span>}
+                </button>
+              </nav>
+            </>
+          )}
         </div>
       </header>
 
@@ -1531,18 +1474,15 @@ export default function ShoppingApp() {
       {view === "orders" && renderOrders()}
 
       <footer className="siteFooter">
-        <div className="wrap footerInner">
-          <div>
-            <strong>{BRAND.name}</strong>
-            <p>Built by {BRAND.company}.</p>
-            <nav className="footerLinks" aria-label="Policies">
-              <a href="/privacy">Privacy Policy</a>
-              <a href="/terms">Terms of Service</a>
-            </nav>
-          </div>
-          <span className="prototypeTag">
-            Live prices, fetched when you search · Checkout is invite-only.
+        <div className="wrap footerInner footerLine">
+          <span>
+            <strong>{BRAND.name}</strong> — shop them all, in one place.
           </span>
+          <nav className="footerLinks" aria-label="Site links">
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/list-your-store">List your store</a>
+          </nav>
         </div>
       </footer>
     </div>
