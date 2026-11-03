@@ -146,6 +146,8 @@ export default function ShoppingApp() {
   const [customMax, setCustomMax] = useState("");
   const [filterFreeShipping, setFilterFreeShipping] = useState(false);
   const [filterWarrantyStated, setFilterWarrantyStated] = useState(false);
+  const [filterFreeReturns, setFilterFreeReturns] = useState(false);
+  const [filterMinReturnDays, setFilterMinReturnDays] = useState<number | null>(null);
 
   const [result, setResult] = useState<DecideResponse | null>(null);
   const [priority, setPriority] = useState<Priority>("cheapest");
@@ -270,6 +272,9 @@ export default function ShoppingApp() {
       if (filterMaxTotal !== null && product.lowestTotal > filterMaxTotal) return false;
       if (filterFreeShipping && !product.hasFreeShipping) return false;
       if (filterWarrantyStated && !product.hasStatedWarranty) return false;
+      // Return filters judge a product by its most generous offer.
+      if (filterFreeReturns && !product.hasFreeReturns) return false;
+      if (filterMinReturnDays !== null && product.longestReturnWindowDays < filterMinReturnDays) return false;
       if (filterMaxDays !== null && product.fastestDeliveryDays > filterMaxDays) return false;
       return true;
     });
@@ -278,7 +283,7 @@ export default function ShoppingApp() {
       list = [...list].sort((a, b) => a.fastestDeliveryDays - b.fastestDeliveryDays);
     }
     return list;
-  }, [searchMeta, filterBrands, filterMinTotal, filterMaxTotal, filterFreeShipping, filterWarrantyStated, filterMaxDays, sort]);
+  }, [searchMeta, filterBrands, filterMinTotal, filterMaxTotal, filterFreeShipping, filterWarrantyStated, filterFreeReturns, filterMinReturnDays, filterMaxDays, sort]);
 
   /* ----- offer filter helpers (results list + comparison table) ----- */
 
@@ -288,7 +293,9 @@ export default function ShoppingApp() {
     filterMinTotal !== null ||
     filterMaxTotal !== null ||
     filterFreeShipping ||
-    filterWarrantyStated;
+    filterWarrantyStated ||
+    filterFreeReturns ||
+    filterMinReturnDays !== null;
 
   function clearOfferFilters() {
     setFilterMinTotal(null);
@@ -297,6 +304,8 @@ export default function ShoppingApp() {
     setCustomMax("");
     setFilterFreeShipping(false);
     setFilterWarrantyStated(false);
+    setFilterFreeReturns(false);
+    setFilterMinReturnDays(null);
   }
 
   function clearAllFilters() {
@@ -333,6 +342,8 @@ export default function ShoppingApp() {
     if (filterMaxTotal !== null && offer.totalCost > filterMaxTotal) return false;
     if (filterFreeShipping && offer.shippingCost !== 0) return false;
     if (filterWarrantyStated && offer.warrantyMonths <= 0) return false;
+    if (filterFreeReturns && offer.returnCost !== "free") return false;
+    if (filterMinReturnDays !== null && offer.returnWindowDays < filterMinReturnDays) return false;
     return true;
   }
 
@@ -415,6 +426,37 @@ export default function ShoppingApp() {
         >
           Warranty stated
         </button>
+        <button
+          type="button"
+          className={`filterChip ${filterFreeReturns ? "active" : ""}`}
+          aria-pressed={filterFreeReturns}
+          onClick={() => setFilterFreeReturns((value) => !value)}
+        >
+          Free returns
+        </button>
+        <div className="filterChipRow" role="group" aria-label="Return window">
+          <button
+            type="button"
+            className={`filterChip ${filterMinReturnDays === null ? "active" : ""}`}
+            onClick={() => setFilterMinReturnDays(null)}
+          >
+            Any return window
+          </button>
+          <button
+            type="button"
+            className={`filterChip ${filterMinReturnDays === 30 ? "active" : ""}`}
+            onClick={() => setFilterMinReturnDays(30)}
+          >
+            30+ day returns
+          </button>
+          <button
+            type="button"
+            className={`filterChip ${filterMinReturnDays === 60 ? "active" : ""}`}
+            onClick={() => setFilterMinReturnDays(60)}
+          >
+            60+ day returns
+          </button>
+        </div>
         {anyFilterActive && (
           <>
             <button type="button" className="filterClear" onClick={clearAllFilters}>

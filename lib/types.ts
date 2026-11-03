@@ -206,6 +206,10 @@ export interface ProductSummary {
   hasFreeShipping: boolean;
   /** True when at least one of the group's offers states a warranty period. */
   hasStatedWarranty: boolean;
+  /** True when at least one of the group's offers states free returns. */
+  hasFreeReturns: boolean;
+  /** Longest stated return window (days) across the group's offers. */
+  longestReturnWindowDays: number;
   fastestDeliveryDays: number;
   exactMatch: boolean;
   dataSource: DataMode;
