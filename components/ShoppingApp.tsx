@@ -610,7 +610,9 @@ export default function ShoppingApp() {
       const existing = previous.find((entry) => entry.offerId === offer.id);
       if (existing) {
         return previous.map((entry) =>
-          entry.offerId === offer.id ? { ...entry, quantity: entry.quantity + 1 } : entry,
+          entry.offerId === offer.id
+            ? { ...entry, quantity: Math.min(10, entry.quantity + 1) }
+            : entry,
         );
       }
       return [...previous, item];
@@ -621,6 +623,21 @@ export default function ShoppingApp() {
 
   function removeFromCart(offerId: string) {
     setCart((previous) => previous.filter((item) => item.offerId !== offerId));
+  }
+
+  /**
+   * Quantity editing for the cart/checkout page. The checkout API caps
+   * a line at 10, so the editor clamps to 1–10 as well — the quantity
+   * the page shows is exactly the quantity both checkout paths send.
+   */
+  function updateCartQuantity(offerId: string, quantity: number) {
+    if (!Number.isFinite(quantity)) return;
+    const next = Math.max(1, Math.min(10, Math.round(quantity)));
+    setCart((previous) =>
+      previous.map((item) =>
+        item.offerId === offerId ? { ...item, quantity: next } : item,
+      ),
+    );
   }
 
   function setCheckoutState(
@@ -1223,9 +1240,41 @@ export default function ShoppingApp() {
                     <strong>{item.productName}</strong>
                     <p>Ships from and sold by {item.seller}</p>
                     <small>
-                      {item.condition} · Qty {item.quantity} · Arrives {arrivalDate(item.deliveryDays)} ·{" "}
+                      {item.condition} · Arrives {arrivalDate(item.deliveryDays)} ·{" "}
                       {item.returnWindowDays}-day return window
                     </small>
+                    <div className="qtyControl">
+                      <span>Qty</span>
+                      <button
+                        type="button"
+                        aria-label={`Decrease quantity of ${item.productName}`}
+                        disabled={item.quantity <= 1}
+                        onClick={() => updateCartQuantity(item.offerId, item.quantity - 1)}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        aria-label={`Quantity of ${item.productName}`}
+                        min={1}
+                        max={10}
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const parsed = Number.parseInt(e.target.value, 10);
+                          if (!Number.isNaN(parsed)) {
+                            updateCartQuantity(item.offerId, parsed);
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Increase quantity of ${item.productName}`}
+                        disabled={item.quantity >= 10}
+                        onClick={() => updateCartQuantity(item.offerId, item.quantity + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <div className="cartPriceCol">
                     <strong>{money(item.totalCost * item.quantity)}</strong>
