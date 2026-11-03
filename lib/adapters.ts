@@ -141,7 +141,11 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
   // were the ten Wave-2 additions (Wave 1's verified-but-deferred set,
   // re-verified live before registering, also Nov 1, 2026). Arhaus was
   // re-verified to the same bar on Nov 1, 2026 after a first-pass
-  // handshake failure, and registered with this wave.
+  // handshake failure, and registered with this wave. The eleven
+  // Wave-4 additions passed the same bar on Nov 3, 2026 (the wave-3
+  // card-blocked trio ButcherBox / Fashion Nova / Eddie Bauer among
+  // them — their Nov 1 timeouts were this sandbox's egress cards,
+  // never store failures).
   // Catalog reads only; no cart/checkout calls.
   ...[
     "Steve Madden",
@@ -185,6 +189,17 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     "Woodcraft",
     "Arhaus",
     "Bonobos",
+    "Dover Saddlery",
+    "Fashion Nova",
+    "Burrow",
+    "ButcherBox",
+    "Champion",
+    "Eddie Bauer",
+    "Faherty",
+    "Johnnie-O",
+    "Sperry",
+    "True Classic",
+    "UNTUCKit",
   ].map(
     (merchant): MerchantPolicy => ({
       merchant,

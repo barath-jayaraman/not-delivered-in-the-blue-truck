@@ -729,6 +729,172 @@ export const UCP_STORES: UcpStore[] = [
     ],
     prefixBrand: true,
   },
+  /* ---------------------------------------------------------------- */
+  /* Wave 4 (Nov 3, 2026) — Top-1000 sweep UCP-live winners, fourth   */
+  /* batch, verified to the same evidence bar (see per-store notes).  */
+  /* ButcherBox, Fashion Nova and Eddie Bauer are the wave-3 trio     */
+  /* whose Nov 1 attempts timed out on this sandbox's egress         */
+  /* approval cards — never store failures; all three passed          */
+  /* end-to-end on Nov 3, 2026. Fallback endpoints are exactly the    */
+  /* hosts each store's live profile declared at verification.        */
+  /* ---------------------------------------------------------------- */
+  {
+    // Verified: "Weaver Leather® Prodigy™ Original Athletic Boots"
+    // — USD 90.49
+    merchant: "Dover Saddlery",
+    profileHost: "doversaddlery.com",
+    brand: "Dover Saddlery",
+    fallbackEndpoint: "https://dover-saddlery.myshopify.com/api/ucp/mcp",
+    category: "Equestrian",
+    brandAliases: ["dover saddlery", "dover"],
+    keywords: [
+      "horse", "horses", "equestrian", "saddle", "saddles", "tack",
+      "horse tack", "horse boots", "horse blanket", "horse blankets",
+      "riding boots", "breeches",
+    ],
+    prefixBrand: false,
+  },
+  {
+    // Verified: "Katarina Maxi Gown Dress - Black" — USD 55.99
+    merchant: "Fashion Nova",
+    profileHost: "fashionnova.com",
+    brand: "Fashion Nova",
+    fallbackEndpoint: "https://fnova.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["fashion nova", "fashionnova"],
+    keywords: [
+      "dress", "dresses", "maxi dress", "gown", "gowns", "jumpsuit",
+      "jumpsuits", "going out dress", "bodycon dress",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Ember Sofa" — USD 1203
+    merchant: "Burrow",
+    profileHost: "burrow.com",
+    brand: "Burrow",
+    fallbackEndpoint: "https://burrow-prod.myshopify.com/api/ucp/mcp",
+    category: "Furniture",
+    brandAliases: ["burrow"],
+    keywords: [
+      "sofa", "sofas", "couch", "couches", "sectional", "sectionals",
+      "modular sofa", "loveseat", "loveseats",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Ground Beef 85/15" — USD 16.5
+    merchant: "ButcherBox",
+    profileHost: "butcherbox.com",
+    brand: "ButcherBox",
+    fallbackEndpoint: "https://butcherbox-prod.myshopify.com/api/ucp/mcp",
+    category: "Grocery",
+    brandAliases: ["butcherbox", "butcher box"],
+    keywords: [
+      "ground beef", "beef", "steak", "steaks", "meat",
+      "meat delivery", "grass fed beef", "chicken breast", "salmon",
+      "pork chops",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Powerblend Hoodie, Full Script Logo" — USD 37.5
+    merchant: "Champion",
+    profileHost: "champion.com",
+    brand: "Champion",
+    fallbackEndpoint: "https://abg-champion-store.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["champion"],
+    keywords: [
+      "hoodie", "hoodies", "sweatshirt", "sweatshirts", "sweatpants",
+      "joggers", "athletic apparel", "reverse weave",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Men's Cirruslite Down Jacket" — USD 129
+    merchant: "Eddie Bauer",
+    profileHost: "eddiebauer.com",
+    brand: "Eddie Bauer",
+    fallbackEndpoint: "https://4gqgby-g9.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["eddie bauer"],
+    keywords: [
+      "down jacket", "down jackets", "puffer jacket", "jacket",
+      "jackets", "flannel", "outdoor apparel", "hiking apparel",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "The Movement Shirt - Light Blue Gingham" — USD 168
+    merchant: "Faherty",
+    profileHost: "fahertybrand.com",
+    brand: "Faherty",
+    fallbackEndpoint: "https://faherty.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["faherty"],
+    keywords: [
+      "shirt", "shirts", "button down", "flannel shirt", "mens shirt",
+      "mens shirts",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Original 4-Button Polo - Solid" — USD 89
+    merchant: "Johnnie-O",
+    profileHost: "johnnie-o.com",
+    brand: "Johnnie-O",
+    fallbackEndpoint: "https://johnnie-oadmin.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["johnnie-o", "johnnie o", "johnnieo"],
+    keywords: [
+      "polo", "polos", "polo shirt", "polo shirts", "golf shirt",
+      "golf shirts", "mens polo",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Slim Boat Shoe" — USD 47.98
+    merchant: "Sperry",
+    profileHost: "sperry.com",
+    brand: "Sperry",
+    fallbackEndpoint: "https://zc1uwf-et.myshopify.com/api/ucp/mcp",
+    category: "Shoes",
+    brandAliases: ["sperry", "sperry top sider", "top sider"],
+    keywords: [
+      "boat shoe", "boat shoes", "deck shoes", "loafers", "loafer",
+      "shoes", "shoe", "footwear",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "White Classic Crew Neck" — USD 34.99
+    merchant: "True Classic",
+    profileHost: "trueclassic.com",
+    brand: "True Classic",
+    fallbackEndpoint: "https://trueclassictees-com.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["true classic"],
+    keywords: [
+      "t shirt", "t shirts", "t-shirt", "t-shirts", "tee", "tees",
+      "crew neck", "mens t shirt", "mens tees",
+    ],
+    prefixBrand: true,
+  },
+  {
+    // Verified: "Wrinkle-Free Black Stone Shirt" — USD 109
+    merchant: "UNTUCKit",
+    profileHost: "untuckit.com",
+    brand: "UNTUCKit",
+    fallbackEndpoint: "https://untuckit.myshopify.com/api/ucp/mcp",
+    category: "Apparel",
+    brandAliases: ["untuckit", "untuck it"],
+    keywords: [
+      "untucked shirt", "untucked shirts", "dress shirt",
+      "dress shirts", "button down shirt", "wrinkle free shirt",
+    ],
+    prefixBrand: true,
+  },
 ];
 
 /** Registry lookup by merchant display name (checkout routing). */
