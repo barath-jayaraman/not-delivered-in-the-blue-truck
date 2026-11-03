@@ -14,13 +14,20 @@ import type {
 } from "@/lib/types";
 import { BRAND } from "@/lib/config";
 import { CATEGORY_IMAGES, productImage } from "@/lib/images";
+import {
+  ORDER_STORAGE_KEY,
+  loadStoredHandoffs,
+  mergeOrderHistory,
+  recordStoredHandoff,
+  type StoreHandoff,
+} from "@/lib/order-history";
 
 /**
  * Confirmed REAL orders (store-returned data only), remembered in the
- * shopper's own browser. The retired v1 key held sandbox sample
- * orders; those were never real and are simply no longer read.
+ * shopper's own browser under ORDER_STORAGE_KEY (lib/order-history.ts).
+ * The retired v1 key held sandbox sample orders; those were never
+ * real and are simply no longer read.
  */
-const ORDER_STORAGE_KEY = "not-delivered-in-the-blue-truck-orders-v2";
 
 /** The comparison always asks for delivery within a week in this prototype. */
 const NEED_BY_DAYS = 7;
@@ -190,6 +197,9 @@ export default function ShoppingApp() {
   const [orders, setOrders] = useState<StoreOrder[]>([]);
   const [ordersLoaded, setOrdersLoaded] = useState(false);
   const [placedOrders, setPlacedOrders] = useState<StoreOrder[]>([]);
+  /** Path B handoffs (buyer checked out on the store's own site),
+   *  remembered on this device only; see lib/order-history.ts. */
+  const [handoffs, setHandoffs] = useState<StoreHandoff[]>([]);
 
   /* ----- order history persistence (local to the browser) -----
      Only orders a store itself confirmed are ever written here, with
@@ -201,6 +211,7 @@ export default function ShoppingApp() {
         const parsed = JSON.parse(raw) as StoreOrder[];
         if (Array.isArray(parsed)) setOrders(parsed);
       }
+      setHandoffs(loadStoredHandoffs());
     } catch {
       // A corrupted local record should not break the shopping flow.
     } finally {
@@ -278,7 +289,7 @@ export default function ShoppingApp() {
       if (filterMaxDays !== null && product.fastestDeliveryDays > filterMaxDays) return false;
       return true;
     });
-    if (sort === "price") list = [...list].sort((a, b) => a.lowestTotal - b.lowestTotal);
+    if (sort === "price") list = [...list].sort((a, b) => a.lowestPrice - b.lowestPrice);
     if (sort === "fastest") {
       list = [...list].sort((a, b) => a.fastestDeliveryDays - b.fastestDeliveryDays);
     }
@@ -736,6 +747,25 @@ export default function ShoppingApp() {
         return;
       }
       window.open(data.continueUrl, "_blank", "noopener");
+      /* Remember the handoff on this device only. The buyer checks
+         out at the store, so this record is labeled a store checkout
+         wherever it appears — never an order placed in this app. */
+      setHandoffs(
+        recordStoredHandoff({
+          merchant,
+          items: items.map((item) => ({
+            title: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          itemsTotal: items.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0,
+          ),
+          handedOffAt: new Date().toISOString(),
+          cartUrl: data.continueUrl,
+        }),
+      );
       setCheckoutState(merchant, {
         cartBusy: false,
         cartUrl: data.continueUrl,
@@ -1591,11 +1621,59 @@ export default function ShoppingApp() {
     );
   }
 
+  function renderHandoffCard(handoff: StoreHandoff) {
+    return (
+      <article
+        className="orderCard"
+        key={`handoff-${handoff.merchant}-${handoff.handedOffAt}`}
+      >
+        <div className="orderHead">
+          <div className="orderMain">
+            <p className="orderNumber">Completed at the store</p>
+            <h4>{handoff.merchant}</h4>
+            <small>
+              Sent to {handoff.merchant}&apos;s cart ·{" "}
+              {formatDateTime(handoff.handedOffAt)}
+            </small>
+          </div>
+          <span className="statusBadge">At {handoff.merchant}</span>
+        </div>
+        <div className="cartList">
+          {handoff.items.map((item, index) => (
+            <div className="cartItem" key={`${item.title}-${index}`}>
+              <div className="cartItemBody">
+                <strong>{item.title}</strong>
+                <small>Qty {item.quantity}</small>
+              </div>
+              <div className="cartPriceCol">
+                <strong>{money(item.price * item.quantity)}</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="confirmationMeta">
+          Items total when handed off: {money(handoff.itemsTotal)}. You entered
+          your details and paid on {handoff.merchant}&apos;s site —{" "}
+          {handoff.merchant} handles the order, delivery, and returns.
+          {handoff.cartUrl && (
+            <>
+              {" "}
+              <a href={handoff.cartUrl} target="_blank" rel="noreferrer">
+                Open the cart at {handoff.merchant} ↗
+              </a>
+            </>
+          )}
+        </p>
+      </article>
+    );
+  }
+
   function renderOrders() {
+    const entries = mergeOrderHistory(orders, handoffs);
     return (
       <main className="wrap flowMain">
         <h2 className="viewTitle">Orders</h2>
-        {orders.length === 0 ? (
+        {entries.length === 0 ? (
           <div className="flowCard">
             <p className="mutedText">
               No orders yet. When a store confirms an order from a checkout here,
@@ -1603,7 +1681,13 @@ export default function ShoppingApp() {
             </p>
           </div>
         ) : (
-          <div className="orderList">{orders.map((order) => renderOrderCard(order))}</div>
+          <div className="orderList">
+            {entries.map((entry) =>
+              entry.kind === "order"
+                ? renderOrderCard(entry.order)
+                : renderHandoffCard(entry.handoff),
+            )}
+          </div>
         )}
       </main>
     );
@@ -1670,6 +1754,7 @@ export default function ShoppingApp() {
             <strong>{BRAND.name}</strong> — shop them all, in one place.
           </span>
           <nav className="footerLinks" aria-label="Site links">
+            <a href="/orders">Orders</a>
             <a href="/privacy">Privacy Policy</a>
             <a href="/terms">Terms of Service</a>
             <a href="/list-your-store">List your store</a>
