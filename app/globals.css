@@ -706,6 +706,23 @@ img {
   gap: 14px;
 }
 
+.showMoreBtn {
+  align-self: center;
+  background: var(--pine);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.showMoreBtn:hover {
+  opacity: 0.9;
+}
+
 .resultRow {
   display: flex;
   gap: 18px;

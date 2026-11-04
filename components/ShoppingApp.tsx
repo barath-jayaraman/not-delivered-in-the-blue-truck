@@ -105,6 +105,12 @@ function summaryImage(product: ProductSummary): string {
   );
 }
 
+/** Results render in pages of this many products; a "Show more"
+ *  button reveals the next page until everything the search
+ *  returned is on screen (Barath, Nov 4, 2026 — no low cap hiding
+ *  matches). */
+const RESULTS_PAGE_SIZE = 100;
+
 export default function ShoppingApp() {
   const [view, setView] = useState<View>("home");
   const [query, setQuery] = useState("");
@@ -113,6 +119,7 @@ export default function ShoppingApp() {
 
   const [searchMeta, setSearchMeta] = useState<{ query: string; products: ProductSummary[] } | null>(null);
   const [sort, setSort] = useState<SortMode>("price");
+  const [resultsShown, setResultsShown] = useState(RESULTS_PAGE_SIZE);
   const [filterBrands, setFilterBrands] = useState<string[]>([]);
   const [filterMaxDays, setFilterMaxDays] = useState<number | null>(null);
   /* Offer filters, shared by the results list and the comparison
@@ -155,6 +162,11 @@ export default function ShoppingApp() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [view]);
+
+  /* A new search starts again at the first page of results. */
+  useEffect(() => {
+    setResultsShown(RESULTS_PAGE_SIZE);
+  }, [searchMeta]);
 
   const resultBrands = useMemo(
     () => (searchMeta ? [...new Set(searchMeta.products.map((p) => p.brand))].sort() : []),
@@ -615,12 +627,16 @@ export default function ShoppingApp() {
 
   function renderResults() {
     const total = searchMeta?.products.length ?? 0;
+    const filteredCount = visibleResults.length;
+    const shownCount = Math.min(resultsShown, filteredCount);
+    const shownResults = visibleResults.slice(0, shownCount);
     return (
       <main className="wrap resultsMain">
         <div className="resultsHead">
           <p className="resultsCount">
-            {visibleResults.length} result{visibleResults.length === 1 ? "" : "s"} for &ldquo;
-            {searchMeta?.query}&rdquo;
+            {total} product{total === 1 ? "" : "s"} for &ldquo;{searchMeta?.query}&rdquo;
+            {filteredCount !== total ? ` · ${filteredCount} match your filters` : ""}
+            {shownCount < filteredCount ? ` · showing ${shownCount}` : ""}
           </p>
           <label className="sortControl" htmlFor="sort">
             Sort
@@ -697,7 +713,7 @@ export default function ShoppingApp() {
             </div>
           ) : (
             <div className="resultList">
-              {visibleResults.map((product) => (
+              {shownResults.map((product) => (
                 <button
                   key={product.id}
                   type="button"
@@ -727,6 +743,15 @@ export default function ShoppingApp() {
                   </span>
                 </button>
               ))}
+              {shownCount < filteredCount && (
+                <button
+                  type="button"
+                  className="showMoreBtn"
+                  onClick={() => setResultsShown((count) => count + RESULTS_PAGE_SIZE)}
+                >
+                  Show more ({filteredCount - shownCount} more)
+                </button>
+              )}
             </div>
           )}
         </div>

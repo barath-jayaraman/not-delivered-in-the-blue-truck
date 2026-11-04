@@ -75,7 +75,7 @@ import type { Merchant, Offer, ProductSummary } from "./types";
  * the listing is skipped, never guessed.
  */
 
-const MAX_GROUPS = 20;
+const MAX_GROUPS = 200;
 const MAX_OFFERS_PER_GROUP = 6;
 const MAX_EBAY_OFFERS_PER_GROUP = 4;
 const MAX_WALMART_OFFERS_PER_GROUP = 2;
