@@ -247,7 +247,7 @@ export interface ExplainOfferFacts {
   price: number;
   shippingCost: number;
   deliveryDays: number;
-  returnWindowDays: number;
+  returnWindowDays: number | null;
   returnCost: ReturnCost;
   warrantyMonths: number;
   sellerRating: number;
@@ -283,10 +283,19 @@ function offerFacts(label: string, o: ExplainOfferFacts): string {
   const rating = o.firstPartyStore
     ? "no seller rating (the merchant's own first-party store)"
     : o.sellerRating.toFixed(1);
+  // Return terms exactly as the source stated them: a stated window, a
+  // stated cost with no stated window, or nothing stated at all. Never
+  // hand the model a window the source did not state.
+  const returns =
+    o.returnWindowDays === null
+      ? o.returnCost === "not-stated"
+        ? "not stated by seller"
+        : `${o.returnCost}, window not stated by seller`
+      : `${o.returnCost} within ${o.returnWindowDays} days`;
   return (
     `${label}: seller ${o.seller} (${o.merchant}), total ${money(o.totalCost)} ` +
     `(sticker ${money(o.price)} + shipping ${shipping}), ` +
-    `arrives in ${o.deliveryDays} days, returns: ${o.returnCost} within ${o.returnWindowDays} days, ` +
+    `arrives in ${o.deliveryDays} days, returns: ${returns}, ` +
     `warranty ${o.warrantyMonths > 0 ? `${o.warrantyMonths} months` : "not stated by seller"}, seller rating ${rating}, score ${o.score}/100.`
   );
 }

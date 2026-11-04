@@ -46,8 +46,13 @@ import type { Merchant, Offer } from "../types";
  *   merchant at checkout", NOT free shipping (lib/scoring.ts does not
  *   attach its "Free shipping" flag to UCP offers);
  * - deliveryDays is a standard ground service-level estimate;
- * - return terms are a conservative curated pattern (30 days,
- *   buyer-paid), not the merchant's stated policy;
+ * - return terms are NOT stated (returnWindowDays null, rendered
+ *   "Not stated by seller"). Accuracy fix, Nov 4, 2026: the earlier
+ *   generic 30-day/buyer-paid default rendered in the comparison table
+ *   as if it were each merchant's own policy — e.g. Kane's Furniture,
+ *   whose published terms are a 48-hour cancellation window and a 20%
+ *   restocking fee, nothing like 30 days. A return window is shown
+ *   only when a source actually states one;
  * - warrantyMonths 0 = not stated (rendered "Not stated by seller");
  * - sellerRating 0 = first-party store, no rating stated (the UI
  *   renders that as a first-party note, not a star rating).
@@ -102,9 +107,8 @@ const SESSION_CACHE_TTL_MS = 10 * 60_000;
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const CATALOG_SEARCH_CAP = "dev.ucp.shopping.catalog.search";
 
-/** Curated/service estimates for fields the UCP catalog does not state. */
+/** Service estimate for the delivery field the UCP catalog does not state. */
 const SERVICE_DELIVERY_DAYS = 5;
-const CURATED_RETURN_WINDOW_DAYS = 30;
 
 export function ucpEnabled(): boolean {
   return process.env.ENABLE_UCP !== "0";
@@ -1501,9 +1505,9 @@ export function buildUcpOffer(
     shippingCost: 0,
     deliveryDays: SERVICE_DELIVERY_DAYS,
     deliveryBasis: "Sample shipping-service estimate",
-    returnWindowDays: CURATED_RETURN_WINDOW_DAYS,
-    returnCost: "buyer-paid",
-    returnPolicySource: "Curated retailer-policy sample",
+    returnWindowDays: null,
+    returnCost: "not-stated",
+    returnPolicySource: "Not stated by seller",
     warrantyMonths: 0,
     sellerRating: 0,
     checkoutItemId: product.itemId,
@@ -1525,9 +1529,9 @@ export function buildUcpOffer(
         `merchant's own live figure. The UCP catalog does not state ` +
         `a shipping charge (shipping is calculated by the merchant at checkout and is not ` +
         `included in the total), a delivery estimate (a ${SERVICE_DELIVERY_DAYS}-day standard ` +
-        `ground service estimate is used for scoring), return terms (a conservative curated ` +
-        `${CURATED_RETURN_WINDOW_DAYS}-day buyer-paid pattern is shown, not the merchant's ` +
-        `stated policy), a warranty period, or a seller rating — this is the merchant's own ` +
+        `ground service estimate is used for scoring), return terms (none are stated, so ` +
+        `returns are shown as "Not stated by seller" — the merchant's own published ` +
+        `policy, on its site, governs), a warranty period, or a seller rating — this is the merchant's own ` +
         `first-party store. Nothing here is stored: the price was fetched in this request.`,
     },
   };

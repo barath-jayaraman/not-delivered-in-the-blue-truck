@@ -491,8 +491,12 @@ function summarizeGroup(group: LiveProductGroup, query: string): ProductSummary 
     hasFreeShipping: group.offers.some((o) => o.shippingCost === 0),
     hasStatedWarranty: group.offers.some((o) => o.warrantyMonths > 0),
     hasFreeReturns: group.offers.some((o) => o.returnCost === "free"),
+    // Longest STATED window in the group; offers that state none
+    // (returnWindowDays null) contribute 0, and 0 means "no offer in
+    // this group states a return window".
     longestReturnWindowDays: Math.max(
-      ...group.offers.map((o) => o.returnWindowDays),
+      0,
+      ...group.offers.map((o) => o.returnWindowDays ?? 0),
     ),
     fastestDeliveryDays: Math.min(...group.offers.map((o) => o.deliveryDays)),
     exactMatch: normalizeSearch(group.name).includes(normalizeSearch(query)),

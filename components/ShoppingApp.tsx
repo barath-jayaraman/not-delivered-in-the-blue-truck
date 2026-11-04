@@ -2,49 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type {
-  CartItem,
   DecideResponse,
-  Merchant,
   Priority,
   ProductSummary,
   ScoredOffer,
   SearchResponse,
-  StoreOrder,
 } from "@/lib/types";
 import { BRAND } from "@/lib/config";
 import { CATEGORY_IMAGES, productImage } from "@/lib/images";
-import {
-  ORDER_STORAGE_KEY,
-  loadStoredHandoffs,
-  mergeOrderHistory,
-  recordStoredHandoff,
-  type StoreHandoff,
-} from "@/lib/order-history";
-
-/**
- * Confirmed REAL orders (store-returned data only), remembered in the
- * shopper's own browser under ORDER_STORAGE_KEY (lib/order-history.ts).
- * The retired v1 key held sandbox sample orders; those were never
- * real and are simply no longer read.
- */
 
 /** The comparison always asks for delivery within a week in this prototype. */
 const NEED_BY_DAYS = 7;
 
-type View = "home" | "results" | "product" | "cart" | "confirmation" | "orders";
+type View = "home" | "results" | "product";
 type SortMode = "price" | "fastest";
 
 const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
-
-function formatDate(value: Date | string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(typeof value === "string" ? new Date(value) : value);
-}
 
 function formatFullDate(value: Date): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -65,12 +39,6 @@ function formatDateTime(value: string): string {
   }).format(new Date(value));
 }
 
-function arrivalDate(deliveryDays: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + deliveryDays);
-  return formatDate(date);
-}
-
 function arrivalFullDate(deliveryDays: number): string {
   const date = new Date();
   date.setDate(date.getDate() + deliveryDays);
@@ -79,12 +47,16 @@ function arrivalFullDate(deliveryDays: number): string {
 
 function returnWindowLabel(offer: ScoredOffer): string {
   if (offer.returnCost === "final-sale") return "Final sale";
+  // returnWindowDays null means the source stated no return window —
+  // an absence of data, labelled exactly like warranty's absence.
+  if (offer.returnWindowDays === null) return "Not stated by seller";
   return `${offer.returnWindowDays} days`;
 }
 
 function returnCostLabel(offer: ScoredOffer): string {
   if (offer.returnCost === "free") return "Free";
   if (offer.returnCost === "buyer-paid") return "Buyer-paid";
+  if (offer.returnCost === "not-stated") return "Not stated";
   return "—";
 }
 
@@ -99,17 +71,11 @@ function warrantyLabel(offer: ScoredOffer): string {
   return `${offer.warrantyMonths}-month warranty`;
 }
 
-/** A cart item can be pre-loaded into the store's own cart only when
- *  its offer came from a UCP store and carries the merchant's
- *  purchasable item id. */
-function canPreloadStoreCart(item: CartItem): boolean {
-  return item.policyStatus === "ucp-public-profile" && !!item.checkoutItemId;
-}
-
-/** Store total line for an order/session, as the store labeled it. */
-function orderTotal(order: { totals: StoreOrder["totals"] }): number | null {
-  const total = order.totals.find((line) => line.type === "total");
-  return total ? total.amount : null;
+/** An offer can be pre-loaded into the store's own cart only when
+ *  it came from a UCP store and carries the merchant's purchasable
+ *  item id — those offers get the store-checkout handoff button. */
+function canPreloadStoreCart(offer: ScoredOffer): boolean {
+  return offer.provenance.policyStatus === "ucp-public-profile" && !!offer.checkoutItemId;
 }
 
 /** Live-group categories that differ from the stored category-art keys. */
@@ -128,11 +94,6 @@ function summaryImage(product: ProductSummary): string {
     CATEGORY_IMAGE_ALIASES[product.category] ??
     productImage(product.id)
   );
-}
-
-/** Image for cart/order records, which remember a live product's image. */
-function recordImage(record: { productId: string; imageUrl?: string | null }): string {
-  return record.imageUrl ?? productImage(record.productId);
 }
 
 export default function ShoppingApp() {
@@ -161,10 +122,7 @@ export default function ShoppingApp() {
   /** Live-search groups currently openable: group id → the query that found it. */
   const [liveGroups, setLiveGroups] = useState<Record<string, string>>({});
 
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [cartNotice, setCartNotice] = useState<string | null>(null);
-
-  /** Per-merchant store-checkout state, keyed by merchant name. */
+  /** Per-offer store-checkout state, keyed by offer id. */
   const [checkoutSessions, setCheckoutSessions] = useState<
     Record<
       string,
@@ -178,38 +136,9 @@ export default function ShoppingApp() {
     >
   >({});
 
-  const [orders, setOrders] = useState<StoreOrder[]>([]);
-  const [ordersLoaded, setOrdersLoaded] = useState(false);
-  /** Store-checkout handoffs (buyer checked out on the store's own site),
-   *  remembered on this device only; see lib/order-history.ts. */
-  const [handoffs, setHandoffs] = useState<StoreHandoff[]>([]);
-
-  /* ----- order history persistence (local to the browser) -----
-     Only orders a store itself confirmed are ever written here, with
-     the store's own figures; see StoreOrder in lib/types.ts. */
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(ORDER_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as StoreOrder[];
-        if (Array.isArray(parsed)) setOrders(parsed);
-      }
-      setHandoffs(loadStoredHandoffs());
-    } catch {
-      // A corrupted local record should not break the shopping flow.
-    } finally {
-      setOrdersLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!ordersLoaded) return;
-    try {
-      window.localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(orders));
-    } catch {
-      // Storage may be unavailable in a restricted browser context.
-    }
-  }, [orders, ordersLoaded]);
+  /* This site keeps no cart and no order history (Barath, Nov 4,
+     2026): every purchase finishes on the selling store's own site,
+     so there is nothing of the shopper's to remember here. */
 
   /* The search-only home (wonder-v7) makes no live calls on load:
      nothing is fetched until the shopper searches. */
@@ -218,31 +147,6 @@ export default function ShoppingApp() {
     window.scrollTo({ top: 0 });
   }, [view]);
 
-  const cartTotals = useMemo(() => {
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const shipping = cart.reduce((sum, item) => sum + item.shippingCost * item.quantity, 0);
-    return {
-      subtotal,
-      shipping,
-      total: subtotal + shipping,
-      count: cart.reduce((n, item) => n + item.quantity, 0),
-    };
-  }, [cart]);
-
-  /** Merchants whose cart items check out inside this app (UCP). */
-  const checkoutMerchants = useMemo(() => {
-    const seen: Merchant[] = [];
-    for (const item of cart) {
-      if (canPreloadStoreCart(item) && !seen.includes(item.merchant)) {
-        seen.push(item.merchant);
-      }
-    }
-    return seen;
-  }, [cart]);
-  const handoffItems = useMemo(
-    () => cart.filter((item) => !canPreloadStoreCart(item)),
-    [cart],
-  );
   const resultBrands = useMemo(
     () => (searchMeta ? [...new Set(searchMeta.products.map((p) => p.brand))].sort() : []),
     [searchMeta],
@@ -328,7 +232,7 @@ export default function ShoppingApp() {
     if (filterFreeShipping && offer.shippingCost !== 0) return false;
     if (filterWarrantyStated && offer.warrantyMonths <= 0) return false;
     if (filterFreeReturns && offer.returnCost !== "free") return false;
-    if (filterMinReturnDays !== null && offer.returnWindowDays < filterMinReturnDays) return false;
+    if (filterMinReturnDays !== null && (offer.returnWindowDays ?? 0) < filterMinReturnDays) return false;
     return true;
   }
 
@@ -553,68 +457,13 @@ export default function ShoppingApp() {
 
   function goHome() {
     setError(null);
-    setCartNotice(null);
     setView("home");
   }
 
-  /* ----- cart & checkout ----- */
-
-  function addToCart(offer: ScoredOffer) {
-    if (!result) return;
-    const item: CartItem = {
-      productId: result.product.id,
-      productName: result.product.name,
-      imageUrl: result.product.imageUrl ?? null,
-      offerId: offer.id,
-      merchant: offer.merchant,
-      seller: offer.seller,
-      condition: offer.condition,
-      price: offer.price,
-      shippingCost: offer.shippingCost,
-      totalCost: offer.totalCost,
-      deliveryDays: offer.deliveryDays,
-      returnWindowDays: offer.returnWindowDays,
-      returnCost: offer.returnCost,
-      quantity: 1,
-      checkoutItemId: offer.checkoutItemId ?? null,
-      sourceUrl: offer.provenance.sourceUrl,
-      policyStatus: offer.provenance.policyStatus,
-    };
-    setCart((previous) => {
-      const existing = previous.find((entry) => entry.offerId === offer.id);
-      if (existing) {
-        return previous.map((entry) =>
-          entry.offerId === offer.id
-            ? { ...entry, quantity: Math.min(10, entry.quantity + 1) }
-            : entry,
-        );
-      }
-      return [...previous, item];
-    });
-    setCartNotice(`${result.product.name} from ${offer.seller} was added to the cart.`);
-  }
-
-  function removeFromCart(offerId: string) {
-    setCart((previous) => previous.filter((item) => item.offerId !== offerId));
-  }
-
-  /**
-   * Quantity editing for the cart/checkout page. The checkout API caps
-   * a line at 10, so the editor clamps to 1–10 as well — the quantity
-   * the page shows is exactly the quantity both checkout paths send.
-   */
-  function updateCartQuantity(offerId: string, quantity: number) {
-    if (!Number.isFinite(quantity)) return;
-    const next = Math.max(1, Math.min(10, Math.round(quantity)));
-    setCart((previous) =>
-      previous.map((item) =>
-        item.offerId === offerId ? { ...item, quantity: next } : item,
-      ),
-    );
-  }
+  /* ----- store checkout (the site's only checkout path) ----- */
 
   function setCheckoutState(
-    merchant: Merchant,
+    offerId: string,
     patch: Partial<{
       fallbackUrl: string;
       cartBusy: boolean;
@@ -625,24 +474,29 @@ export default function ShoppingApp() {
   ) {
     setCheckoutSessions((previous) => ({
       ...previous,
-      [merchant]: { ...previous[merchant], ...patch },
+      [offerId]: { ...previous[offerId], ...patch },
     }));
   }
 
   /**
-   * The site's only checkout path: ask the store to pre-load a cart
-   * with this merchant's items and hand back its own continuation
-   * link. No buyer details are collected or sent by this site — the
-   * buyer enters everything and pays on the store's site. The
-   * returned link is rendered in the panel (popup blockers can't
-   * eat it) and also opened in a new tab.
+   * The site's only checkout path, for one product from its product
+   * page: ask the store to pre-load its own cart with this item and
+   * hand back its continuation link. No buyer details are collected
+   * or sent by this site — the buyer enters everything and pays on
+   * the store's site. The returned link is rendered in the row
+   * (popup blockers can't eat it) and also opened in a new tab.
+   * Nothing is recorded here: the purchase finishes at the store,
+   * so this site keeps no cart and no order history.
    */
-  async function continueAtStore(merchant: Merchant) {
-    const items = cart.filter(
-      (item) => item.merchant === merchant && canPreloadStoreCart(item),
-    );
-    if (items.length === 0) return;
-    setCheckoutState(merchant, { cartBusy: true, cartError: undefined, cartNote: undefined });
+  async function continueAtStore(offer: ScoredOffer) {
+    if (!offer.checkoutItemId) return;
+    const merchant = offer.merchant;
+    setCheckoutState(offer.id, {
+      cartBusy: true,
+      cartUrl: undefined,
+      cartNote: undefined,
+      cartError: undefined,
+    });
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -650,10 +504,7 @@ export default function ShoppingApp() {
         body: JSON.stringify({
           action: "cartlink",
           merchant,
-          items: items.map((item) => ({
-            itemId: item.checkoutItemId,
-            quantity: item.quantity,
-          })),
+          items: [{ itemId: offer.checkoutItemId, quantity: 1 }],
         }),
       });
       const data = (await res.json()) as {
@@ -663,7 +514,7 @@ export default function ShoppingApp() {
         continueUrl?: string;
       };
       if (!res.ok || !data.ok || !data.continueUrl) {
-        setCheckoutState(merchant, {
+        setCheckoutState(offer.id, {
           cartBusy: false,
           cartError:
             data.error ?? `${merchant} could not prepare a cart. Use the product link instead.`,
@@ -672,34 +523,15 @@ export default function ShoppingApp() {
         return;
       }
       window.open(data.continueUrl, "_blank", "noopener");
-      /* Remember the handoff on this device only. The buyer checks
-         out at the store, so this record is labeled a store checkout
-         wherever it appears — never an order placed in this app. */
-      setHandoffs(
-        recordStoredHandoff({
-          merchant,
-          items: items.map((item) => ({
-            title: item.productName,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          itemsTotal: items.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0,
-          ),
-          handedOffAt: new Date().toISOString(),
-          cartUrl: data.continueUrl,
-        }),
-      );
-      setCheckoutState(merchant, {
+      setCheckoutState(offer.id, {
         cartBusy: false,
         cartUrl: data.continueUrl,
         cartNote:
-          `Your items are in ${merchant}'s cart — the link opened in a new tab. ` +
+          `Your item is in ${merchant}'s cart — the link opened in a new tab. ` +
           `Enter your details and pay on ${merchant}'s site.`,
       });
     } catch {
-      setCheckoutState(merchant, {
+      setCheckoutState(offer.id, {
         cartBusy: false,
         cartError: `Could not reach ${merchant} to prepare a cart. Try again.`,
       });
@@ -982,6 +814,7 @@ export default function ShoppingApp() {
             <tbody>
               {visibleOffers.map((offer) => {
                 const isWinner = offer.id === winnerId;
+                const checkoutState = checkoutSessions[offer.id] ?? {};
                 return (
                   <tr key={offer.id} className={isWinner ? "winnerRow" : ""}>
                     <td data-label="Merchant / Seller">
@@ -1023,14 +856,47 @@ export default function ShoppingApp() {
                     <td data-label="Return cost">{returnCostLabel(offer)}</td>
                     <td data-label="Warranty">{warrantyLabel(offer)}</td>
                     <td data-label="Action">
-                      {offer.provenance.policyStatus === "ucp-public-profile" ? (
-                        <button
-                          type="button"
-                          className={`addBtn ${isWinner ? "btnCoral" : "btnOutline"}`}
-                          onClick={() => addToCart(offer)}
-                        >
-                          Add to cart
-                        </button>
+                      {canPreloadStoreCart(offer) ? (
+                        <div>
+                          <button
+                            type="button"
+                            className={`addBtn ${isWinner ? "btnCoral" : "btnOutline"}`}
+                            disabled={checkoutState.cartBusy}
+                            onClick={() => void continueAtStore(offer)}
+                          >
+                            {checkoutState.cartBusy
+                              ? `Preparing your cart at ${offer.merchant}…`
+                              : `Continue checkout at ${offer.merchant} ↗`}
+                          </button>
+                          {checkoutState.cartError && (
+                            <p className="mutedText">
+                              {checkoutState.cartError}{" "}
+                              {offer.provenance.sourceUrl && (
+                                <a
+                                  href={offer.provenance.sourceUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Open the product at {offer.merchant} instead ↗
+                                </a>
+                              )}
+                            </p>
+                          )}
+                          {checkoutState.cartUrl && (
+                            <p className="mutedText">
+                              <a
+                                href={checkoutState.cartUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Open your {offer.merchant} cart ↗
+                              </a>
+                            </p>
+                          )}
+                          {checkoutState.cartNote && (
+                            <p className="mutedText">{checkoutState.cartNote}</p>
+                          )}
+                        </div>
                       ) : offer.provenance.sourceUrl ? (
                         <a
                           className={`addBtn ${isWinner ? "btnCoral" : "btnOutline"}`}
@@ -1054,21 +920,12 @@ export default function ShoppingApp() {
         </div>
         )}
 
-        {cartNotice && (
-          <p className="successNotice">
-            {cartNotice}{" "}
-            <button type="button" className="backLink" onClick={() => setView("cart")}>
-              View cart →
-            </button>
-          </p>
-        )}
-
         <p className="shipsLine">Ships from and sold by {result.recommendation.seller}</p>
         {result.dataSource === "live" && result.retrievedAt && (
           <p className="liveLine">
             Prices retrieved {formatDateTime(result.retrievedAt)} from{" "}
-            {result.sourceMerchants.join(" and ")} — every figure is the listing&apos;s
-            own.
+            {result.sourceMerchants.join(" and ")} — prices are the listings&apos; own,
+            retrieved live for this comparison.
           </p>
         )}
         <p className="smallPrint">
@@ -1076,331 +933,6 @@ export default function ShoppingApp() {
             ? "Comparison assembled with Muse Spark."
             : "Comparison assembled locally — live model unavailable for this request."}
         </p>
-      </main>
-    );
-  }
-
-  function renderCart() {
-    return (
-      <main className="wrap flowMain">
-        <h2 className="viewTitle">Cart {cartTotals.count > 0 ? `(${cartTotals.count})` : ""}</h2>
-
-        {cart.length === 0 ? (
-          <div className="flowCard">
-            <p className="mutedText">
-              Your cart is empty. Open a product and add an offer from its comparison table.
-            </p>
-            <button type="button" className="btnPine" onClick={goHome}>
-              Continue shopping
-            </button>
-          </div>
-        ) : (
-          <div className="flowCard">
-            <div className="cartList">
-              {cart.map((item) => (
-                <article className="cartItem" key={item.offerId}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="cartThumb" src={recordImage(item)} alt={item.productName} />
-                  <div className="cartItemBody">
-                    <strong>{item.productName}</strong>
-                    <p>Ships from and sold by {item.seller}</p>
-                    <small>
-                      {item.condition} · Arrives {arrivalDate(item.deliveryDays)} ·{" "}
-                      {item.returnWindowDays}-day return window
-                    </small>
-                    <div className="qtyControl">
-                      <span>Qty</span>
-                      <button
-                        type="button"
-                        aria-label={`Decrease quantity of ${item.productName}`}
-                        disabled={item.quantity <= 1}
-                        onClick={() => updateCartQuantity(item.offerId, item.quantity - 1)}
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        aria-label={`Quantity of ${item.productName}`}
-                        min={1}
-                        max={10}
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const parsed = Number.parseInt(e.target.value, 10);
-                          if (!Number.isNaN(parsed)) {
-                            updateCartQuantity(item.offerId, parsed);
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        aria-label={`Increase quantity of ${item.productName}`}
-                        disabled={item.quantity >= 10}
-                        onClick={() => updateCartQuantity(item.offerId, item.quantity + 1)}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                  <div className="cartPriceCol">
-                    <strong>{money(item.totalCost * item.quantity)}</strong>
-                    <button type="button" className="removeBtn" onClick={() => removeFromCart(item.offerId)}>
-                      Remove
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="totalsBox">
-              <span>Subtotal {money(cartTotals.subtotal)}</span>
-              <span>Shipping {cartTotals.shipping === 0 ? "Calculated at checkout" : money(cartTotals.shipping)}</span>
-              <strong>Total {money(cartTotals.total)}</strong>
-            </div>
-            <p className="mutedText">
-              Comparison totals are estimates from live listings. At checkout, the
-              selling store computes the binding totals — including its shipping
-              charge and tax — and shows them before you pay.
-            </p>
-
-            {handoffItems.length > 0 && (
-              <section aria-label="Buy on the store's site">
-                <h4>Buy on the store&apos;s site</h4>
-                <p className="mutedText">
-                  These stores complete purchases on their own sites — the button
-                  takes you straight to the listing.
-                </p>
-                <div className="cartList">
-                  {handoffItems.map((item) => (
-                    <article className="cartItem" key={`handoff-${item.offerId}`}>
-                      <div className="cartItemBody">
-                        <strong>{item.productName}</strong>
-                        <p>Ships from and sold by {item.seller}</p>
-                      </div>
-                      {item.sourceUrl ? (
-                        <a
-                          className="btnOutline"
-                          href={item.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Buy at {item.merchant} ↗
-                        </a>
-                      ) : (
-                        <span className="mutedText">Available at {item.merchant}</span>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {checkoutMerchants.length > 0 && (
-              <section className="checkoutForm" aria-label="Checkout">
-                <h4>Checkout</h4>
-                <p className="warningText">
-                  You check out on each store&apos;s own site. Use the button
-                  for a store below and we load your items into that
-                  store&apos;s cart — you enter your details and pay there.
-                  This site collects no checkout or payment information, and
-                  never takes a card number.
-                </p>
-                {checkoutMerchants.map((merchant) => {
-                  const state = checkoutSessions[merchant] ?? {};
-                  const merchantItems = cart.filter(
-                    (item) => item.merchant === merchant && canPreloadStoreCart(item),
-                  );
-                  const fallbackItem = merchantItems.find((item) => item.sourceUrl);
-                  return (
-                    <section className="checkoutPanel" key={merchant} aria-label={`Checkout at ${merchant}`}>
-                      <h4>{merchant}</h4>
-                      <p className="mutedText">
-                        {merchantItems.length} item{merchantItems.length === 1 ? "" : "s"} ·{" "}
-                        {money(
-                          merchantItems.reduce(
-                            (sum, item) => sum + item.price * item.quantity,
-                            0,
-                          ),
-                        )}{" "}
-                        before shipping and tax, which {merchant} calculates in its checkout.
-                      </p>
-
-                      <div className="pathBlock">
-                        <p className="mutedText">
-                          We load these items into {merchant}&apos;s cart for
-                          you — you enter your details and pay on{" "}
-                          {merchant}&apos;s site. Nothing about you is sent
-                          from here.
-                        </p>
-                        {state.cartError && (
-                          <div className="errorBox" role="alert">
-                            <p>{state.cartError}</p>
-                            {(fallbackItem?.sourceUrl || state.fallbackUrl) && (
-                              <p>
-                                <a
-                                  href={fallbackItem?.sourceUrl ?? state.fallbackUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  Open the product at {merchant} instead ↗
-                                </a>
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          className="btnCoral btnBlock"
-                          disabled={state.cartBusy}
-                          onClick={() => void continueAtStore(merchant)}
-                        >
-                          {state.cartBusy
-                            ? `Preparing your cart at ${merchant}…`
-                            : `Continue checkout at ${merchant} ↗`}
-                        </button>
-                        {state.cartUrl && (
-                          <p>
-                            <a
-                              className="btnCoral"
-                              href={state.cartUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Open your {merchant} cart ↗
-                            </a>
-                          </p>
-                        )}
-                        {state.cartNote && (
-                          <p className="mutedText">{state.cartNote}</p>
-                        )}
-                      </div>
-                    </section>
-                  );
-                })}
-              </section>
-            )}
-          </div>
-        )}
-      </main>
-    );
-  }
-
-  function renderOrderCard(order: StoreOrder) {
-    const total = orderTotal(order);
-    return (
-      <article className="orderCard" key={order.orderId}>
-        <div className="orderHead">
-          <div className="orderMain">
-            <p className="orderNumber">{order.orderId}</p>
-            <h4>{order.merchant}</h4>
-            <small>
-              Confirmed by {order.merchant} · {formatDateTime(order.confirmedAt)} · Guest:{" "}
-              {order.buyerEmail}
-            </small>
-          </div>
-          {order.status && <span className="statusBadge">{order.status}</span>}
-        </div>
-        <div className="cartList">
-          {order.items.map((item, index) => (
-            <div className="cartItem" key={`${item.title}-${index}`}>
-              <div className="cartItemBody">
-                <strong>{item.title}</strong>
-                <small>Qty {item.quantity}</small>
-              </div>
-              <div className="cartPriceCol">
-                <strong>{money(item.price * item.quantity)}</strong>
-              </div>
-            </div>
-          ))}
-        </div>
-        {total !== null && (
-          <p className="confirmationMeta">
-            Total charged by {order.merchant}: {money(total)} {order.currency}
-          </p>
-        )}
-        <p className="confirmationMeta">
-          Delivery, tracking, and returns are handled by {order.merchant} under its own
-          policies.
-          {order.orderUrl && (
-            <>
-              {" "}
-              <a href={order.orderUrl} target="_blank" rel="noreferrer">
-                View this order at {order.merchant} ↗
-              </a>
-            </>
-          )}
-        </p>
-      </article>
-    );
-  }
-
-  function renderHandoffCard(handoff: StoreHandoff) {
-    return (
-      <article
-        className="orderCard"
-        key={`handoff-${handoff.merchant}-${handoff.handedOffAt}`}
-      >
-        <div className="orderHead">
-          <div className="orderMain">
-            <p className="orderNumber">Completed at the store</p>
-            <h4>{handoff.merchant}</h4>
-            <small>
-              Sent to {handoff.merchant}&apos;s cart ·{" "}
-              {formatDateTime(handoff.handedOffAt)}
-            </small>
-          </div>
-          <span className="statusBadge">At {handoff.merchant}</span>
-        </div>
-        <div className="cartList">
-          {handoff.items.map((item, index) => (
-            <div className="cartItem" key={`${item.title}-${index}`}>
-              <div className="cartItemBody">
-                <strong>{item.title}</strong>
-                <small>Qty {item.quantity}</small>
-              </div>
-              <div className="cartPriceCol">
-                <strong>{money(item.price * item.quantity)}</strong>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="confirmationMeta">
-          Items total when handed off: {money(handoff.itemsTotal)}. You entered
-          your details and paid on {handoff.merchant}&apos;s site —{" "}
-          {handoff.merchant} handles the order, delivery, and returns.
-          {handoff.cartUrl && (
-            <>
-              {" "}
-              <a href={handoff.cartUrl} target="_blank" rel="noreferrer">
-                Open the cart at {handoff.merchant} ↗
-              </a>
-            </>
-          )}
-        </p>
-      </article>
-    );
-  }
-
-  function renderOrders() {
-    const entries = mergeOrderHistory(orders, handoffs);
-    return (
-      <main className="wrap flowMain">
-        <h2 className="viewTitle">Orders</h2>
-        {entries.length === 0 ? (
-          <div className="flowCard">
-            <p className="mutedText">
-              No orders yet. When a store confirms an order from a checkout here,
-              it will appear with the store&apos;s own confirmation details.
-            </p>
-          </div>
-        ) : (
-          <div className="orderList">
-            {entries.map((entry) =>
-              entry.kind === "order"
-                ? renderOrderCard(entry.order)
-                : renderHandoffCard(entry.handoff),
-            )}
-          </div>
-        )}
       </main>
     );
   }
@@ -1430,15 +962,6 @@ export default function ShoppingApp() {
                   {loading ? "Searching…" : "Search"}
                 </button>
               </form>
-              <nav className="headerNav" aria-label="Account">
-                <button type="button" className="headerNavBtn" onClick={() => setView("orders")}>
-                  Orders
-                </button>
-                <button type="button" className="headerNavBtn" onClick={() => setView("cart")}>
-                  Cart
-                  {cartTotals.count > 0 && <span className="cartBadge">{cartTotals.count}</span>}
-                </button>
-              </nav>
             </>
           )}
         </div>
@@ -1455,9 +978,6 @@ export default function ShoppingApp() {
       {view === "home" && renderHome()}
       {view === "results" && renderResults()}
       {view === "product" && renderProduct()}
-      {view === "cart" && renderCart()}
-      {view === "confirmation" && renderOrders()}
-      {view === "orders" && renderOrders()}
 
       <footer className="siteFooter">
         <div className="wrap footerInner footerLine">
@@ -1465,7 +985,6 @@ export default function ShoppingApp() {
             <strong>{BRAND.name}</strong> — shop them all, in one place.
           </span>
           <nav className="footerLinks" aria-label="Site links">
-            <a href="/orders">Orders</a>
             <a href="/privacy">Privacy Policy</a>
             <a href="/terms">Terms of Service</a>
             <a href="/list-your-store">List your store</a>

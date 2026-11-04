@@ -41,6 +41,11 @@ function returnsSubscore(offer: Offer, priority: Priority): number {
     // Final sale is a hard trap when returns matter, a footnote when they don't.
     return priority === "returns" ? 0.03 : 0.25;
   }
+  if (offer.returnCost === "not-stated" || offer.returnWindowDays === null) {
+    // The source stated no return terms: score as unknown — below any
+    // stated window, above final sale — never as a stated 30 days.
+    return 0.2;
+  }
   let s = clamp01(offer.returnWindowDays / 90); // 90+ day window = perfect
   if (offer.returnCost === "buyer-paid") {
     // Buyer-paid returns quietly erase a low sticker price.
@@ -117,6 +122,8 @@ export function scoreOffers(
 
 function returnsPhrase(o: ScoredOffer): string {
   if (o.returnCost === "final-sale") return "final sale (no returns)";
+  if (o.returnCost === "not-stated" || o.returnWindowDays === null)
+    return "return terms not stated by the seller";
   return `${o.returnCost === "free" ? "free" : "buyer-paid"} ${o.returnWindowDays}-day returns`;
 }
 

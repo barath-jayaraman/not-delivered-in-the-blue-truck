@@ -79,13 +79,13 @@ const ITEM_TIMEOUT_MS = 10_000;
 /** Refresh the application token this long before its stated expiry. */
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 /**
- * Curated retailer-policy pattern for eBay when a listing's summary does
- * not carry return terms (the normal Browse API case): a 30-day window
- * with free returns, the terms eBay Top Rated Plus sellers must offer.
- * Always labelled as curated in the offer, never presented as
- * listing-specific terms.
+ * Return terms come from the listing itself or not at all. When a
+ * listing's summary carries no return terms (the normal Browse API
+ * case), returns render as "Not stated by seller" — accuracy fix,
+ * Nov 4, 2026: the previous fallback invented a generic 30-day/free
+ * pattern (rationalized as the terms Top Rated Plus sellers must
+ * offer) and the comparison table rendered it as the listing's terms.
  */
-const CURATED_RETURN_WINDOW_DAYS = 30;
 
 /**
  * Credential aliases + enablement rule (changed 2026-10-30):
@@ -384,15 +384,14 @@ export function buildEbayOffer(
     : 0;
 
   // Return terms: use the listing's own when the summary carries them;
-  // otherwise the curated retailer-policy pattern, disclosed in the note.
-  let returnWindowDays = CURATED_RETURN_WINDOW_DAYS;
-  let returnCost: Offer["returnCost"] = "free";
+  // otherwise state none (see the note at the top of this file).
+  let returnWindowDays: number | null = null;
+  let returnCost: Offer["returnCost"] = "not-stated";
   let returnPolicySource: Offer["returnPolicySource"] =
-    "Curated retailer-policy sample";
+    "Not stated by seller";
   let returnsNote =
-    `The Browse API summary carried no return terms for this listing, so the return ` +
-    `window/cost are the curated eBay pattern (${CURATED_RETURN_WINDOW_DAYS}-day window, ` +
-    `free returns — the terms Top Rated Plus sellers must offer), not listing-specific terms. `;
+    `The Browse API summary carried no return terms for this listing, so returns are ` +
+    `shown as not stated by the seller — no window or cost is claimed. `;
   const terms = item.returnTerms;
   if (terms && typeof terms.returnsAccepted === "boolean") {
     returnPolicySource = "Sample seller return terms";

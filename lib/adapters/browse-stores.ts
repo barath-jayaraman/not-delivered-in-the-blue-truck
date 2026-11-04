@@ -55,10 +55,11 @@ import type { Merchant, Offer } from "../types";
  *
  * Offer honesty (same pattern as the UCP adapter): the price is the
  * figure the page itself displayed. Fields the search page does not
- * state — shipping charge, delivery estimate, return terms, warranty —
- * use the labelled curated/service estimates disclosed in every
- * offer's provenance note; nothing is presented as the merchant's
- * stated policy.
+ * state — shipping charge, delivery estimate — use the labelled
+ * service estimates disclosed in every offer's provenance note.
+ * Return terms and warranty are never estimated: when the page states
+ * none, they render as "Not stated by seller" (accuracy fix,
+ * Nov 4, 2026 — a generic 30-day default previously rendered as fact).
  *
  * Enabled by default. Set ENABLE_BROWSE_STORES=0 to disable. The
  * merchant policy registry gate still applies on top of this switch.
@@ -73,9 +74,6 @@ const MAX_PRODUCTS_PER_STORE = 12;
 const MAX_BROWSE_STORES_PER_QUERY = 3;
 /** Standard ground service estimate used when a page states no delivery time (as in the UCP adapter). */
 const SERVICE_DELIVERY_DAYS = 5;
-/** Conservative curated return pattern used when a page states no return terms (as in the UCP adapter). */
-const CURATED_RETURN_WINDOW_DAYS = 30;
-
 export function browseStoresEnabled(): boolean {
   return process.env.ENABLE_BROWSE_STORES !== "0";
 }
@@ -664,9 +662,9 @@ export function buildBrowseOffer(
     shippingCost: 0,
     deliveryDays: SERVICE_DELIVERY_DAYS,
     deliveryBasis: "Sample shipping-service estimate",
-    returnWindowDays: CURATED_RETURN_WINDOW_DAYS,
-    returnCost: "buyer-paid",
-    returnPolicySource: "Curated retailer-policy sample",
+    returnWindowDays: null,
+    returnCost: "not-stated",
+    returnPolicySource: "Not stated by seller",
     warrantyMonths: 0,
     sellerRating: product.rating ?? 0,
     description: product.description ?? null,
@@ -687,9 +685,9 @@ export function buildBrowseOffer(
         `The price is the figure the page itself displayed for this listing. The search page ` +
         `did not state a shipping charge (shipping is set by the merchant at checkout and is ` +
         `not included in the total), a delivery estimate (a ${SERVICE_DELIVERY_DAYS}-day ` +
-        `standard ground service estimate is used for scoring), return terms (a conservative ` +
-        `curated ${CURATED_RETURN_WINDOW_DAYS}-day buyer-paid pattern is shown, not the ` +
-        `merchant's stated policy), or a warranty period` +
+        `standard ground service estimate is used for scoring), return terms (none are ` +
+        `stated, so returns are shown as "Not stated by seller" — the merchant's own ` +
+        `published policy governs), or a warranty period` +
         (product.rating != null
           ? `. The rating field carries the product rating the page displayed for this ` +
             `first-party listing. `

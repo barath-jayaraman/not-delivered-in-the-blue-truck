@@ -51,9 +51,6 @@ const MIN_INTERVAL_MS = 2_000;
 const FETCH_TIMEOUT_MS = 10_000;
 /** Walmart's published free-shipping threshold for non-Walmart+ orders. */
 const FREE_SHIPPING_THRESHOLD = 35;
-/** Walmart's published return window for electronics (curated policy). */
-const ELECTRONICS_RETURN_WINDOW_DAYS = 30;
-
 export function walmartBrowseEnabled(): boolean {
   return process.env.ENABLE_WALMART_BROWSE !== "0";
 }
@@ -459,9 +456,9 @@ export function buildWalmartOffer(
     shippingCost,
     deliveryDays,
     deliveryBasis: "Live page-displayed delivery estimate",
-    returnWindowDays: ELECTRONICS_RETURN_WINDOW_DAYS,
-    returnCost: "free",
-    returnPolicySource: "Curated retailer-policy sample",
+    returnWindowDays: null,
+    returnCost: "not-stated",
+    returnPolicySource: "Not stated by seller",
     warrantyMonths: 0,
     sellerRating:
       typeof item.averageRating === "number" ? item.averageRating : 0,
@@ -482,8 +479,10 @@ export function buildWalmartOffer(
           ? "Shipping is the shipping charge displayed for the listing. "
           : `No shipping charge was displayed for the listing; shipping is shown as $0.00 ` +
             `under Walmart's published free-shipping policy for orders of $${FREE_SHIPPING_THRESHOLD}+. `) +
-        `The listing displayed no return terms; the return window/cost are Walmart's ` +
-        `published electronics return policy (curated). The rating field carries the ` +
+        `The listing displayed no return terms, so returns are shown as not stated ` +
+        `by the seller — no window or cost is claimed. (Accuracy fix, Nov 4, 2026: ` +
+        `Walmart's published electronics window was previously applied to every ` +
+        `listing, electronics or not.) The rating field carries the ` +
         `listing's displayed average review rating for this first-party offer.`,
     },
   };

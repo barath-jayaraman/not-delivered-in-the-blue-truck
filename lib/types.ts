@@ -63,7 +63,7 @@ export type Merchant =
   | "Mattress Firm";
 /** "live" marks records retrieved from a merchant for this request (see lib/live-search.ts). */
 export type DataMode = "sample" | "live";
-export type ReturnCost = "free" | "buyer-paid" | "final-sale";
+export type ReturnCost = "free" | "buyer-paid" | "final-sale" | "not-stated";
 
 /** Production acquisition routes supported by the policy registry. */
 export type AcquisitionMethod = "api" | "browser" | "disabled";
@@ -151,10 +151,21 @@ export interface Offer {
     | "Sample page-displayed delivery estimate"
     | "Live page-displayed delivery estimate"
     | "Live API delivery estimate";
-  returnWindowDays: number; // 0 when final sale
+  /**
+   * Stated return window in days. null means the source stated NO
+   * return window — an absence of data, displayed as "Not stated by
+   * seller" (accuracy rule, Nov 4, 2026: a return window renders only
+   * when the listing itself or a verified merchant policy states one,
+   * never from a generic default). 0 only when the listing itself
+   * states returns are not accepted (final sale).
+   */
+  returnWindowDays: number | null;
   returnCost: ReturnCost;
-  /** eBay sample terms are seller terms; Best Buy values are a curated policy sample. */
-  returnPolicySource: "Sample seller return terms" | "Curated retailer-policy sample";
+  /** Where the return terms came from: the listing itself, or not stated. */
+  returnPolicySource:
+    | "Sample seller return terms"
+    | "Curated retailer-policy sample"
+    | "Not stated by seller";
   /**
    * Stated warranty period in months. 0 means the source stated NO
    * warranty period — an absence of data, displayed as "Not stated by
@@ -316,7 +327,7 @@ export interface CartItem {
   shippingCost: number;
   totalCost: number;
   deliveryDays: number;
-  returnWindowDays: number;
+  returnWindowDays: number | null;
   returnCost: ReturnCost;
   quantity: number;
   /** Merchant item id for in-app checkout (UCP stores); null otherwise. */
