@@ -7,6 +7,7 @@ import {
   type InterpretedQuery,
   type LiveRunInfo,
 } from "./agent";
+import { enrichEbayOfferDescriptions } from "./adapters/ebay-api";
 import { getProductById } from "./data";
 import {
   pickGroupForProduct,
@@ -83,6 +84,13 @@ async function buildLiveComparison(
   const config = getMetaModelConfig();
   const scored = scoreOffers(group.offers, req);
   const offers = scored.slice(0, 5);
+  // Product-page-only detail (Nov 4, 2026): eBay summaries carry no
+  // description, so fetch each shown listing's own description via
+  // getItem — kicked off now so it runs in parallel with the
+  // explanation below, and awaited before the response is built.
+  // Search results never pay this cost. UCP and browsing-route offers
+  // already carry whatever description their search payload stated.
+  const enrichDescriptions = enrichEbayOfferDescriptions(offers);
   const recommendation = offers[0];
   const cheapestSticker = [...scored].sort((a, b) => a.price - b.price)[0];
   let explanation = buildExplanation(
@@ -172,6 +180,10 @@ async function buildLiveComparison(
     sourceUrl: list[0].provenance.sourceUrl ?? "",
     offerIds: list.map((o) => o.id),
   }));
+
+  // Descriptions land on the same offer objects the response carries
+  // (recommendation included — it is offers[0] by reference).
+  await enrichDescriptions;
 
   return {
     product: {

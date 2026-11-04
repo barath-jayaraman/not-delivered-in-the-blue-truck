@@ -173,6 +173,22 @@ export interface Offer {
    * for routes that check out on the merchant's own site instead.
    */
   checkoutItemId?: string | null;
+  /**
+   * The listing's own product description, exactly as the source
+   * returned it — markup stripped and length-capped by
+   * lib/description.ts, never generated, summarized, or filled in.
+   * Null/absent when the source returned no description; the product
+   * page then renders no Details section for that offer. Fetched live
+   * in the request that displays it, like every other offer field.
+   */
+  description?: string | null;
+  /**
+   * The source's own listing id for this offer (for eBay, the Buy
+   * Browse item id), carried so the product page can fetch listing
+   * detail (the description) for exactly the item that was priced.
+   * Null for routes whose search payload already carries everything.
+   */
+  sourceItemId?: string | null;
 }
 
 export interface Product {

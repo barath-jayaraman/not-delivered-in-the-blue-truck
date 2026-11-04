@@ -1,5 +1,6 @@
 import { getMerchantPolicy } from "../adapters";
 import { normalizeSearch } from "../data";
+import { cleanDescription } from "../description";
 import type { Merchant, Offer } from "../types";
 
 /**
@@ -28,9 +29,15 @@ import type { Merchant, Offer } from "../types";
  * failed call discards it and re-runs the full flow (live profile,
  * initialize handshake, tools/list discovery) inside that request.
  *
- * What the UCP catalog does NOT state (verified from live responses,
- * Oct 31, 2026): shipping charges, delivery estimates, return terms,
- * warranty, seller ratings. Following the codebase's existing pattern
+ * What the UCP catalog DOES carry (verified live Nov 4, 2026, on
+ * Monos, Kane's Furniture, and Allbirds): a per-product `description`
+ * object ({ html }) in the catalog.search payload itself — the store's
+ * own listing text. It is cleaned (markup stripped, length-capped;
+ * lib/description.ts) and passed through verbatim; no product-detail
+ * call is needed for it, though the servers also declare lookup /
+ * get_product tools. What the UCP catalog does NOT state (verified
+ * from live responses, Oct 31, 2026): shipping charges, delivery
+ * estimates, return terms, warranty, seller ratings. Following the codebase's existing pattern
  * for API gaps (cf. the curated eBay return pattern and the Best Buy
  * shipping-service estimate in lib/adapters.ts), those Offer fields use
  * clearly labelled curated/service estimates, disclosed in every
@@ -1069,6 +1076,12 @@ export async function readProfileEndpoint(store: UcpStore): Promise<{
 
 export interface UcpProduct {
   title: string;
+  /**
+   * The store's own listing description from the catalog payload,
+   * cleaned to plain text (lib/description.ts). Null when the payload
+   * carried none for this product.
+   */
+  description: string | null;
   /** Major-unit price (e.g. dollars), converted from UCP minor units. */
   price: number;
   currency: string;
@@ -1107,6 +1120,9 @@ interface RawUcpVariant {
 interface RawUcpProduct {
   id?: string;
   title?: string;
+  /** UCP carries the description as an object ({ html }); a plain
+   *  string is also accepted defensively. */
+  description?: string | { html?: string } | null;
   url?: string;
   price_range?: {
     min?: { amount?: number; currency?: string };
@@ -1164,8 +1180,18 @@ function normalizeUcpProduct(raw: RawUcpProduct): UcpProduct | null {
     (typeof raw.id === "string" ? raw.id.split("/").pop() : null) ??
     raw.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
+  // The product-level description is the store's listing text (the
+  // priced variant repeats the same text). Cleaned, never rewritten.
+  const rawDescription =
+    typeof raw.description === "string"
+      ? raw.description
+      : typeof raw.description?.html === "string"
+        ? raw.description.html
+        : null;
+
   return {
     title: raw.title,
+    description: cleanDescription(rawDescription),
     price,
     currency: "USD",
     url: typeof raw.url === "string" ? raw.url : null,
@@ -1481,6 +1507,7 @@ export function buildUcpOffer(
     warrantyMonths: 0,
     sellerRating: 0,
     checkoutItemId: product.itemId,
+    description: product.description,
     sampleListingLabel: `Live ${store.merchant} UCP listing`,
     provenance: {
       sourceMerchant: store.merchant,

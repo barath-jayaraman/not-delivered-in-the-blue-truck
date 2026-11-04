@@ -1,5 +1,6 @@
 import { getMerchantPolicy } from "../adapters";
 import { normalizeSearch } from "../data";
+import { cleanDescription } from "../description";
 import type { Merchant, Offer } from "../types";
 
 /**
@@ -254,6 +255,12 @@ export interface BrowseProduct {
   title: string;
   /** The price the search page itself displayed for this listing. */
   price: number;
+  /**
+   * Listing description ONLY when the search payload itself already
+   * carries it — this route never fetches product pages for detail
+   * (Nov 4, 2026). Null when the payload states none.
+   */
+  description?: string | null;
   /** Product page URL when the search page states it; null otherwise. */
   url: string | null;
   imageUrl: string | null;
@@ -327,6 +334,8 @@ interface HfEntity {
   sku?: string | number;
   id?: string | number;
   Brand?: string;
+  /** Magento product descriptions arrive as { html } when present. */
+  description?: string | { html?: string } | null;
   canonical_url?: string;
   price_range?: {
     minimum_price?: { final_price?: { value?: number } };
@@ -409,6 +418,15 @@ function parseHarborFreight(html: string): BrowseProduct[] {
     products.push({
       title,
       price,
+      // Opportunistic only: used when the search state itself already
+      // carried the description; no product-page fetch is ever made.
+      description: cleanDescription(
+        typeof entity.description === "string"
+          ? entity.description
+          : typeof entity.description?.html === "string"
+            ? entity.description.html
+            : null,
+      ),
       url: entity.canonical_url
         ? `https://www.harborfreight.com/${entity.canonical_url}`
         : null,
@@ -651,6 +669,7 @@ export function buildBrowseOffer(
     returnPolicySource: "Curated retailer-policy sample",
     warrantyMonths: 0,
     sellerRating: product.rating ?? 0,
+    description: product.description ?? null,
     sampleListingLabel: `Live ${store.merchant} listing ${product.productKey}`,
     provenance: {
       sourceMerchant: store.merchant,

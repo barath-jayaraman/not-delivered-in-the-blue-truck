@@ -1,4 +1,5 @@
 import { getMerchantPolicy } from "../adapters";
+import { cleanDescription } from "../description";
 import type { Offer } from "../types";
 
 /**
@@ -26,6 +27,10 @@ import type { Offer } from "../types";
  *   Shipping is taken from the listing's first shipping option; a listing
  *   whose shipping charge is not stated is skipped rather than guessed
  *   (a listing states free shipping as an explicit $0.00 charge).
+ * - Item summaries carry no description, so the product page — and
+ *   only the product page — fetches each compared listing's own
+ *   description via one getItem call per offer (see
+ *   enrichEbayOfferDescriptions). Search never pays that cost.
  *   Delivery days come from the latest date of the listing's estimated
  *   delivery range. Return terms are used when the summary carries them;
  *   Browse item summaries normally do not, so the curated retailer-policy
@@ -53,6 +58,7 @@ import type { Offer } from "../types";
 
 const TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token";
 const SEARCH_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search";
+const ITEM_URL = "https://api.ebay.com/buy/browse/v1/item";
 const BROWSE_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const FETCH_TIMEOUT_MS = 15_000;
 /**
@@ -62,6 +68,13 @@ const FETCH_TIMEOUT_MS = 15_000;
  * must not hold the whole fan-out for the token's budget.
  */
 const SEARCH_TIMEOUT_MS = 10_000;
+/**
+ * Ceiling for one Buy Browse item-Detail call (getItem). Used ONLY on
+ * the decide/product path — never on search — to fetch the listing's
+ * own description for the product page (Nov 4, 2026). The product
+ * page's few offers are fetched in parallel under this same cap.
+ */
+const ITEM_TIMEOUT_MS = 10_000;
 /** Far inside eBay's 6-hour display-freshness limit for listing data. */
 /** Refresh the application token this long before its stated expiry. */
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
@@ -420,6 +433,10 @@ export function buildEbayOffer(
     returnPolicySource,
     warrantyMonths: 0,
     sellerRating,
+    // The Browse item id, carried so the product page can fetch this
+    // exact listing's detail (its description) — see
+    // enrichEbayOfferDescriptions below. Search results never fetch it.
+    sourceItemId: item.itemId ?? null,
     sampleListingLabel: `Live eBay listing ${item.legacyItemId ?? item.itemId}`,
     provenance: {
       sourceMerchant: "eBay",
@@ -497,4 +514,91 @@ export async function searchEbayItems(
   }
 
   return items;
+}
+
+/* ------------------------------------------------------------------ */
+/* Item detail: the listing's own description (product page only)      */
+/* ------------------------------------------------------------------ */
+
+interface EbayItemDetail {
+  shortDescription?: string;
+  description?: string;
+}
+
+/**
+ * One Buy Browse getItem call for a listing id, returning the
+ * listing's OWN description text (shortDescription preferred, the
+ * full description otherwise), cleaned to plain readable text by
+ * lib/description.ts. Returns null on any failure or when the item
+ * carries neither field — never invented, never throws.
+ *
+ * PRODUCT PAGE ONLY: this runs on the decide path for the handful of
+ * offers being compared, never on search results (search latency is
+ * untouched). Like all listing data here it is fetched live in the
+ * request that displays it and cached nowhere.
+ */
+export async function fetchEbayItemDescription(
+  itemId: string,
+): Promise<string | null> {
+  if (!ebayApiEnabled()) return null;
+  const token = await getApplicationToken();
+  if (!token) return null;
+  try {
+    const response = await fetch(
+      `${ITEM_URL}/${encodeURIComponent(itemId)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+          Accept: "application/json",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(ITEM_TIMEOUT_MS),
+      },
+    );
+    if (response.status === 401 || response.status === 403) {
+      tokenCache = null;
+    }
+    if (response.status !== 200) {
+      console.warn(
+        `[ebay-api] item detail returned HTTP ${response.status}; no description for that offer.`,
+      );
+      return null;
+    }
+    const payload = (await response.json()) as EbayItemDetail;
+    return (
+      cleanDescription(payload.shortDescription) ??
+      cleanDescription(payload.description)
+    );
+  } catch (error) {
+    console.warn("[ebay-api] item detail request failed:", String(error));
+    return null;
+  }
+}
+
+/**
+ * Fill in `description` on the given eBay offers (in place) from each
+ * listing's own item detail, fetched in parallel under the per-call
+ * cap. Offers that already carry a description, are not eBay offers,
+ * or lack a Browse item id are left untouched; a failed fetch leaves
+ * the description absent — the page then shows no Details section
+ * for that offer. Never throws.
+ */
+export async function enrichEbayOfferDescriptions(
+  offers: Offer[],
+): Promise<void> {
+  const targets = offers.filter(
+    (offer) =>
+      offer.merchant === "eBay" && !offer.description && offer.sourceItemId,
+  );
+  if (!targets.length) return;
+  await Promise.allSettled(
+    targets.map(async (offer) => {
+      const description = await fetchEbayItemDescription(
+        offer.sourceItemId as string,
+      );
+      if (description) offer.description = description;
+    }),
+  );
 }
