@@ -916,6 +916,18 @@ export default function ShoppingApp() {
           {result.fastestDeliveryDays === 1 ? "" : "s"}
         </p>
 
+        {result.explanation && (
+          <p className="museNote">
+            <strong>
+              {result.agentActivity.mode === "live"
+                ? "Muse Spark's take"
+                : "Our take"}
+              :
+            </strong>{" "}
+            {result.explanation}
+          </p>
+        )}
+
         {result.offers.length > 1 && (
         <div className="priorityRow" aria-label="Sort offers">
           <span>Show me:</span>

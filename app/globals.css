@@ -819,6 +819,16 @@ img {
   font-size: 15px;
 }
 
+.museNote {
+  background: #fff;
+  border: 1px solid var(--line, #e5ded2);
+  border-left: 4px solid var(--butter);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
 .detailsLink {
   display: inline-block;
   margin-top: 6px;
