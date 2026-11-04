@@ -12,8 +12,8 @@ export const metadata: Metadata = {
  * behavior: live-only search (nothing stored), no checkout or
  * payment information collected here (buying finishes on the
  * store's own site; only item ids and quantities go to the store
- * to pre-load its cart), and store-checkout handoffs remembered
- * only in the shopper's own browser.
+ * to pre-load its cart). This site keeps no cart of its own and
+ * no order history.
  */
 export default function PrivacyPage() {
   return (
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         ← Back to shopping
       </Link>
       <h1>Privacy Policy</h1>
-      <p className="legalUpdated">Last updated: November 3, 2026</p>
+      <p className="legalUpdated">Last updated: November 4, 2026</p>
 
       <p>
         {BRAND.name} is a shopping comparison service from {BRAND.company}. We
@@ -62,19 +62,11 @@ export default function PrivacyPage() {
         payment step. Your card details go to that provider, not to us.
       </p>
 
-      <h2>Orders shown in your browser</h2>
-      <p>
-        When you continue to a store&apos;s checkout from here, we remember
-        that handoff — the store, the items, and the time — so you can find
-        it again under Orders. That record is kept only in your own
-        browser&apos;s local storage, on your device. It is not sent to us,
-        and clearing your browser data removes it.
-      </p>
-
       <h2>What we do not do</h2>
       <ul>
         <li>We do not sell personal information.</li>
         <li>We do not require accounts, and we do not ask for any store or bank login.</li>
+        <li>We do not keep a cart or an order history for you — your purchase lives with the selling store.</li>
         <li>We do not store the prices, searches, or checkout details described above on our servers.</li>
       </ul>
 
