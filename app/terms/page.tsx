@@ -10,8 +10,9 @@ export const metadata: Metadata = {
 /**
  * Terms of service in plain language, matching the app's actual
  * behavior: live prices that can change, the selling store as the
- * seller of record, in-app checkout, payment by the
- * store's provider, and delivery/returns handled by the store.
+ * seller of record, checkout on the store's own site (we pre-load
+ * the cart where the store supports it), payment by the store's
+ * provider, and delivery/returns handled by the store.
  */
 export default function TermsPage() {
   return (
@@ -20,7 +21,7 @@ export default function TermsPage() {
         ← Back to shopping
       </Link>
       <h1>Terms of Service</h1>
-      <p className="legalUpdated">Last updated: November 2, 2026</p>
+      <p className="legalUpdated">Last updated: November 3, 2026</p>
 
       <p>
         {BRAND.name} is operated by {BRAND.company}. By using this site you
@@ -31,9 +32,10 @@ export default function TermsPage() {
       <p>
         We search stores at the moment you ask and compare the whole buying
         decision — price, shipping, delivery time, return window and cost,
-        warranty, and seller rating — then show you the comparison. For some
-        stores you can also check out here; for others we link you to the
-        item on the store&apos;s own site to buy it there.
+        warranty, and seller rating — then show you the comparison. When you
+        are ready to buy, we send you to the selling store&apos;s own site
+        to check out — for many stores with your items already loaded into
+        its cart; for the rest, we link you to the item there.
       </p>
 
       <h2>Prices and availability</h2>
@@ -53,32 +55,33 @@ export default function TermsPage() {
         When you buy, your purchase contract is with the store that sells the
         item — not with us. The store takes your payment through its own
         payment provider, fulfills and delivers your order, and handles
-        returns and warranty claims under its own policies, which are linked
-        from the checkout before you pay.
+        returns and warranty claims under its own policies, which the store
+        presents in its checkout before you pay.
       </p>
 
       <h2>Checkout</h2>
       <p>
-        Checkout on this site does not create an account. We may change,
-        pause, or end checkout availability at any time. Do not enter
-        payment card details anywhere on this site — payment is only ever
-        taken on the selling store&apos;s secure payment step.
+        Checkout happens on the selling store&apos;s own site and does not
+        create an account here. We may change, pause, or end the
+        store-checkout links at any time. Do not enter payment card details
+        anywhere on this site — payment is only ever taken on the selling
+        store&apos;s secure payment step.
       </p>
 
       <h2>Orders and confirmations</h2>
       <p>
-        An order exists only when the selling store confirms it. The
-        confirmation we display is the store&apos;s own confirmation,
-        shown exactly as the store returned it. If a store cannot complete
-        a checkout, we will say so and link you to the item at the store
-        instead — we never present an unconfirmed purchase as an order.
+        An order exists only when the selling store confirms it, and your
+        confirmation comes from the selling store. If a store cannot
+        prepare your cart, we will say so and link you to the item at the
+        store instead — a handoff to a store&apos;s cart is never
+        presented as a completed order.
       </p>
 
       <h2>Acceptable use</h2>
       <p>
-        Use this service for your own shopping. Do not misuse the access
-        code, attempt to bypass the checkout gate, or use the service to
-        place orders you do not intend to complete.
+        Use this service for your own shopping. Do not use the service to
+        place orders you do not intend to complete, and do not attempt to
+        disrupt the service.
       </p>
 
       <h2>Liability</h2>

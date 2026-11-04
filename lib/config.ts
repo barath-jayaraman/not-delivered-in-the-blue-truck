@@ -9,7 +9,7 @@ export const BRAND = {
   /** Short descriptor used under the hero headline. */
   blurb:
     "Search once, compare live offers from eBay sellers, Walmart, UCP stores like Steve Madden, Monos, Gymshark, and Everlane, and browsing-route stores like Micro Center, Harbor Freight, Carter's, and Mattress Firm — fetched the moment you search — and see price, shipping, arrival time, returns, warranty, and seller rating together.",
-  /** Honesty note — prices are live at fetch time; checkout is real. */
+  /** Honesty note — prices are live at fetch time; buying finishes at the store. */
   betaNote:
-    "Every price shown was fetched live when you searched or compared, and prices can change at any time. Checkout at UCP stores is real: the selling store takes payment through its own payment provider and fulfills the order. eBay, Walmart, and browsing-route stores complete purchases on their own sites.",
+    "Every price shown was fetched live when you searched or compared, and prices can change at any time. When you buy, you check out on the selling store's own site — for many stores we load your items into that store's cart first — and the store takes payment through its own payment provider and fulfills your order.",
 } as const;

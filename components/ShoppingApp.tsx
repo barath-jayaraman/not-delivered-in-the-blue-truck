@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   CartItem,
-  CheckoutSessionSummary,
   DecideResponse,
   Merchant,
   Priority,
@@ -100,9 +99,10 @@ function warrantyLabel(offer: ScoredOffer): string {
   return `${offer.warrantyMonths}-month warranty`;
 }
 
-/** A cart item checks out inside this app only when its offer came
- *  from a UCP store and carries the merchant's purchasable item id. */
-function isInAppCheckout(item: CartItem): boolean {
+/** A cart item can be pre-loaded into the store's own cart only when
+ *  its offer came from a UCP store and carries the merchant's
+ *  purchasable item id. */
+function canPreloadStoreCart(item: CartItem): boolean {
   return item.policyStatus === "ucp-public-profile" && !!item.checkoutItemId;
 }
 
@@ -163,28 +163,13 @@ export default function ShoppingApp() {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
-  const [guestName, setGuestName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
-  const [guestStreet, setGuestStreet] = useState("");
-  const [guestExtended, setGuestExtended] = useState("");
-  const [guestCity, setGuestCity] = useState("");
-  const [guestRegion, setGuestRegion] = useState("");
-  const [guestPostal, setGuestPostal] = useState("");
-  const [buyerConsent, setBuyerConsent] = useState(false);
 
-  /** Per-merchant live checkout state, keyed by merchant name. The
-   *  session itself lives at the store; this is only its last summary. */
+  /** Per-merchant store-checkout state, keyed by merchant name. */
   const [checkoutSessions, setCheckoutSessions] = useState<
     Record<
       string,
       {
-        busy?: boolean;
-        error?: string;
         fallbackUrl?: string;
-        session?: CheckoutSessionSummary;
-        statusBusy?: boolean;
-        statusNote?: string;
         cartBusy?: boolean;
         cartUrl?: string;
         cartNote?: string;
@@ -195,8 +180,7 @@ export default function ShoppingApp() {
 
   const [orders, setOrders] = useState<StoreOrder[]>([]);
   const [ordersLoaded, setOrdersLoaded] = useState(false);
-  const [placedOrders, setPlacedOrders] = useState<StoreOrder[]>([]);
-  /** Path B handoffs (buyer checked out on the store's own site),
+  /** Store-checkout handoffs (buyer checked out on the store's own site),
    *  remembered on this device only; see lib/order-history.ts. */
   const [handoffs, setHandoffs] = useState<StoreHandoff[]>([]);
 
@@ -249,25 +233,16 @@ export default function ShoppingApp() {
   const checkoutMerchants = useMemo(() => {
     const seen: Merchant[] = [];
     for (const item of cart) {
-      if (isInAppCheckout(item) && !seen.includes(item.merchant)) {
+      if (canPreloadStoreCart(item) && !seen.includes(item.merchant)) {
         seen.push(item.merchant);
       }
     }
     return seen;
   }, [cart]);
   const handoffItems = useMemo(
-    () => cart.filter((item) => !isInAppCheckout(item)),
+    () => cart.filter((item) => !canPreloadStoreCart(item)),
     [cart],
   );
-  const guestDetailsValid =
-    guestName.trim().length > 0 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim()) &&
-    guestPhone.trim().length >= 5 &&
-    guestStreet.trim().length > 0 &&
-    guestCity.trim().length > 0 &&
-    /^[A-Za-z]{2}$/.test(guestRegion.trim()) &&
-    /^\d{5}(-\d{4})?$/.test(guestPostal.trim());
-
   const resultBrands = useMemo(
     () => (searchMeta ? [...new Set(searchMeta.products.map((p) => p.brand))].sort() : []),
     [searchMeta],
@@ -616,7 +591,6 @@ export default function ShoppingApp() {
       }
       return [...previous, item];
     });
-    setPlacedOrders([]);
     setCartNotice(`${result.product.name} from ${offer.seller} was added to the cart.`);
   }
 
@@ -642,12 +616,7 @@ export default function ShoppingApp() {
   function setCheckoutState(
     merchant: Merchant,
     patch: Partial<{
-      busy: boolean;
-      error: string;
       fallbackUrl: string;
-      session: CheckoutSessionSummary;
-      statusBusy: boolean;
-      statusNote: string;
       cartBusy: boolean;
       cartUrl: string;
       cartNote: string;
@@ -661,73 +630,16 @@ export default function ShoppingApp() {
   }
 
   /**
-   * Start a REAL checkout session at one UCP store for that store's
-   * cart items. The session, totals, and messages shown afterwards are
-   * the store's own response. No order exists until the store confirms
-   * one (see checkStoreOrder).
-   */
-  async function startStoreCheckout(merchant: Merchant) {
-    const items = cart.filter(
-      (item) => item.merchant === merchant && isInAppCheckout(item),
-    );
-    if (items.length === 0) return;
-    setCheckoutState(merchant, { busy: true, error: undefined, statusNote: undefined });
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "start",
-          merchant,
-          items: items.map((item) => ({
-            itemId: item.checkoutItemId,
-            quantity: item.quantity,
-          })),
-          buyer: { name: guestName, email: guestEmail, phone: guestPhone },
-          address: {
-            street: guestStreet,
-            extended: guestExtended,
-            city: guestCity,
-            region: guestRegion,
-            postal: guestPostal,
-          },
-        }),
-      });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        error?: string;
-        fallbackUrl?: string;
-        session?: CheckoutSessionSummary;
-      };
-      if (!res.ok || !data.ok || !data.session) {
-        setCheckoutState(merchant, {
-          busy: false,
-          error: data.error ?? `Could not start checkout at ${merchant}.`,
-          fallbackUrl: data.fallbackUrl,
-          session: undefined,
-        });
-        return;
-      }
-      setCheckoutState(merchant, { busy: false, session: data.session });
-    } catch {
-      setCheckoutState(merchant, {
-        busy: false,
-        error: `Could not reach checkout at ${merchant}. Try again.`,
-        session: undefined,
-      });
-    }
-  }
-
-  /**
-   * Path B: ask the store to pre-load a cart with this merchant's
-   * items and hand back its own continuation link. No guest details
-   * are collected or sent — the buyer enters everything on the
-   * store's site. The returned link is rendered in the panel (popup
-   * blockers can't eat it) and also opened in a new tab.
+   * The site's only checkout path: ask the store to pre-load a cart
+   * with this merchant's items and hand back its own continuation
+   * link. No buyer details are collected or sent by this site — the
+   * buyer enters everything and pays on the store's site. The
+   * returned link is rendered in the panel (popup blockers can't
+   * eat it) and also opened in a new tab.
    */
   async function continueAtStore(merchant: Merchant) {
     const items = cart.filter(
-      (item) => item.merchant === merchant && isInAppCheckout(item),
+      (item) => item.merchant === merchant && canPreloadStoreCart(item),
     );
     if (items.length === 0) return;
     setCheckoutState(merchant, { cartBusy: true, cartError: undefined, cartNote: undefined });
@@ -794,72 +706,6 @@ export default function ShoppingApp() {
     }
   }
 
-  /**
-   * Ask the store whether the session has produced an order. Only a
-   * store-returned order is recorded — anything else is reported as
-   * "not confirmed yet", never dressed up as a purchase.
-   */
-  async function checkStoreOrder(merchant: Merchant) {
-    const session = checkoutSessions[merchant]?.session;
-    if (!session) return;
-    setCheckoutState(merchant, { statusBusy: true, statusNote: undefined });
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "status",
-          merchant,
-          checkoutId: session.checkoutId,
-          buyerEmail: guestEmail,
-        }),
-      });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        error?: string;
-        session?: CheckoutSessionSummary | null;
-        order?: StoreOrder | null;
-        note?: string;
-      };
-      if (!res.ok || !data.ok) {
-        setCheckoutState(merchant, {
-          statusBusy: false,
-          statusNote: data.error ?? `Could not read the session at ${merchant}.`,
-        });
-        return;
-      }
-      if (data.session) {
-        setCheckoutState(merchant, { session: data.session });
-      }
-      if (data.order) {
-        const order = data.order;
-        setOrders((previous) => [
-          order,
-          ...previous.filter((entry) => entry.orderId !== order.orderId),
-        ]);
-        setPlacedOrders([order]);
-        setCart((previous) =>
-          previous.filter((item) => item.merchant !== merchant),
-        );
-        setCheckoutState(merchant, { statusBusy: false, session: undefined });
-        setView("confirmation");
-        return;
-      }
-      setCheckoutState(merchant, {
-        statusBusy: false,
-        statusNote:
-          data.note ??
-          (`${merchant} has not confirmed an order for this session yet. ` +
-            `Finish the payment step on ${merchant}'s page, then check again.`),
-      });
-    } catch {
-      setCheckoutState(merchant, {
-        statusBusy: false,
-        statusNote: `Could not reach ${merchant} to check the order. Try again.`,
-      });
-    }
-  }
-
   /* ----- views ----- */
 
   function renderHome() {
@@ -904,7 +750,7 @@ export default function ShoppingApp() {
           <div className="homeStep">
             <span className="stepNum">3</span>
             <p>
-              <strong>Step 3 — Check out here, or at the store.</strong>
+              <strong>Step 3 — Check out at the store.</strong>
             </p>
           </div>
         </div>
@@ -1008,12 +854,7 @@ export default function ShoppingApp() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="resultThumb" src={summaryImage(product)} alt={product.name} />
                   <span className="resultBody">
-                    <h3>
-                      {product.name}
-                      {product.dataSource === "live" && (
-                        <span className="livePill">Live</span>
-                      )}
-                    </h3>
+                    <h3>{product.name}</h3>
                     <p className="resultFrom">
                       From <strong>{money(product.lowestPrice)}</strong>
                     </p>
@@ -1038,8 +879,10 @@ export default function ShoppingApp() {
 
   function renderProduct() {
     if (!result) return null;
-    const winnerId = result.recommendation.id;
-    const visibleOffers = result.offers.filter(offerMatchesFilters);
+    /* A single offer is not a "Best Whole Deal" — there is nothing it
+       beat. Only crown a winner when stores actually compete. */
+    const winnerId = result.offers.length > 1 ? result.recommendation.id : null;
+    const visibleOffers = result.offers;
     return (
       <main className="wrap productMain">
         <button type="button" className="backLink" onClick={() => setView(searchMeta ? "results" : "home")}>
@@ -1059,15 +902,21 @@ export default function ShoppingApp() {
             }
             alt={result.product.name}
           />
-          <h1>
-            {result.product.name}
-            {result.dataSource === "live" && <span className="livePill">Live</span>}
-          </h1>
+          <h1>{result.product.name}</h1>
           <span className="titleFrom">
             from <strong>{money(result.priceRange.lowest)}</strong>
           </span>
         </div>
 
+        <p className="productFacts">
+          {result.offers.length === 1
+            ? `Sold by ${result.offers[0].merchant} · ${result.offers[0].condition} · `
+            : `${result.offers.length} stores compared · ${money(result.priceRange.lowest)}–${money(result.priceRange.highest)} · `}
+          Arrives in as fast as {result.fastestDeliveryDays} day
+          {result.fastestDeliveryDays === 1 ? "" : "s"}
+        </p>
+
+        {result.offers.length > 1 && (
         <div className="priorityRow" aria-label="Sort offers">
           <span>Show me:</span>
           {(
@@ -1090,13 +939,12 @@ export default function ShoppingApp() {
             </button>
           ))}
         </div>
-
-        {renderFilterBar(visibleOffers.length, result.offers.length)}
+        )}
 
         {visibleOffers.length === 0 ? (
           <div className="emptyBox">
-            <strong>No offers match those filters</strong>
-            <p>Loosen a filter to see the other offers for this product.</p>
+            <strong>No offers for this product right now</strong>
+            <p>Try the search again in a moment.</p>
           </div>
         ) : (
         <div className="compareWrap">
@@ -1130,8 +978,15 @@ export default function ShoppingApp() {
                             ? "First-party store — no seller rating stated"
                             : `${offer.sellerRating.toFixed(1)} seller rating`}
                         </span>
-                        {result.liveData?.offerIds.includes(offer.id) && (
-                          <span className="livePill livePillSmall">Live price</span>
+                        {offer.provenance.sourceUrl && (
+                          <a
+                            className="detailsLink"
+                            href={offer.provenance.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            See full details at {offer.merchant} ↗
+                          </a>
                         )}
                       </span>
                     </td>
@@ -1194,7 +1049,7 @@ export default function ShoppingApp() {
         <p className="shipsLine">Ships from and sold by {result.recommendation.seller}</p>
         {result.dataSource === "live" && result.retrievedAt && (
           <p className="liveLine">
-            Live prices retrieved {formatDateTime(result.retrievedAt)} from{" "}
+            Prices retrieved {formatDateTime(result.retrievedAt)} from{" "}
             {result.sourceMerchants.join(" and ")} — every figure is the listing&apos;s
             own.
           </p>
@@ -1326,67 +1181,16 @@ export default function ShoppingApp() {
               <section className="checkoutForm" aria-label="Checkout">
                 <h4>Checkout</h4>
                 <p className="warningText">
-                  Checkout here is real, and each store below is checked out
-                  separately with that store. Your details go to the selling
-                  store to fulfill your order and are not stored by this site.
-                  Payment is taken by the store&apos;s own payment provider on
-                  the store&apos;s secure payment step — never enter a card
-                  number on this site.
+                  You check out on each store&apos;s own site. Use the button
+                  for a store below and we load your items into that
+                  store&apos;s cart — you enter your details and pay there.
+                  This site collects no checkout or payment information, and
+                  never takes a card number.
                 </p>
-                <div className="formGrid">
-                  <label className="field">
-                    <span>Guest name</span>
-                    <input value={guestName} onChange={(e) => setGuestName(e.target.value)} autoComplete="name" />
-                  </label>
-                  <label className="field">
-                    <span>Guest email</span>
-                    <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} autoComplete="email" />
-                  </label>
-                  <label className="field">
-                    <span>Phone</span>
-                    <input type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} autoComplete="tel" />
-                  </label>
-                  <label className="field formWide">
-                    <span>Street address</span>
-                    <input value={guestStreet} onChange={(e) => setGuestStreet(e.target.value)} autoComplete="street-address" />
-                  </label>
-                  <label className="field">
-                    <span>Apt / suite (optional)</span>
-                    <input value={guestExtended} onChange={(e) => setGuestExtended(e.target.value)} autoComplete="address-line2" />
-                  </label>
-                  <label className="field">
-                    <span>City</span>
-                    <input value={guestCity} onChange={(e) => setGuestCity(e.target.value)} autoComplete="address-level2" />
-                  </label>
-                  <label className="field">
-                    <span>State (2-letter)</span>
-                    <input value={guestRegion} onChange={(e) => setGuestRegion(e.target.value)} autoComplete="address-level1" maxLength={2} />
-                  </label>
-                  <label className="field">
-                    <span>ZIP code</span>
-                    <input value={guestPostal} onChange={(e) => setGuestPostal(e.target.value)} autoComplete="postal-code" inputMode="numeric" />
-                  </label>
-                </div>
-
-                <label className="consentCheck">
-                  <input
-                    type="checkbox"
-                    checked={buyerConsent}
-                    onChange={(e) => setBuyerConsent(e.target.checked)}
-                  />
-                  <span>
-                    <strong>I agree</strong> — send my name, email, phone, and
-                    delivery address to the selling store so it can take payment
-                    through its own payment provider and fulfill my order, under
-                    the store&apos;s policies (linked in the checkout below).
-                  </span>
-                </label>
-
                 {checkoutMerchants.map((merchant) => {
                   const state = checkoutSessions[merchant] ?? {};
-                  const session = state.session;
                   const merchantItems = cart.filter(
-                    (item) => item.merchant === merchant && isInAppCheckout(item),
+                    (item) => item.merchant === merchant && canPreloadStoreCart(item),
                   );
                   const fallbackItem = merchantItems.find((item) => item.sourceUrl);
                   return (
@@ -1403,117 +1207,12 @@ export default function ShoppingApp() {
                         before shipping and tax, which {merchant} calculates in its checkout.
                       </p>
 
-                      <p className="pathTag">Path A — check out here</p>
-
-                      {state.error && (
-                        <div className="errorBox" role="alert">
-                          <p>{state.error}</p>
-                          {(fallbackItem?.sourceUrl || state.fallbackUrl) && (
-                            <p>
-                              <a
-                                href={fallbackItem?.sourceUrl ?? state.fallbackUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Buy it at {merchant} instead ↗
-                              </a>
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {!session ? (
-                        <button
-                          type="button"
-                          className="btnCoral btnBlock"
-                          disabled={
-                            state.busy || !guestDetailsValid || !buyerConsent
-                          }
-                          onClick={() => void startStoreCheckout(merchant)}
-                        >
-                          {state.busy
-                            ? `Starting checkout at ${merchant}…`
-                            : `Start checkout at ${merchant}`}
-                        </button>
-                      ) : (
-                        <div>
-                          <p>
-                            <strong>Checkout started at {merchant}.</strong>{" "}
-                            {session.destinationAccepted
-                              ? "Your delivery address was accepted. "
-                              : "Confirm your delivery address on the store's payment step. "}
-                            {merchant} reports the session status as “{session.status}”.
-                          </p>
-                          <div className="sessionTotals" aria-label={`${merchant} totals`}>
-                            {session.totals.map((line) => (
-                              <div
-                                className={`totalsRow ${line.type === "total" ? "grand" : ""}`}
-                                key={`${line.type}-${line.displayText}`}
-                              >
-                                <span>{line.displayText}</span>
-                                <span>{money(line.amount)}</span>
-                              </div>
-                            ))}
-                          </div>
-                          {session.messages.length > 0 && (
-                            <ul className="sessionMessages">
-                              {session.messages.map((message, index) => (
-                                <li key={`${message.code}-${index}`}>{message.content}</li>
-                              ))}
-                            </ul>
-                          )}
-                          {session.policyLinks.length > 0 && (
-                            <div className="policyLinkList">
-                              {session.policyLinks.map((link) => (
-                                <a key={link.url} href={link.url} target="_blank" rel="noreferrer">
-                                  {merchant} {link.title} ↗
-                                </a>
-                              ))}
-                            </div>
-                          )}
-                          {session.continueUrl ? (
-                            <div className="viewActions">
-                              <a
-                                className="btnCoral"
-                                href={session.continueUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Pay at {merchant} ↗
-                              </a>
-                              <button
-                                type="button"
-                                className="btnOutline"
-                                disabled={state.statusBusy}
-                                onClick={() => void checkStoreOrder(merchant)}
-                              >
-                                {state.statusBusy
-                                  ? "Checking…"
-                                  : "I've paid — check for my order"}
-                              </button>
-                            </div>
-                          ) : (
-                            <p className="mutedText">
-                              {merchant} did not return a payment step for this
-                              session. Use the store link in the cart above to buy
-                              the item on its site instead.
-                            </p>
-                          )}
-                          {state.statusNote && <p className="mutedText">{state.statusNote}</p>}
-                          {session.expiresAt && (
-                            <p className="mutedText">
-                              This checkout session expires {formatDateTime(session.expiresAt)}.
-                            </p>
-                          )}
-                        </div>
-                      )}
                       <div className="pathBlock">
-                        <p className="pathTag">Path B — continue at {merchant}</p>
                         <p className="mutedText">
-                          Prefer the store&apos;s own checkout? We load these
-                          items into {merchant}&apos;s cart for you — you enter
-                          your details and pay on {merchant}&apos;s site.
-                          Nothing about you is sent from here.
+                          We load these items into {merchant}&apos;s cart for
+                          you — you enter your details and pay on{" "}
+                          {merchant}&apos;s site. Nothing about you is sent
+                          from here.
                         </p>
                         {state.cartError && (
                           <div className="errorBox" role="alert">
@@ -1533,13 +1232,13 @@ export default function ShoppingApp() {
                         )}
                         <button
                           type="button"
-                          className="btnOutline btnBlock"
+                          className="btnCoral btnBlock"
                           disabled={state.cartBusy}
                           onClick={() => void continueAtStore(merchant)}
                         >
                           {state.cartBusy
                             ? `Preparing your cart at ${merchant}…`
-                            : `Continue at ${merchant} ↗`}
+                            : `Continue checkout at ${merchant} ↗`}
                         </button>
                         {state.cartUrl && (
                           <p>
@@ -1614,32 +1313,6 @@ export default function ShoppingApp() {
           )}
         </p>
       </article>
-    );
-  }
-
-  function renderConfirmation() {
-    return (
-      <main className="wrap flowMain">
-        <h2 className="viewTitle">Order confirmed</h2>
-        <div className="flowCard">
-          <p>
-            The selling store confirmed this order — the details below are exactly
-            what the store returned. The store will also email its own
-            confirmation to the guest email used at checkout.
-          </p>
-          <div className="confirmationGrid">
-            {placedOrders.map((order) => renderOrderCard(order))}
-          </div>
-          <div className="viewActions">
-            <button type="button" className="btnPine" onClick={() => setView("orders")}>
-              View orders
-            </button>
-            <button type="button" className="btnOutline" onClick={goHome}>
-              Continue shopping
-            </button>
-          </div>
-        </div>
-      </main>
     );
   }
 
@@ -1766,8 +1439,7 @@ export default function ShoppingApp() {
       {view === "results" && renderResults()}
       {view === "product" && renderProduct()}
       {view === "cart" && renderCart()}
-      {view === "confirmation" && placedOrders.length > 0 && renderConfirmation()}
-      {view === "confirmation" && placedOrders.length === 0 && renderOrders()}
+      {view === "confirmation" && renderOrders()}
       {view === "orders" && renderOrders()}
 
       <footer className="siteFooter">
