@@ -870,7 +870,7 @@ export default function ShoppingApp() {
   function renderHome() {
     return (
       <main className="wrap homeMain">
-        <h1 className="homeTitle">One app to shop them all.</h1>
+        <h1 className="homeTitle">One place to shop them all.</h1>
         <p className="homeSub">Search once. We do the comparing.</p>
 
         <form className="heroSearch" onSubmit={onHeaderSearch} role="search">
@@ -895,7 +895,7 @@ export default function ShoppingApp() {
           <div className="homeStep">
             <span className="stepNum">1</span>
             <p>
-              <strong>Search for the product.</strong>
+              <strong>Step 1 — Search for the product.</strong>
               <br />
               Type what you want, just like any store.
             </p>
@@ -903,17 +903,13 @@ export default function ShoppingApp() {
           <div className="homeStep">
             <span className="stepNum">2</span>
             <p>
-              <strong>See it across different stores and compare.</strong>
-              <br />
-              Price, delivery, return policy and warranty — all in one place.
+              <strong>Step 2 — See it across different stores and compare price, delivery speed, return policy, and warranty.</strong>
             </p>
           </div>
           <div className="homeStep">
             <span className="stepNum">3</span>
             <p>
-              <strong>Buy it right here.</strong>
-              <br />
-              See the best whole deal, then check out.
+              <strong>Step 3 — Check out here, or at the store.</strong>
             </p>
           </div>
         </div>
