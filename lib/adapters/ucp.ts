@@ -912,11 +912,11 @@ export const UCP_STORES: UcpStore[] = [
   /* ran against a Nov 3, 2026 snapshot of this registry). Each row  */
   /* below comes from a real search_catalog response received in     */
   /* that sweep: public UCP profile 200 + catalog.search declared +  */
-  /* a priced USD product returned. Only the sweep's ADOPT stores    */
-  /* are registered below. Its ADOPT WITH CAUTION stores (terms ban  */
-  /* bots generally) were briefly registered and then REMOVED on     */
-  /* Nov 4, 2026 per Barath's decision — clean ADOPT only, so a       */
-  /* store whose terms prohibit agent access cannot risk the app.    */
+  /* a priced USD product returned. The sweep's 185 ADOPT WITH       */
+  /* CAUTION stores (terms ban bots generally) were registered in    */
+  /* the first wave-5 push and REMOVED the same day, Nov 4, 2026,    */
+  /* on Barath's decision: where the terms prohibit agent access     */
+  /* the store stays out until its terms are re-read.                */
   /* Stores whose terms mention AI/intelligent agents (the sweep's  */
   /* INVESTIGATE rows) are NOT registered — held for Barath's        */
   /* decision. fallbackEndpoint is the endpoint each store's live   */

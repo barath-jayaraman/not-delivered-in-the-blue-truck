@@ -158,13 +158,13 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
   // candidates this app had never probed: every row rests on a real
   // search_catalog response in that sweep (profile 200 + catalog.search
   // declared + a priced USD product). The 177 ADOPT stores use the same
-  // rationale as the waves above. The 185 ADOPT WITH CAUTION stores sit
-  // in the second spread below: their terms ban bots generally, so they
-  // are UCP-ONLY (ucpOnly: true) — no browsing/page-fetch route exists
-  // for them anywhere in this app, and the gate labels them "UCP-only,
-  // not authorized in the terms". The sweep's INVESTIGATE rows (terms
-  // mentioning AI/intelligent agents, or dev-store endpoints) are NOT
-  // registered — held for Barath's decision.
+  // rationale as the waves above. The sweep's 185 ADOPT WITH CAUTION
+  // stores (terms ban bots generally) were registered in the first
+  // wave-5 push and REMOVED the same day on Barath's decision — held,
+  // not connected, until their terms are re-read. The sweep's
+  // INVESTIGATE rows (terms mentioning AI/intelligent agents, or
+  // dev-store endpoints) are NOT registered — held for Barath's
+  // decision.
   // Catalog reads only; no cart/checkout calls.
   ...[
     "Steve Madden",
@@ -411,33 +411,13 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
       consentGateRequired: false,
     }),
   ),
-  // Wave 5 ADOPT WITH CAUTION (Grok sweep, Nov 4, 2026): stores whose
-  // site terms ban bots generally and do not authorize the UCP channel
-  // in the terms. They were briefly registered UCP-ONLY and then
-  // REMOVED the same day per Barath's decision — clean ADOPT only, so
-  // a store whose terms prohibit agent access cannot risk the app.
-  // The list is therefore empty; the ucpOnly mechanism stays for any
-  // future store Barath expressly approves on this basis.
-  ...[
-  ].map(
-    (merchant): MerchantPolicy => ({
-      merchant,
-      allowedAcquisitionMethods: ["api"],
-      preferredAcquisitionMethod: "api",
-      status: "ucp-authorized-channel",
-      rationale:
-        `${merchant} publishes a public UCP profile (/.well-known/ucp) declaring the ` +
-        `dev.ucp.shopping.catalog.search capability over an MCP transport, and its ` +
-        `catalog answers live through that endpoint. Its site terms ban bots ` +
-        `generally and do not authorize this channel in the terms, so the store is ` +
-        `UCP-ONLY here: the merchant-published UCP endpoint is the sole route ever ` +
-        `used — no browsing, no page fetching, stop on any 401/403/429/challenge. ` +
-        `Catalog data is read live, at request time, through that profile only.`,
-      browserPurchasingAllowed: false,
-      consentGateRequired: false,
-      ucpOnly: true,
-    }),
-  ),
+  // Wave 5 ADOPT WITH CAUTION stores (185, Grok sweep, Nov 4, 2026)
+  // were registered in the first wave-5 push and REMOVED the same
+  // day on Barath's decision: their site terms ban bots generally,
+  // and where the terms prohibit agent access the store stays out
+  // until its terms are re-read. They are held, not connected; the
+  // per-store terms evidence is recorded in
+  // meta-hackathon/grok-new-stores-integration-nov4.md.
   // Browsing-route stores (lib/adapters/browse-stores.ts): terms read
   // in full on Nov 1, 2026 contain NO automated-access prohibition,
   // and one honest search-results fetch with this app's

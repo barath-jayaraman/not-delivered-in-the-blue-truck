@@ -587,7 +587,7 @@ export default function ShoppingApp() {
           </div>
         </div>
 
-        <p className="heroHint">Searching 54 stores — and growing.</p>
+        <p className="heroHint">Searching 231 stores — and growing.</p>
       </main>
     );
   }
