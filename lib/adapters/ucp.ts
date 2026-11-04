@@ -912,11 +912,11 @@ export const UCP_STORES: UcpStore[] = [
   /* ran against a Nov 3, 2026 snapshot of this registry). Each row  */
   /* below comes from a real search_catalog response received in     */
   /* that sweep: public UCP profile 200 + catalog.search declared +  */
-  /* a priced USD product returned. ADOPT WITH CAUTION stores are    */
-  /* UCP-ONLY here: their terms ban bots generally, so no browsing   */
-  /* or page-fetch route exists for them anywhere in this app — the  */
-  /* merchant-published UCP endpoint is the sole route, labelled     */
-  /* "UCP-only, not authorized in the terms" in the policy gate.     */
+  /* a priced USD product returned. Only the sweep's ADOPT stores    */
+  /* are registered below. Its ADOPT WITH CAUTION stores (terms ban  */
+  /* bots generally) were briefly registered and then REMOVED on     */
+  /* Nov 4, 2026 per Barath's decision — clean ADOPT only, so a       */
+  /* store whose terms prohibit agent access cannot risk the app.    */
   /* Stores whose terms mention AI/intelligent agents (the sweep's  */
   /* INVESTIGATE rows) are NOT registered — held for Barath's        */
   /* decision. fallbackEndpoint is the endpoint each store's live   */
@@ -937,24 +937,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "basic tee", "basic", "basics", "tee", "tees", "clothing",
       "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Standard Crest Tee" — USD 18
-    // Endpoint declared by the live profile at verification: 1p-ecomm.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "1st Phorm",
-    profileHost: "1stphorm.com",
-    brand: "1st Phorm",
-    fallbackEndpoint: "https://1p-ecomm.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "1st phorm", "1stphorm",
-    ],
-    keywords: [
-      "shirt", "standard crest", "crest tee", "standard", "standards",
-      "crest", "crests", "tee", "tees", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -1062,24 +1044,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Scott Shirt - White" — USD 280
-    // Endpoint declared by the live profile at verification: aninebing.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "ANINE BING",
-    profileHost: "aninebing.com",
-    brand: "ANINE BING",
-    fallbackEndpoint: "https://aninebing.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "anine bing", "aninebing",
-    ],
-    keywords: [
-      "shirt", "scott shirt", "scott", "scotts", "shirts", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Anker MagGo Power Bank (10K, Slim)" — USD 79.86
     // Endpoint declared by the live profile at verification: ankerus.myshopify.com
     merchant: "Anker",
@@ -1149,25 +1113,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Flagship Landscape T-Shirt - Run Wild" — USD 25
-    // Endpoint declared by the live profile at verification: athletic-brewing-company.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Athletic Brewing Company",
-    profileHost: "athleticbrewing.com",
-    brand: "Athletic Brewing Company",
-    fallbackEndpoint: "https://athletic-brewing-company.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "athletic brewing company", "athleticbrewingcompany",
-    ],
-    keywords: [
-      "shirt", "flagship landscape", "landscape shirt", "shirt run",
-      "run wild", "flagship", "flagships", "landscape", "landscapes",
-      "shirts", "run", "runs",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Model 000: Black & White" — USD 130.5
     // Endpoint declared by the live profile at verification: atoms-k2.myshopify.com
     merchant: "Atoms",
@@ -1182,24 +1127,6 @@ export const UCP_STORES: UcpStore[] = [
       "shirt", "model", "models", "clothing", "apparel",
     ],
     prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Arcam OPEN BOX A50 Signature Stereo Integrated Amplifier - A Grade" — USD 2499.95
-    // Endpoint declared by the live profile at verification: audioadvice.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Audio Advice",
-    profileHost: "audioadvice.com",
-    brand: "Audio Advice",
-    fallbackEndpoint: "https://audioadvice.myshopify.com/api/ucp/mcp",
-    category: "Electronics",
-    brandAliases: [
-      "audio advice", "audioadvice",
-    ],
-    keywords: [
-      "arcam open", "open box", "box a50", "a50 stereo", "stereo integrated",
-      "arcam", "arcams", "open", "opens", "box", "boxes", "a50",
-    ],
-    prefixBrand: false,
   },
   {
     // Sweep-verified Nov 4, 2026: "Aventon Topograph Shirt" — USD 24.99
@@ -1338,114 +1265,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Ben Shirt - White" — USD 49
-    // Endpoint declared by the live profile at verification: birdygrace.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "BIRDY GREY",
-    profileHost: "birdygrey.com",
-    brand: "BIRDY GREY",
-    fallbackEndpoint: "https://birdygrace.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "birdy grey", "birdygrey",
-    ],
-    keywords: [
-      "shirt", "ben shirt", "ben", "bens", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Daily Habits Kit" — USD 62
-    // Endpoint declared by the live profile at verification: bite-bits.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Bite",
-    profileHost: "bitetoothpastebits.com",
-    brand: "Bite",
-    fallbackEndpoint: "https://bite-bits.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "bite",
-    ],
-    keywords: [
-      "daily habits", "habits kit", "daily", "dailies", "habits", "habit",
-      "kit", "kits", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's Circuit Short Sleeve Tee" — USD 65
-    // Endpoint declared by the live profile at verification: b4fbf5-dc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Black Diamond",
-    profileHost: "blackdiamondequipment.com",
-    brand: "Black Diamond",
-    fallbackEndpoint: "https://b4fbf5-dc.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "black diamond", "blackdiamond",
-    ],
-    keywords: [
-      "shirt", "circuit short", "short sleeve", "sleeve tee", "circuit",
-      "circuits", "short", "shorts", "sleeve", "sleeves", "tee", "tees",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Easy-Care White Pinpoint Dress Shirt" — USD 129
-    // Endpoint declared by the live profile at verification: 9ra0eq-ig.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Black Lapel",
-    profileHost: "blacklapel.com",
-    brand: "Black Lapel",
-    fallbackEndpoint: "https://9ra0eq-ig.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "black lapel", "blacklapel",
-    ],
-    keywords: [
-      "shirt", "easy care", "care pinpoint", "pinpoint dress", "dress shirt",
-      "easy", "easies", "care", "cares", "pinpoint", "pinpoints", "dress",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "22\" Griddle Carry Bag" — USD 49.99
-    // Endpoint declared by the live profile at verification: blackstoneproducts.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Blackstone Products",
-    profileHost: "blackstoneproducts.com",
-    brand: "Blackstone Products",
-    fallbackEndpoint: "https://blackstoneproducts.myshopify.com/api/ucp/mcp",
-    category: "Kitchen",
-    brandAliases: [
-      "blackstone products", "blackstoneproducts",
-    ],
-    keywords: [
-      "bag", "griddle carry", "carry bag", "griddle", "griddles", "carry",
-      "carries", "bags", "kitchen", "cookware",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Oxi Laundry Booster Refills" — USD 12
-    // Endpoint declared by the live profile at verification: bluelandhome.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Blueland",
-    profileHost: "blueland.com",
-    brand: "Blueland",
-    fallbackEndpoint: "https://bluelandhome.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "blueland",
-    ],
-    keywords: [
-      "oxi laundry", "laundry booster", "booster refills", "oxi", "oxis",
-      "laundry", "laundries", "booster", "boosters", "refills", "refill",
-      "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "BLUETTI POLO shirt" — USD 19.99
     // Endpoint declared by the live profile at verification: bluettipower.myshopify.com
     merchant: "BLUETTI",
@@ -1476,78 +1295,6 @@ export const UCP_STORES: UcpStore[] = [
       "complete nano", "nano hydroxyapatite", "hydroxyapatite oral",
       "oral care", "care starter", "complete", "completes", "nano", "nanos",
       "hydroxyapatite", "hydroxyapatites", "oral",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Soft Knit Sleepshirt - Mineral" — USD 99
-    // Endpoint declared by the live profile at verification: boll-branch.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Boll & Branch",
-    profileHost: "bollandbranch.com",
-    brand: "Boll & Branch",
-    fallbackEndpoint: "https://boll-branch.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "boll and branch", "boll branch", "bollandbranch",
-    ],
-    keywords: [
-      "shirt", "soft knit", "knit sleepshirt", "sleepshirt mineral", "soft",
-      "softs", "knit", "knits", "sleepshirt", "sleepshirts", "mineral",
-      "minerals",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Boppy Nursing Pillow" — USD 50
-    // Endpoint declared by the live profile at verification: newboppy.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Boppy",
-    profileHost: "boppy.com",
-    brand: "Boppy",
-    fallbackEndpoint: "https://newboppy.myshopify.com/api/ucp/mcp",
-    category: "Baby",
-    brandAliases: [
-      "boppy",
-    ],
-    keywords: [
-      "nursing pillow", "nursing", "nursings", "pillow", "pillows", "baby",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Revolution Home Gym" — USD 2999
-    // Endpoint declared by the live profile at verification: bowflex-dtc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "BowFlex",
-    profileHost: "bowflex.com",
-    brand: "BowFlex",
-    fallbackEndpoint: "https://bowflex-dtc.myshopify.com/api/ucp/mcp",
-    category: "Sporting Goods",
-    brandAliases: [
-      "bowflex",
-    ],
-    keywords: [
-      "revolution home", "home gym", "revolution", "revolutions", "home",
-      "homes", "gym", "gyms", "outdoor gear",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "DOLL MIST TRAVEL MIST" — USD 20
-    // Endpoint declared by the live profile at verification: boysmells.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Boy Smells",
-    profileHost: "boysmells.com",
-    brand: "Boy Smells",
-    fallbackEndpoint: "https://boysmells.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "boy smells", "boysmells",
-    ],
-    keywords: [
-      "doll mist", "mist travel", "travel mist", "doll", "dolls", "mist",
-      "mists", "travel", "travels", "makeup", "skincare", "beauty",
     ],
     prefixBrand: true,
   },
@@ -1586,23 +1333,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: false,
   },
   {
-    // Sweep-verified Nov 4, 2026: "B.R.E.E.O Shirt" — USD 30
-    // Endpoint declared by the live profile at verification: breeo.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Breeo",
-    profileHost: "breeo.com",
-    brand: "Breeo",
-    fallbackEndpoint: "https://breeo.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "breeo",
-    ],
-    keywords: [
-      "shirt", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "The Pantry Trio" — USD 99
     // Endpoint declared by the live profile at verification: brightland-ca.myshopify.com
     merchant: "Brightland",
@@ -1615,25 +1345,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "pantry trio", "pantry", "pantries", "trio", "trios",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Dreamweave Waffle Robe" — USD 129
-    // Endpoint declared by the live profile at verification: brooklinen2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Brooklinen",
-    profileHost: "brooklinen.com",
-    brand: "Brooklinen",
-    fallbackEndpoint: "https://brooklinen2.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "brooklinen",
-    ],
-    keywords: [
-      "shirt", "dreamweave waffle", "waffle robe", "dreamweave",
-      "dreamweaves", "waffle", "waffles", "robe", "robes", "clothing",
-      "apparel",
     ],
     prefixBrand: true,
   },
@@ -1655,24 +1366,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Santorini Reed Diffuser" — USD 48
-    // Endpoint declared by the live profile at verification: brooklyn-candle-studio.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Brooklyn Candle Studio",
-    profileHost: "brooklyncandlestudio.com",
-    brand: "Brooklyn Candle Studio",
-    fallbackEndpoint: "https://brooklyn-candle-studio.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "brooklyn candle studio", "brooklyncandlestudio",
-    ],
-    keywords: [
-      "santorini reed", "reed diffuser", "santorini", "santorinis", "reed",
-      "diffuser", "diffusers", "candle", "candles", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Long-Sleeve T-Shirt | White" — USD 29.99
     // Endpoint declared by the live profile at verification: kryo-gear.myshopify.com
     merchant: "BruMate",
@@ -1686,61 +1379,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "long sleeve", "sleeve shirt", "long", "longs", "sleeve",
       "sleeves", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Break Long Sleeve Tee - Heather Grey" — USD 46
-    // Endpoint declared by the live profile at verification: buffbunny.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Buffbunny",
-    profileHost: "buffbunny.com",
-    brand: "Buffbunny",
-    fallbackEndpoint: "https://buffbunny.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "buffbunny",
-    ],
-    keywords: [
-      "shirt", "break long", "long sleeve", "sleeve tee", "tee heather",
-      "break", "breaks", "long", "longs", "sleeve", "sleeves", "tee",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Mentalist™ Whole Bean Coffee, 5 lb." — USD 111.1
-    // Endpoint declared by the live profile at verification: bulletproof-coffee.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Bulletproof",
-    profileHost: "bulletproof.com",
-    brand: "Bulletproof",
-    fallbackEndpoint: "https://bulletproof-coffee.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "bulletproof",
-    ],
-    keywords: [
-      "mentalisttm whole", "whole bean", "bean coffee", "mentalisttm",
-      "mentalisttms", "whole", "wholes", "bean", "beans", "coffee",
-      "coffees",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Screen Protector" — USD 13.95
-    // Endpoint declared by the live profile at verification: burga-store.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "BURGA",
-    profileHost: "burga.com",
-    brand: "BURGA",
-    fallbackEndpoint: "https://burga-store.myshopify.com/api/ucp/mcp",
-    category: "Electronics",
-    brandAliases: [
-      "burga",
-    ],
-    keywords: [
-      "screen protector", "screen", "screens", "protector", "protectors",
-      "electronics",
     ],
     prefixBrand: true,
   },
@@ -1762,25 +1400,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Short Sleeve Organic Cotton Toddler V Neck Tees 3 Pack" — USD 32.95
-    // Endpoint declared by the live profile at verification: stg-burtsbeesbaby.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Burt's Bees Baby",
-    profileHost: "burtsbeesbaby.com",
-    brand: "Burt's Bees Baby",
-    fallbackEndpoint: "https://stg-burtsbeesbaby.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "burt s bees baby", "burtsbeesbaby",
-    ],
-    keywords: [
-      "shirt", "short sleeve", "sleeve organic", "organic cotton",
-      "cotton toddler", "short", "shorts", "sleeve", "sleeves", "organic",
-      "organics", "cotton",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Burton Elite Long Sleeve T-Shirt" — USD 49.95
     // Endpoint declared by the live profile at verification: burton-na-production.myshopify.com
     merchant: "Burton Snowboards",
@@ -1798,24 +1417,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Everyday Classic Fit Tee" — USD 31.5
-    // Endpoint declared by the live profile at verification: bylt-apparel.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "BYLT Basics",
-    profileHost: "byltbasics.com",
-    brand: "BYLT Basics",
-    fallbackEndpoint: "https://bylt-apparel.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "bylt basics", "byltbasics",
-    ],
-    keywords: [
-      "shirt", "everyday fit", "fit tee", "everyday", "everydays", "fit",
-      "fits", "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "All you Need Is Love Bundle" — USD 55
     // Endpoint declared by the live profile at verification: crn-dev.myshopify.com
     merchant: "Camille Rose Naturals",
@@ -1829,62 +1430,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "you need", "need love", "you", "yous", "need", "love", "loves",
       "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Cerulean Tactile Switch by Durock" — USD 17.55
-    // Endpoint declared by the live profile at verification: cannon-keys.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "CannonKeys",
-    profileHost: "cannonkeys.com",
-    brand: "CannonKeys",
-    fallbackEndpoint: "https://cannon-keys.myshopify.com/api/ucp/mcp",
-    category: "Hardware",
-    brandAliases: [
-      "cannonkeys",
-    ],
-    keywords: [
-      "cerulean tactile", "tactile switch", "switch durock", "cerulean",
-      "ceruleans", "tactile", "tactiles", "switch", "switches", "durock",
-      "durocks", "tools",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Volcano Concentrated Laundry Detergent" — USD 31
-    // Endpoint declared by the live profile at verification: hvchpn-2q.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Capri Blue",
-    profileHost: "capri-blue.com",
-    brand: "Capri Blue",
-    fallbackEndpoint: "https://hvchpn-2q.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "capri blue", "capriblue",
-    ],
-    keywords: [
-      "volcano concentrated", "concentrated laundry", "laundry detergent",
-      "volcano", "volcanos", "concentrated", "laundry", "laundries",
-      "detergent", "detergents", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "10-Cup Coffee Maker" — USD 495
-    // Endpoint declared by the live profile at verification: caraway-home.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Caraway",
-    profileHost: "carawayhome.com",
-    brand: "Caraway",
-    fallbackEndpoint: "https://caraway-home.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "caraway",
-    ],
-    keywords: [
-      "cup coffee", "coffee maker", "cup", "cups", "coffee", "coffees",
-      "maker", "makers",
     ],
     prefixBrand: true,
   },
@@ -1939,24 +1484,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "The Pedro Short Sleeve Shirt | Noir Daisy" — USD 148
-    // Endpoint declared by the live profile at verification: christy-dawn.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Christy Dawn",
-    profileHost: "christydawn.com",
-    brand: "Christy Dawn",
-    fallbackEndpoint: "https://christy-dawn.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "christy dawn", "christydawn",
-    ],
-    keywords: [
-      "shirt", "pedro short", "short sleeve", "sleeve shirt", "shirt noir",
-      "pedro", "pedros", "short", "shorts", "sleeve", "sleeves", "shirts",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "The Sandstone (LS Waffle Cord Friday Shirt)" — USD 84.5
     // Endpoint declared by the live profile at verification: chubbies.myshopify.com
     merchant: "Chubbies Shorts",
@@ -1989,41 +1516,6 @@ export const UCP_STORES: UcpStore[] = [
       "peanut butter", "butter banana", "banana dark", "dark chocolate",
       "chocolate flavor", "peanut", "peanuts", "butter", "butters", "banana",
       "bananas", "dark",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Limited Edition Clinique T-Shirt in Black" — USD 25
-    // Endpoint declared by the live profile at verification: elc-us-cl-prod.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Clinique Online",
-    profileHost: "clinique.com",
-    brand: "Clinique Online",
-    fallbackEndpoint: "https://elc-us-cl-prod.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "clinique online", "cliniqueonline",
-    ],
-    keywords: [
-      "shirt", "shirts", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Cobra Pure 2.0 Golf Polo" — USD 65
-    // Endpoint declared by the live profile at verification: cobrapuma-main.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "COBRA Golf",
-    profileHost: "cobragolf.com",
-    brand: "COBRA Golf",
-    fallbackEndpoint: "https://cobrapuma-main.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "cobra golf", "cobragolf",
-    ],
-    keywords: [
-      "shirt", "pure polo", "pure", "pures", "polo", "polos", "golf",
-      "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -2062,78 +1554,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Just A Kiss" — USD 34
-    // Endpoint declared by the live profile at verification: colourpop-prd.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "ColourPop",
-    profileHost: "colourpop.com",
-    brand: "ColourPop",
-    fallbackEndpoint: "https://colourpop-prd.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "colourpop",
-    ],
-    keywords: [
-      "just kiss", "just", "justs", "kiss", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Rifle Paper Co. Coffee Mug" — USD 35
-    // Endpoint declared by the live profile at verification: corkcicle.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "CORKCICLE",
-    profileHost: "corkcicle.com",
-    brand: "CORKCICLE",
-    fallbackEndpoint: "https://corkcicle.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "corkcicle",
-    ],
-    keywords: [
-      "rifle paper", "paper coffee", "coffee mug", "rifle", "rifles",
-      "paper", "papers", "coffee", "coffees", "mug", "mugs",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Mero Organic Flannel Shirt - Men's" — USD 98
-    // Endpoint declared by the live profile at verification: cotopaxi.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Cotopaxi",
-    profileHost: "cotopaxi.com",
-    brand: "Cotopaxi",
-    fallbackEndpoint: "https://cotopaxi.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "cotopaxi",
-    ],
-    keywords: [
-      "shirt", "mero organic", "organic flannel", "flannel shirt", "mero",
-      "meros", "organic", "organics", "flannel", "flannels", "shirts",
-      "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Throwback Tee" — USD 25
-    // Endpoint declared by the live profile at verification: counter-culture-coffee-retail.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Counter Culture Coffee",
-    profileHost: "counterculturecoffee.com",
-    brand: "Counter Culture Coffee",
-    fallbackEndpoint: "https://counter-culture-coffee-retail.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "counter culture coffee", "counterculturecoffee",
-    ],
-    keywords: [
-      "shirt", "throwback tee", "throwback", "throwbacks", "tee", "tees",
-      "coffee", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Men's All Day Tee" — USD 64
     // Endpoint declared by the live profile at verification: cozyearth2.myshopify.com
     merchant: "Cozy Earth",
@@ -2147,25 +1567,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "day tee", "day", "days", "tee", "tees", "clothing",
       "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Overtime Oversized Tee | White Relaxed-Fit" — USD 42
-    // Endpoint declared by the live profile at verification: cuts-clothing.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Cuts",
-    profileHost: "cutsclothing.com",
-    brand: "Cuts",
-    fallbackEndpoint: "https://cuts-clothing.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "cuts",
-    ],
-    keywords: [
-      "shirt", "overtime oversized", "oversized tee", "tee relaxed",
-      "relaxed fit", "overtime", "overtimes", "oversized", "tee", "tees",
-      "relaxed", "fit",
     ],
     prefixBrand: true,
   },
@@ -2205,24 +1606,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "DK x Voz Art - おいしい Sweets Hoodie" — USD 75
-    // Endpoint declared by the live profile at verification: minessentials.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Dangkeebs",
-    profileHost: "dangkeebs.com",
-    brand: "Dangkeebs",
-    fallbackEndpoint: "https://minessentials.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "dangkeebs",
-    ],
-    keywords: [
-      "shirt", "voz art", "art sweets", "sweets hoodie", "voz", "vozes",
-      "art", "arts", "sweets", "sweet", "hoodie", "hoodies",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Sheer Loyalty \"Premium\" Oversized Tee in Black" — USD 50
     // Endpoint declared by the live profile at verification: darcsport.myshopify.com
     merchant: "DarcSport",
@@ -2237,25 +1620,6 @@ export const UCP_STORES: UcpStore[] = [
       "shirt", "sheer loyalty", "loyalty oversized", "oversized tee",
       "sheer", "sheers", "loyalty", "loyalties", "oversized", "tee", "tees",
       "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's The Standard Crew Cushioned Lightweight Lifestyle Socks" — USD 25
-    // Endpoint declared by the live profile at verification: darn-tough.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Darn Tough",
-    profileHost: "darntough.com",
-    brand: "Darn Tough",
-    fallbackEndpoint: "https://darn-tough.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "darn tough", "darntough",
-    ],
-    keywords: [
-      "shirt", "standard crew", "crew cushioned", "cushioned lightweight",
-      "lightweight lifestyle", "standard", "standards", "crew", "crews",
-      "cushioned", "lightweight", "lightweights",
     ],
     prefixBrand: true,
   },
@@ -2277,42 +1641,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Signature Standard Tee" — USD 15
-    // Endpoint declared by the live profile at verification: deathwishcoffee.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Death Wish Coffee",
-    profileHost: "deathwishcoffee.com",
-    brand: "Death Wish Coffee",
-    fallbackEndpoint: "https://deathwishcoffee.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "death wish coffee", "deathwishcoffee",
-    ],
-    keywords: [
-      "shirt", "standard tee", "standard", "standards", "tee", "tees",
-      "coffee", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "MATTIE LOAFERS DK BROWN SUEDE" — USD 140
-    // Endpoint declared by the live profile at verification: smdolcevita.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Dolce Vita",
-    profileHost: "dolcevita.com",
-    brand: "Dolce Vita",
-    fallbackEndpoint: "https://smdolcevita.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "dolce vita", "dolcevita",
-    ],
-    keywords: [
-      "shirt", "mattie loafers", "loafers suede", "mattie", "matties",
-      "loafers", "loafer", "suede", "suedes", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "The Men's Signature 6 Blade Razor" — USD 10
     // Endpoint declared by the live profile at verification: dollar-shave-club-store.myshopify.com
     merchant: "Dollar Shave Club",
@@ -2326,24 +1654,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "blade razor", "blade", "blades", "razor", "razors", "makeup",
       "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: profile 200 + catalog.search answered
-    // (the sweep's sample listing was a store service, not a product)
-    // Endpoint declared by the live profile at verification: 13scents.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Dossier Perfumes",
-    profileHost: "dossier.co",
-    brand: "Dossier Perfumes",
-    fallbackEndpoint: "https://13scents.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "dossier perfumes", "dossierperfumes",
-    ],
-    keywords: [
-      "dossier", "dossiers", "perfumes", "perfume",
     ],
     prefixBrand: true,
   },
@@ -2394,43 +1704,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "insider", "insiders",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Monstrously Good Retro T-Shirt" — USD 12.5
-    // Endpoint declared by the live profile at verification: dylans-candy-bar-dev.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Dylan's Candy Bar",
-    profileHost: "dylanscandybar.com",
-    brand: "Dylan's Candy Bar",
-    fallbackEndpoint: "https://dylans-candy-bar-dev.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "dylan s candy bar", "dylanscandybar",
-    ],
-    keywords: [
-      "shirt", "monstrously good", "good retro", "retro shirt",
-      "monstrously", "monstrouslies", "good", "goods", "retro", "retros",
-      "shirts", "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Sleek Streak Shine Hair Care Kit" — USD 12
-    // Endpoint declared by the live profile at verification: mbw1zp-yd.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "e.l.f. Cosmetics",
-    profileHost: "elfcosmetics.com",
-    brand: "e.l.f. Cosmetics",
-    fallbackEndpoint: "https://mbw1zp-yd.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "e l f cosmetics", "elfcosmetics",
-    ],
-    keywords: [
-      "sleek streak", "streak shine", "shine hair", "hair care", "care kit",
-      "sleek", "sleeks", "streak", "streaks", "shine", "shines", "hair",
     ],
     prefixBrand: true,
   },
@@ -2486,41 +1759,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Ember Mug 3" — USD 129.95
-    // Endpoint declared by the live profile at verification: ember-tech.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Ember",
-    profileHost: "ember.com",
-    brand: "Ember",
-    fallbackEndpoint: "https://ember-tech.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "ember",
-    ],
-    keywords: [
-      "mug", "mugs", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Unisex Tee – Teal" — USD 35
-    // Endpoint declared by the live profile at verification: ergattashop.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Ergatta",
-    profileHost: "ergatta.com",
-    brand: "Ergatta",
-    fallbackEndpoint: "https://ergattashop.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "ergatta",
-    ],
-    keywords: [
-      "shirt", "tee teal", "tee", "tees", "teal", "teals", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "eufy Plus Member" — USD 15
     // Endpoint declared by the live profile at verification: eufy-us.myshopify.com
     merchant: "eufy",
@@ -2537,41 +1775,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Arc'teryx Mens Kragg SL Cotton L/S Shirt" — USD 70
-    // Endpoint declared by the live profile at verification: extrabutterny.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Extra Butter",
-    profileHost: "extrabutterny.com",
-    brand: "Extra Butter",
-    fallbackEndpoint: "https://extrabutterny.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "extra butter", "extrabutter",
-    ],
-    keywords: [
-      "shirt", "arc teryx", "teryx kragg", "kragg cotton", "cotton shirt",
-      "arc", "arcs", "teryx", "teryxes", "kragg", "kraggs", "cotton",
-    ],
-    prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Fable Unisex Hoodie" — USD 65
-    // Endpoint declared by the live profile at verification: fable-pets.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Fable",
-    profileHost: "fablepets.com",
-    brand: "Fable",
-    fallbackEndpoint: "https://fable-pets.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "fable",
-    ],
-    keywords: [
-      "shirt", "hoodie", "hoodies", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "FASHIONPHILE Logo T-Shirt" — USD 30
     // Endpoint declared by the live profile at verification: 9b6844-68.myshopify.com
     merchant: "FASHIONPHILE",
@@ -2584,42 +1787,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "shirt", "logo shirt", "logo", "logos", "shirts", "clothing",
-      "apparel",
-    ],
-    prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Essentials SS26 Classic Tee" — USD 75
-    // Endpoint declared by the live profile at verification: fear-of-god.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Fear of God",
-    profileHost: "fearofgod.com",
-    brand: "Fear of God",
-    fallbackEndpoint: "https://fear-of-god.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "fear of god", "fearofgod",
-    ],
-    keywords: [
-      "shirt", "essentials ss26", "ss26 tee", "essentials", "essential",
-      "ss26", "ss26s", "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Graphic T-Shirt - White" — USD 80
-    // Endpoint declared by the live profile at verification: feature-sneaker-boutique.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Feature",
-    profileHost: "feature.com",
-    brand: "Feature",
-    fallbackEndpoint: "https://feature-sneaker-boutique.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "feature",
-    ],
-    keywords: [
-      "shirt", "graphic shirt", "graphic", "graphics", "shirts", "clothing",
       "apparel",
     ],
     prefixBrand: false,
@@ -2695,60 +1862,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Field Flannel Shirt - Nubuck Tan" — USD 59.5
-    // Endpoint declared by the live profile at verification: cb3d2b-00.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Filson",
-    profileHost: "filson.com",
-    brand: "Filson",
-    fallbackEndpoint: "https://cb3d2b-00.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "filson",
-    ],
-    keywords: [
-      "shirt", "field flannel", "flannel shirt", "shirt nubuck", "field",
-      "fields", "flannel", "flannels", "shirts", "nubuck", "nubucks",
-      "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's Rugged Wool Field Shirt" — USD 200
-    // Endpoint declared by the live profile at verification: first-lite-apparel.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "First Lite",
-    profileHost: "firstlite.com",
-    brand: "First Lite",
-    fallbackEndpoint: "https://first-lite-apparel.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "first lite", "firstlite",
-    ],
-    keywords: [
-      "shirt", "rugged wool", "wool field", "field shirt", "rugged", "wool",
-      "wools", "field", "fields", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Floyd Sweatshirt" — USD 55
-    // Endpoint declared by the live profile at verification: floyd-home.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Floyd Home",
-    profileHost: "floydhome.com",
-    brand: "Floyd Home",
-    fallbackEndpoint: "https://floyd-home.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "floyd home", "floydhome",
-    ],
-    keywords: [
-      "shirt", "sweatshirt", "sweatshirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "DOMKE PHOTOGS VEST BLACK/SMALL (Open Box)" — USD 116.95
     // Endpoint declared by the live profile at verification: evxnaz-ut.myshopify.com
     merchant: "Focus Camera",
@@ -2767,24 +1880,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: false,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Montecito Boat Neck Knit Shirt - Heartstrings" — USD 77
-    // Endpoint declared by the live profile at verification: frankies-bikinis-2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Frankies Bikinis",
-    profileHost: "frankiesbikinis.com",
-    brand: "Frankies Bikinis",
-    fallbackEndpoint: "https://frankies-bikinis-2.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "frankies bikinis", "frankiesbikinis",
-    ],
-    keywords: [
-      "shirt", "montecito boat", "boat neck", "neck knit", "knit shirt",
-      "montecito", "montecitos", "boat", "boats", "neck", "necks", "knit",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Black Crew Neck" — USD 23
     // Endpoint declared by the live profile at verification: fresh-clean-tees.myshopify.com
     merchant: "Fresh Clean Tees",
@@ -2800,61 +1895,6 @@ export const UCP_STORES: UcpStore[] = [
       "apparel",
     ],
     prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Delivery and Nursing Gown" — USD 29.99
-    // Endpoint declared by the live profile at verification: fridababy.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Frida",
-    profileHost: "frida.com",
-    brand: "Frida",
-    fallbackEndpoint: "https://fridababy.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "frida",
-    ],
-    keywords: [
-      "delivery nursing", "nursing gown", "delivery", "deliveries",
-      "nursing", "nursings", "gown", "gowns",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Custom Shampoo" — USD 24.99
-    // Endpoint declared by the live profile at verification: fob-admin.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Function of Beauty",
-    profileHost: "functionofbeauty.com",
-    brand: "Function of Beauty",
-    fallbackEndpoint: "https://fob-admin.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "function of beauty", "functionofbeauty",
-    ],
-    keywords: [
-      "custom shampoo", "custom", "customs", "shampoo", "shampoos", "makeup",
-      "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Tempur-Pedic ProAdapt 2.0 Mattress | Soft, Medium, Medium Hybrid & Firm" — USD 2799
-    // Endpoint declared by the live profile at verification: gallery-furniture-tx.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Gallery Furniture",
-    profileHost: "galleryfurniture.com",
-    brand: "Gallery Furniture",
-    fallbackEndpoint: "https://gallery-furniture-tx.myshopify.com/api/ucp/mcp",
-    category: "Furniture",
-    brandAliases: [
-      "gallery furniture", "galleryfurniture",
-    ],
-    keywords: [
-      "tempur pedic", "pedic proadapt", "proadapt mattress", "mattress soft",
-      "soft medium", "tempur", "tempurs", "pedic", "pedics", "proadapt",
-      "proadapts", "mattress",
-    ],
-    prefixBrand: false,
   },
   {
     // Sweep-verified Nov 4, 2026: "GHOST® CORE LOGO LONG SLEEVE | BLACK" — USD 39.99
@@ -2925,24 +1965,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Short Squoval Icons" — USD 83.95
-    // Endpoint declared by the live profile at verification: glamrco.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "glamnetic",
-    profileHost: "glamnetic.com",
-    brand: "glamnetic",
-    fallbackEndpoint: "https://glamrco.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "glamnetic",
-    ],
-    keywords: [
-      "short squoval", "squoval icons", "short", "shorts", "squoval",
-      "squovals", "icons", "icon", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: profile 200 + catalog.search answered
     // (the sweep's sample listing was a store service, not a product)
     // Endpoint declared by the live profile at verification: glorious-pc-gaming-race.myshopify.com
@@ -2976,80 +1998,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "You Jelly Crewneck" — USD 38
-    // Endpoint declared by the live profile at verification: aramara-beauty.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Glow Recipe",
-    profileHost: "glowrecipe.com",
-    brand: "Glow Recipe",
-    fallbackEndpoint: "https://aramara-beauty.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "glow recipe", "glowrecipe",
-    ],
-    keywords: [
-      "shirt", "you jelly", "jelly crewneck", "you", "yous", "jelly",
-      "jellies", "crewneck", "crewnecks", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Boulder 100 Briefcase (OPEN BOX)" — USD 259.97
-    // Endpoint declared by the live profile at verification: goalzerous.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Goal Zero",
-    profileHost: "goalzero.com",
-    brand: "Goal Zero",
-    fallbackEndpoint: "https://goalzerous.myshopify.com/api/ucp/mcp",
-    category: "Hardware",
-    brandAliases: [
-      "goal zero", "goalzero",
-    ],
-    keywords: [
-      "boulder briefcase", "briefcase open", "open box", "boulder",
-      "boulders", "briefcase", "briefcases", "open", "opens", "box", "boxes",
-      "tools",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Assorted Chocolate Gold Gift Box, 60pc." — USD 125
-    // Endpoint declared by the live profile at verification: godiva-us.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "GODIVA",
-    profileHost: "godiva.com",
-    brand: "GODIVA",
-    fallbackEndpoint: "https://godiva-us.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "godiva",
-    ],
-    keywords: [
-      "assorted chocolate", "chocolate gift", "gift box", "box 60pc",
-      "assorted", "chocolate", "chocolates", "gift", "gifts", "box", "boxes",
-      "60pc",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Gorilla Mind Core Tee" — USD 24.99
-    // Endpoint declared by the live profile at verification: gorilla-mind.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Gorilla Mind",
-    profileHost: "gorillamind.com",
-    brand: "Gorilla Mind",
-    fallbackEndpoint: "https://gorilla-mind.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "gorilla mind", "gorillamind",
-    ],
-    keywords: [
-      "shirt", "core tee", "core", "cores", "tee", "tees", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Govee Table Lamp 2" — USD 79.99
     // Endpoint declared by the live profile at verification: store-govee-com.myshopify.com
     merchant: "Govee",
@@ -3062,24 +2010,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "table lamp", "table", "tables", "lamp", "lamps", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Road Crew Tee - Camel" — USD 35.95
-    // Endpoint declared by the live profile at verification: grayl.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "GRAYL",
-    profileHost: "grayl.com",
-    brand: "GRAYL",
-    fallbackEndpoint: "https://grayl.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "grayl",
-    ],
-    keywords: [
-      "shirt", "road crew", "crew tee", "tee camel", "road", "roads", "crew",
-      "crews", "tee", "tees", "camel", "camels",
     ],
     prefixBrand: true,
   },
@@ -3112,24 +2042,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "holy sheet", "holy", "holies", "sheet", "sheets", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Royale 2.0 - Blanco" — USD 199
-    // Endpoint declared by the live profile at verification: greats.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "GREATS",
-    profileHost: "greats.com",
-    brand: "GREATS",
-    fallbackEndpoint: "https://greats.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "greats",
-    ],
-    keywords: [
-      "shirt", "royale blanco", "royale", "royales", "blanco", "blancos",
-      "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -3168,113 +2080,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Roctane Energy Gel" — USD 72
-    // Endpoint declared by the live profile at verification: guenergy-2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "GU Energy Labs",
-    profileHost: "guenergy.com",
-    brand: "GU Energy Labs",
-    fallbackEndpoint: "https://guenergy-2.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "gu energy labs", "guenergylabs",
-    ],
-    keywords: [
-      "roctane gel", "roctane", "roctanes", "gel", "gels", "makeup",
-      "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Kids' Media Desk, Hutch and Chair Set" — USD 289.95
-    // Endpoint declared by the live profile at verification: newgcstore.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Guidecraft",
-    profileHost: "guidecraft.com",
-    brand: "Guidecraft",
-    fallbackEndpoint: "https://newgcstore.myshopify.com/api/ucp/mcp",
-    category: "Furniture",
-    brandAliases: [
-      "guidecraft",
-    ],
-    keywords: [
-      "media desk", "desk hutch", "hutch chair", "chair set", "media",
-      "medias", "desk", "desks", "hutch", "hutches", "chair", "chairs",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Anti-Shine Stick" — USD 20
-    // Endpoint declared by the live profile at verification: com-harrys-us.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Harry's",
-    profileHost: "harrys.com",
-    brand: "Harry's",
-    fallbackEndpoint: "https://com-harrys-us.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "harry s", "harrys",
-    ],
-    keywords: [
-      "anti shine", "shine stick", "anti", "antis", "shine", "shines",
-      "stick", "sticks", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Tactical Table One L" — USD 194.95
-    // Endpoint declared by the live profile at verification: helinox-furniture.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Helinox",
-    profileHost: "helinox.com",
-    brand: "Helinox",
-    fallbackEndpoint: "https://helinox-furniture.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "helinox",
-    ],
-    keywords: [
-      "tactical table", "table one", "tactical", "tacticals", "table",
-      "tables", "one", "ones",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Dave" — USD 35
-    // Endpoint declared by the live profile at verification: fragrancehenryrose.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Henry Rose",
-    profileHost: "henryrose.com",
-    brand: "Henry Rose",
-    fallbackEndpoint: "https://fragrancehenryrose.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "henry rose", "henryrose",
-    ],
-    keywords: [
-      "dave", "daves", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Basic Tee Men's" — USD 13.99
-    // Endpoint declared by the live profile at verification: production-herschel-us.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Herschel Supply Co.",
-    profileHost: "herschel.com",
-    brand: "Herschel Supply Co.",
-    fallbackEndpoint: "https://production-herschel-us.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "herschel supply co", "herschelsupplyco",
-    ],
-    keywords: [
-      "shirt", "basic tee", "basic", "basics", "tee", "tees", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "The Mari - Slim Fit - Soft Wash" — USD 380
     // Endpoint declared by the live profile at verification: hiut.myshopify.com
     merchant: "Hiut Denim",
@@ -3288,97 +2093,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "mari slim", "slim fit", "fit soft", "soft wash", "mari",
       "maris", "slim", "slims", "fit", "fits", "soft",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Farrell Shirt: White" — USD 125
-    // Endpoint declared by the live profile at verification: holderness-bourne.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Holderness & Bourne",
-    profileHost: "holdernessandbourne.com",
-    brand: "Holderness & Bourne",
-    fallbackEndpoint: "https://holderness-bourne.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "holderness and bourne", "holderness bourne", "holdernessandbourne",
-    ],
-    keywords: [
-      "shirt", "farrell shirt", "farrell", "farrells", "shirts", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Homesick T-Shirt" — USD 24.95
-    // Endpoint declared by the live profile at verification: scroll-commerce.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Homesick",
-    profileHost: "homesick.com",
-    brand: "Homesick",
-    fallbackEndpoint: "https://scroll-commerce.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "homesick",
-    ],
-    keywords: [
-      "shirt", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Sanitizing Alcohol Wipes, Grapefruit Grove" — USD 0
-    // Endpoint declared by the live profile at verification: 9497e5-2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Honest",
-    profileHost: "honest.com",
-    brand: "Honest",
-    fallbackEndpoint: "https://9497e5-2.myshopify.com/api/ucp/mcp",
-    category: "Baby",
-    brandAliases: [
-      "honest",
-    ],
-    keywords: [
-      "sanitizing alcohol", "alcohol wipes", "wipes grapefruit",
-      "grapefruit grove", "sanitizing", "sanitizings", "alcohol", "alcohols",
-      "wipes", "wipe", "grapefruit", "grapefruits",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Mobility CBD Oil" — USD 24.95
-    // Endpoint declared by the live profile at verification: honest-paws.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Honest Paws",
-    profileHost: "honestpaws.com",
-    brand: "Honest Paws",
-    fallbackEndpoint: "https://honest-paws.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "honest paws", "honestpaws",
-    ],
-    keywords: [
-      "mobility cbd", "cbd oil", "mobility", "mobilities", "cbd", "cbds",
-      "oil", "oils", "pet supplies",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Vegan Leather Makeup Bag" — USD 98
-    // Endpoint declared by the live profile at verification: hourglasscosmetics.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Hourglass Cosmetics",
-    profileHost: "hourglasscosmetics.com",
-    brand: "Hourglass Cosmetics",
-    fallbackEndpoint: "https://hourglasscosmetics.myshopify.com/api/ucp/mcp",
-    category: "Luggage",
-    brandAliases: [
-      "hourglass cosmetics", "hourglasscosmetics",
-    ],
-    keywords: [
-      "bag", "vegan leather", "leather makeup", "makeup bag", "vegan",
-      "vegans", "leather", "leathers", "makeup", "makeups", "bags",
-      "luggage",
     ],
     prefixBrand: true,
   },
@@ -3412,41 +2126,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "faux filler", "filler extra", "extra shine", "shine lip", "lip gloss",
       "faux", "fauxes", "filler", "fillers", "extra", "extras", "shine",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Huel Men's T-Shirt" — USD 25
-    // Endpoint declared by the live profile at verification: huelamerica.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Huel",
-    profileHost: "www.huel.com",
-    brand: "Huel",
-    fallbackEndpoint: "https://huelamerica.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "huel",
-    ],
-    keywords: [
-      "shirt", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Daily Oversized Tee" — USD 29.99
-    // Endpoint declared by the live profile at verification: hydrojug.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "HydroJug",
-    profileHost: "hydrojug.com",
-    brand: "HydroJug",
-    fallbackEndpoint: "https://hydrojug.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "hydrojug",
-    ],
-    keywords: [
-      "shirt", "daily oversized", "oversized tee", "daily", "dailies",
-      "oversized", "tee", "tees", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -3485,24 +2164,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Party Bar 125 Qt Cooler" — USD 279.99
-    // Endpoint declared by the live profile at verification: igloocoolers.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Igloo",
-    profileHost: "igloocoolers.com",
-    brand: "Igloo",
-    fallbackEndpoint: "https://igloocoolers.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "igloo",
-    ],
-    keywords: [
-      "party bar", "bar cooler", "party", "parties", "bar", "bars", "cooler",
-      "coolers", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "True Skin Serum Foundation" — USD 56
     // Endpoint declared by the live profile at verification: ilia-beauty-v2.myshopify.com
     merchant: "ILIA Beauty",
@@ -3516,60 +2177,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "true skin", "skin serum", "serum foundation", "true", "trues", "skin",
       "skins", "serum", "serums", "foundation", "foundations", "makeup",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Ringer Tee" — USD 36
-    // Endpoint declared by the live profile at verification: intelligentsiacoffee.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Intelligentsia Coffee",
-    profileHost: "intelligentsia.com",
-    brand: "Intelligentsia Coffee",
-    fallbackEndpoint: "https://intelligentsiacoffee.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "intelligentsia coffee", "intelligentsiacoffee",
-    ],
-    keywords: [
-      "shirt", "ringer tee", "ringer", "ringers", "tee", "tees", "coffee",
-      "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "GUMBLE Wings Graphic Black Tee" — USD 10.99
-    // Endpoint declared by the live profile at verification: e73b81.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "IT'SUGAR",
-    profileHost: "itsugar.com",
-    brand: "IT'SUGAR",
-    fallbackEndpoint: "https://e73b81.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "it sugar", "itsugar",
-    ],
-    keywords: [
-      "shirt", "gumble wings", "wings graphic", "graphic tee", "gumble",
-      "gumbles", "wings", "wing", "graphic", "graphics", "tee", "tees",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Jackery HomePower 2000 Plus v2" — USD 1199
-    // Endpoint declared by the live profile at verification: jackery.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Jackery",
-    profileHost: "jackery.com",
-    brand: "Jackery",
-    fallbackEndpoint: "https://jackery.myshopify.com/api/ucp/mcp",
-    category: "Electronics",
-    brandAliases: [
-      "jackery",
-    ],
-    keywords: [
-      "homepower plus", "homepower", "homepowers", "plus", "plu",
-      "electronics",
     ],
     prefixBrand: true,
   },
@@ -3603,42 +2210,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "spider tee", "spider", "spiders", "tee", "tees", "clothing",
       "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Linen Logan Shirt" — USD 245
-    // Endpoint declared by the live profile at verification: jennikayne-prod.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Jenni Kayne",
-    profileHost: "jennikayne.com",
-    brand: "Jenni Kayne",
-    fallbackEndpoint: "https://jennikayne-prod.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "jenni kayne", "jennikayne",
-    ],
-    keywords: [
-      "shirt", "linen logan", "logan shirt", "linen", "linens", "logan",
-      "logans", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Jessica Simpson 2.0 Carly Shirt in Snake" — USD 79
-    // Endpoint declared by the live profile at verification: jessicasimpsonstyle.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Jessica Simpson",
-    profileHost: "jessicasimpson.com",
-    brand: "Jessica Simpson",
-    fallbackEndpoint: "https://jessicasimpsonstyle.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "jessica simpson", "jessicasimpson",
-    ],
-    keywords: [
-      "shirt", "carly shirt", "shirt snake", "carly", "carlies", "shirts",
-      "snake", "snakes", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -3678,59 +2249,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Damage Shield Wash Care Set" — USD 62
-    // Endpoint declared by the live profile at verification: aquiskhairpep.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "K18Hair",
-    profileHost: "k18hair.com",
-    brand: "K18Hair",
-    fallbackEndpoint: "https://aquiskhairpep.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "k18hair",
-    ],
-    keywords: [
-      "damage shield", "shield wash", "wash care", "care set", "damage",
-      "damages", "shield", "shields", "wash", "washes", "care", "cares",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "KBDfans T-shirt" — USD 9.9
-    // Endpoint declared by the live profile at verification: kbdfans.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "KBDfans",
-    profileHost: "kbdfans.com",
-    brand: "KBDfans",
-    fallbackEndpoint: "https://kbdfans.myshopify.com/api/ucp/mcp",
-    category: "Accessories",
-    brandAliases: [
-      "kbdfans",
-    ],
-    keywords: [
-      "shirt", "shirts", "accessories",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's Flint II (Soft Toe)  |  Cascade Brown/Golden Rod" — USD 155
-    // Endpoint declared by the live profile at verification: us-keenfootwear.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "KEEN Footwear",
-    profileHost: "keenfootwear.com",
-    brand: "KEEN Footwear",
-    fallbackEndpoint: "https://us-keenfootwear.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "keen footwear", "keenfootwear",
-    ],
-    keywords: [
-      "shirt", "flint soft", "soft toe", "toe cascade", "cascade golden",
-      "flint", "flints", "soft", "softs", "toe", "toes", "cascade",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Low Loveseat" — USD 149.95
     // Endpoint declared by the live profile at verification: h1dpcq-ih.myshopify.com
     merchant: "Kelty",
@@ -3760,24 +2278,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "wireless mechanical", "mechanical keyboard", "wireless", "mechanical",
       "mechanicals", "keyboard", "keyboards", "electronics",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Modal Rib T-Shirt" — USD 42
-    // Endpoint declared by the live profile at verification: knix-us-store.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Knix",
-    profileHost: "knix.com",
-    brand: "Knix",
-    fallbackEndpoint: "https://knix-us-store.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "knix",
-    ],
-    keywords: [
-      "shirt", "modal rib", "rib shirt", "modal", "modals", "rib", "ribs",
-      "shirts", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -3817,62 +2317,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Men's Crew Neck Tee in Midnight" — USD 50
-    // Endpoint declared by the live profile at verification: kyte-baby-co.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Kyte Baby",
-    profileHost: "kytebaby.com",
-    brand: "Kyte Baby",
-    fallbackEndpoint: "https://kyte-baby-co.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "kyte baby", "kytebaby",
-    ],
-    keywords: [
-      "shirt", "crew neck", "neck tee", "tee midnight", "crew", "crews",
-      "neck", "necks", "tee", "tees", "midnight", "midnights",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Oatmilk Everyday Draft Latte" — USD 38
-    // Endpoint declared by the live profile at verification: lacolombe.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "La Colombe",
-    profileHost: "lacolombe.com",
-    brand: "La Colombe",
-    fallbackEndpoint: "https://lacolombe.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "la colombe", "lacolombe",
-    ],
-    keywords: [
-      "oatmilk everyday", "everyday draft", "draft latte", "oatmilk",
-      "oatmilks", "everyday", "everydays", "draft", "drafts", "latte",
-      "lattes",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Sweet & Creamy with Adaptogens Superfood Creamer®" — USD 17
-    // Endpoint declared by the live profile at verification: laird-superfood.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Laird Superfood",
-    profileHost: "lairdsuperfood.com",
-    brand: "Laird Superfood",
-    fallbackEndpoint: "https://laird-superfood.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "laird superfood", "lairdsuperfood",
-    ],
-    keywords: [
-      "sweet creamy", "creamy adaptogens", "adaptogens creamer", "sweet",
-      "sweets", "creamy", "creamies", "adaptogens", "adaptogen", "creamer",
-      "creamers",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Jules Shirt White Percale" — USD 345
     // Endpoint declared by the live profile at verification: larroude-com.myshopify.com
     merchant: "Larroude",
@@ -3886,24 +2330,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "jules shirt", "shirt percale", "jules", "jule", "shirts",
       "percale", "percales", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Perfect Lashify Sweatshirt" — USD 90
-    // Endpoint declared by the live profile at verification: lashifyusa.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Lashify",
-    profileHost: "lashify.com",
-    brand: "Lashify",
-    fallbackEndpoint: "https://lashifyusa.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "lashify",
-    ],
-    keywords: [
-      "shirt", "perfect sweatshirt", "perfect", "perfects", "sweatshirt",
-      "sweatshirts", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -3925,41 +2351,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Lectric T-Shirt" — USD 25
-    // Endpoint declared by the live profile at verification: lectric-ebikes.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Lectric eBikes",
-    profileHost: "lectricebikes.com",
-    brand: "Lectric eBikes",
-    fallbackEndpoint: "https://lectric-ebikes.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "lectric ebikes", "lectricebikes",
-    ],
-    keywords: [
-      "shirt", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Pumpkin Spice Popcorn" — USD 4.66
-    // Endpoint declared by the live profile at verification: lesser-evil.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "LesserEvil Snacks",
-    profileHost: "lesserevil.com",
-    brand: "LesserEvil Snacks",
-    fallbackEndpoint: "https://lesser-evil.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "lesserevil snacks", "lesserevilsnacks",
-    ],
-    keywords: [
-      "pumpkin spice", "spice popcorn", "pumpkin", "pumpkins", "spice",
-      "spices", "popcorn", "popcorns",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Levain T-Shirt" — USD 35
     // Endpoint declared by the live profile at verification: levainbakery.myshopify.com
     merchant: "Levain Bakery",
@@ -3972,41 +2363,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "shirt", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "LifeStraw Home 7-Cup Glass" — USD 64.95
-    // Endpoint declared by the live profile at verification: lifestraw-store.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "LifeStraw",
-    profileHost: "lifestraw.com",
-    brand: "LifeStraw",
-    fallbackEndpoint: "https://lifestraw-store.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "lifestraw",
-    ],
-    keywords: [
-      "home cup", "cup glass", "home", "homes", "cup", "cups", "glass",
-      "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "LIFX Tee" — USD 29.99
-    // Endpoint declared by the live profile at verification: lifxus.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "LIFX",
-    profileHost: "lifx.com",
-    brand: "LIFX",
-    fallbackEndpoint: "https://lifxus.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "lifx",
-    ],
-    keywords: [
-      "shirt", "tee", "tees", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -4045,41 +2401,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Sugar-Free Sweet Bundle" — USD 57.98
-    // Endpoint declared by the live profile at verification: liv-group.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Liquid I.V.",
-    profileHost: "liquid-iv.com",
-    brand: "Liquid I.V.",
-    fallbackEndpoint: "https://liv-group.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "liquid i v", "liquidiv",
-    ],
-    keywords: [
-      "sugar sweet", "sugar", "sugars", "sweet", "sweets",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Black Women's Perfect Pocket Tee" — USD 34
-    // Endpoint declared by the live profile at verification: little-sleepies.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Little Sleepies",
-    profileHost: "littlesleepies.com",
-    brand: "Little Sleepies",
-    fallbackEndpoint: "https://little-sleepies.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "little sleepies", "littlesleepies",
-    ],
-    keywords: [
-      "shirt", "perfect pocket", "pocket tee", "perfect", "perfects",
-      "pocket", "pockets", "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Ken Shirt" — USD 225
     // Endpoint declared by the live profile at verification: loeffler-randall-1.myshopify.com
     merchant: "Loeffler Randall",
@@ -4092,24 +2413,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "shirt", "ken shirt", "ken", "kens", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Sleep Sweatshirt" — USD 59.99
-    // Endpoint declared by the live profile at verification: byloftie.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Loftie",
-    profileHost: "loftie.com",
-    brand: "Loftie",
-    fallbackEndpoint: "https://byloftie.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "loftie",
-    ],
-    keywords: [
-      "shirt", "sleep sweatshirt", "sleep", "sleeps", "sweatshirt",
-      "sweatshirts", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -4131,42 +2434,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "M·A·C VIVA GLAM x Conner Ives “Protect the Dolls” Shirt" — USD 100
-    // Endpoint declared by the live profile at verification: elc-us-mc-prod.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "MAC Cosmetics",
-    profileHost: "maccosmetics.com",
-    brand: "MAC Cosmetics",
-    fallbackEndpoint: "https://elc-us-mc-prod.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "mac cosmetics", "maccosmetics",
-    ],
-    keywords: [
-      "shirt", "viva glam", "glam conner", "conner ives", "ives protect",
-      "viva", "vivas", "glam", "glams", "conner", "conners", "ives",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "SILVER Crew Neck T-Shirt" — USD 58
-    // Endpoint declared by the live profile at verification: mack-weldon.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Mack Weldon",
-    profileHost: "mackweldon.com",
-    brand: "Mack Weldon",
-    fallbackEndpoint: "https://mack-weldon.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "mack weldon", "mackweldon",
-    ],
-    keywords: [
-      "shirt", "crew neck", "neck shirt", "crew", "crews", "neck", "necks",
-      "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Wrangler x Made In T-Shirt" — USD 35
     // Endpoint declared by the live profile at verification: madeincookware.myshopify.com
     merchant: "Made In Cookware",
@@ -4180,24 +2447,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "wrangler shirt", "wrangler", "wranglers", "shirts",
       "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Variety 6 - 24 Cereal Treats (6 Boxes)" — USD 55.5
-    // Endpoint declared by the live profile at verification: magic-spoon.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Magic Spoon",
-    profileHost: "magicspoon.com",
-    brand: "Magic Spoon",
-    fallbackEndpoint: "https://magic-spoon.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "magic spoon", "magicspoon",
-    ],
-    keywords: [
-      "variety cereal", "cereal treats", "treats boxes", "variety",
-      "varieties", "cereal", "cereals", "treats", "treat", "boxes", "boxe",
     ],
     prefixBrand: true,
   },
@@ -4254,43 +2503,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Yale Pointy Toe Chelsea Leather Bootie" — USD 189
-    // Endpoint declared by the live profile at verification: mffootwear.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Marc Fisher Footwear",
-    profileHost: "marcfisherfootwear.com",
-    brand: "Marc Fisher Footwear",
-    fallbackEndpoint: "https://mffootwear.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "marc fisher footwear", "marcfisherfootwear",
-    ],
-    keywords: [
-      "shirt", "yale pointy", "pointy toe", "toe chelsea", "chelsea leather",
-      "yale", "yales", "pointy", "pointies", "toe", "toes", "chelsea",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Stretch Selvage Short Sleeve Shirt" — USD 118
-    // Endpoint declared by the live profile at verification: marinelayer.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Marine Layer",
-    profileHost: "marinelayer.com",
-    brand: "Marine Layer",
-    fallbackEndpoint: "https://marinelayer.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "marine layer", "marinelayer",
-    ],
-    keywords: [
-      "shirt", "stretch selvage", "selvage short", "short sleeve",
-      "sleeve shirt", "stretch", "stretches", "selvage", "selvages", "short",
-      "shorts", "sleeve",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Mattel Shop Test T-shirt" — USD 25
     // Endpoint declared by the live profile at verification: prod-mattel.myshopify.com
     merchant: "Mattel Shop",
@@ -4307,24 +2519,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: false,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Striped Fuzzy Jumper" — USD 65
-    // Endpoint declared by the live profile at verification: max-bone.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "maxbone",
-    profileHost: "maxbone.com",
-    brand: "maxbone",
-    fallbackEndpoint: "https://max-bone.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "maxbone",
-    ],
-    keywords: [
-      "striped fuzzy", "fuzzy jumper", "striped", "fuzzy", "fuzzies",
-      "jumper", "jumpers", "pet supplies",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "MK Strawberry Frog Hawaiian Button-up Shirt" — USD 30
     // Endpoint declared by the live profile at verification: a701d1-5.myshopify.com
     merchant: "Mechanical Keyboards",
@@ -4339,42 +2533,6 @@ export const UCP_STORES: UcpStore[] = [
       "shirt", "strawberry frog", "frog hawaiian", "hawaiian button",
       "button shirt", "strawberry", "strawberries", "frog", "frogs",
       "hawaiian", "hawaiians", "button",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Mine to Love Mix & Match Playtime Doll Clothes" — USD 30.99
-    // Endpoint declared by the live profile at verification: melissadoug.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Melissa & Doug",
-    profileHost: "melissaanddoug.com",
-    brand: "Melissa & Doug",
-    fallbackEndpoint: "https://melissadoug.myshopify.com/api/ucp/mcp",
-    category: "Toys",
-    brandAliases: [
-      "melissa and doug", "melissa doug", "melissaanddoug",
-    ],
-    keywords: [
-      "mine love", "love mix", "mix match", "match playtime",
-      "playtime doll", "mine", "mines", "love", "loves", "mix", "mixes",
-      "match",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Top" — USD 120
-    // Endpoint declared by the live profile at verification: meritbeauty.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "MERIT Beauty",
-    profileHost: "meritbeauty.com",
-    brand: "MERIT Beauty",
-    fallbackEndpoint: "https://meritbeauty.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "merit beauty", "meritbeauty",
-    ],
-    keywords: [
-      "shirt", "top", "tops", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -4448,43 +2606,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Men's Apollo Dress Shirt - White (MPS)" — USD 168
-    // Endpoint declared by the live profile at verification: mostrial.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Ministry of Supply",
-    profileHost: "ministryofsupply.com",
-    brand: "Ministry of Supply",
-    fallbackEndpoint: "https://mostrial.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "ministry of supply", "ministryofsupply",
-    ],
-    keywords: [
-      "shirt", "apollo dress", "dress shirt", "shirt mps", "apollo",
-      "apollos", "dress", "shirts", "mps", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Lightweight Men's Wool T Shirt Crew - 100% Merino Wool" — USD 69.99
-    // Endpoint declared by the live profile at verification: minus33.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Minus33",
-    profileHost: "minus33.com",
-    brand: "Minus33",
-    fallbackEndpoint: "https://minus33.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "minus33",
-    ],
-    keywords: [
-      "shirt", "lightweight wool", "wool shirt", "shirt crew", "crew merino",
-      "lightweight", "lightweights", "wool", "wools", "shirts", "crew",
-      "crews",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Modkat Flip" — USD 99.99
     // Endpoint declared by the live profile at verification: modkat.myshopify.com
     merchant: "Modkat",
@@ -4536,24 +2657,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Portrait Mode 5-Piece Face Brush Set" — USD 33
-    // Endpoint declared by the live profile at verification: morphe-inc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Morphe",
-    profileHost: "morphe.com",
-    brand: "Morphe",
-    fallbackEndpoint: "https://morphe-inc.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "morphe",
-    ],
-    keywords: [
-      "portrait mode", "mode piece", "piece face", "face brush", "brush set",
-      "portrait", "portraits", "mode", "modes", "piece", "pieces", "face",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Screen Protector" — USD 13.99
     // Endpoint declared by the live profile at verification: mous-us.myshopify.com
     merchant: "Mous",
@@ -4588,24 +2691,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "UNLEARN \\ RELEARN T-Shirt" — USD 60
-    // Endpoint declared by the live profile at verification: mud-wtr.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "MUD\\WTR",
-    profileHost: "mudwtr.com",
-    brand: "MUD\\WTR",
-    fallbackEndpoint: "https://mud-wtr.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "mud wtr", "mudwtr",
-    ],
-    keywords: [
-      "shirt", "unlearn relearn", "relearn shirt", "unlearn", "unlearns",
-      "relearn", "relearns", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Pebbles" — USD 118
     // Endpoint declared by the live profile at verification: mugsy-2.myshopify.com
     merchant: "Mugsy",
@@ -4634,25 +2719,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "athena", "athenas", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Super Fine Cashmere T-Shirt" — USD 158
-    // Endpoint declared by the live profile at verification: naadamcashmere.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "NAADAM",
-    profileHost: "naadam.co",
-    brand: "NAADAM",
-    fallbackEndpoint: "https://naadamcashmere.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "naadam",
-    ],
-    keywords: [
-      "shirt", "super fine", "fine cashmere", "cashmere shirt", "super",
-      "supers", "fine", "fines", "cashmere", "cashmeres", "shirts",
-      "clothing",
     ],
     prefixBrand: true,
   },
@@ -4724,44 +2790,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Island Short Sleeve Shirt in Black" — USD 120
-    // Endpoint declared by the live profile at verification: negative-underwear.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Negative",
-    profileHost: "negativeunderwear.com",
-    brand: "Negative",
-    fallbackEndpoint: "https://negative-underwear.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "negative",
-    ],
-    keywords: [
-      "shirt", "island short", "short sleeve", "sleeve shirt", "island",
-      "islands", "short", "shorts", "sleeve", "sleeves", "shirts",
-      "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Tempo™ Women's Endless Promise Synthetic Sleeping Bag" — USD 149.95
-    // Endpoint declared by the live profile at verification: nemo-equipment-shop.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "NEMO Equipment",
-    profileHost: "nemoequipment.com",
-    brand: "NEMO Equipment",
-    fallbackEndpoint: "https://nemo-equipment-shop.myshopify.com/api/ucp/mcp",
-    category: "Sporting Goods",
-    brandAliases: [
-      "nemo equipment", "nemoequipment",
-    ],
-    keywords: [
-      "tempotm endless", "endless promise", "promise synthetic",
-      "synthetic sleeping", "sleeping bag", "tempotm", "tempotms", "endless",
-      "promise", "promises", "synthetic", "synthetics",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Bamboo Liquid Soap" — USD 26
     // Endpoint declared by the live profile at verification: nestny.myshopify.com
     merchant: "NEST NEW YORK",
@@ -4792,24 +2820,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "huarache sandal", "huarache", "huaraches", "sandal",
       "sandals", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Classic Pocket Tee" — USD 58
-    // Endpoint declared by the live profile at verification: noahnyc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Noah NYC",
-    profileHost: "noahny.com",
-    brand: "Noah NYC",
-    fallbackEndpoint: "https://noahnyc.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "noah nyc", "noahnyc",
-    ],
-    keywords: [
-      "shirt", "pocket tee", "pocket", "pockets", "tee", "tees", "clothing",
-      "apparel",
     ],
     prefixBrand: true,
   },
@@ -4848,23 +2858,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Artifact Stratum 80" — USD 590
-    // Endpoint declared by the live profile at verification: novelkeys-llc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "NovelKeys",
-    profileHost: "novelkeys.com",
-    brand: "NovelKeys",
-    fallbackEndpoint: "https://novelkeys-llc.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "novelkeys",
-    ],
-    keywords: [
-      "artifact stratum", "artifact", "artifacts", "stratum", "stratums",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "The Nugget® - Nebula" — USD 279
     // Endpoint declared by the live profile at verification: nuggetcomfort-com.myshopify.com
     merchant: "Nugget",
@@ -4897,59 +2890,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Eclipse Daydream Baby Tee" — USD 24
-    // Endpoint declared by the live profile at verification: nvgtn.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "NVGTN",
-    profileHost: "nvgtn.com",
-    brand: "NVGTN",
-    fallbackEndpoint: "https://nvgtn.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "nvgtn",
-    ],
-    keywords: [
-      "shirt", "eclipse daydream", "daydream baby", "baby tee", "eclipse",
-      "eclipses", "daydream", "daydreams", "baby", "babies", "tee", "tees",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "STRENGTH & SHINE SET" — USD 46
-    // Endpoint declared by the live profile at verification: olaplex.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "OLAPLEX",
-    profileHost: "olaplex.com",
-    brand: "OLAPLEX",
-    fallbackEndpoint: "https://olaplex.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "olaplex",
-    ],
-    keywords: [
-      "strength shine", "shine set", "strength", "strengths", "shine",
-      "shines", "set", "sets", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Shirley Temple" — USD 35.99
-    // Endpoint declared by the live profile at verification: olipop-store.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "OLIPOP",
-    profileHost: "drinkolipop.com",
-    brand: "OLIPOP",
-    fallbackEndpoint: "https://olipop-store.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "olipop",
-    ],
-    keywords: [
-      "shirley temple", "shirley", "shirleys", "temple", "temples",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Gildan Adult Short Sleeve Tees" — USD 1.99
     // Endpoint declared by the live profile at verification: shopollies.myshopify.com
     merchant: "Ollies",
@@ -4965,23 +2905,6 @@ export const UCP_STORES: UcpStore[] = [
       "gildan", "gildans", "adult", "adults", "short", "shorts", "sleeve",
     ],
     prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Women's 40+ Multi" — USD 21.99
-    // Endpoint declared by the live profile at verification: ollypbc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "OLLY",
-    profileHost: "olly.com",
-    brand: "OLLY",
-    fallbackEndpoint: "https://ollypbc.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "olly",
-    ],
-    keywords: [
-      "multi", "multis", "makeup", "skincare", "beauty",
-    ],
-    prefixBrand: true,
   },
   {
     // Sweep-verified Nov 4, 2026: "OluKai x Kahala Aloha Shirt" — USD 118
@@ -5018,24 +2941,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "The Sandlot Tee" — USD 35
-    // Endpoint declared by the live profile at verification: onewheel.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Onewheel",
-    profileHost: "onewheel.com",
-    brand: "Onewheel",
-    fallbackEndpoint: "https://onewheel.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "onewheel",
-    ],
-    keywords: [
-      "shirt", "sandlot tee", "sandlot", "sandlots", "tee", "tees",
-      "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Ooni Karu 2 Pro Multi-Fuel Pizza Oven- 2nd Generation" — USD 849
     // Endpoint declared by the live profile at verification: uuni.myshopify.com
     merchant: "Ooni",
@@ -5049,43 +2954,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "karu multi", "multi fuel", "fuel pizza", "pizza oven", "oven 2nd",
       "karu", "karus", "multi", "multis", "fuel", "fuels", "pizza",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "\"Call Me Crazy\" Cat Parent Hoodie" — USD 65
-    // Endpoint declared by the live profile at verification: openfarm.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Open Farm",
-    profileHost: "openfarmpet.com",
-    brand: "Open Farm",
-    fallbackEndpoint: "https://openfarm.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "open farm", "openfarm",
-    ],
-    keywords: [
-      "call crazy", "crazy cat", "cat parent", "parent hoodie", "call",
-      "calls", "crazy", "crazies", "cat", "cats", "parent", "parents",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "No.08 Stainless Steel Folding Knife" — USD 23
-    // Endpoint declared by the live profile at verification: kniforia.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "OPINEL",
-    profileHost: "opinel-usa.com",
-    brand: "OPINEL",
-    fallbackEndpoint: "https://kniforia.myshopify.com/api/ucp/mcp",
-    category: "Kitchen",
-    brandAliases: [
-      "opinel",
-    ],
-    keywords: [
-      "stainless steel", "steel folding", "folding knife", "stainless",
-      "steel", "steels", "folding", "foldings", "knife", "knives", "kitchen",
-      "cookware",
     ],
     prefixBrand: true,
   },
@@ -5121,24 +2989,6 @@ export const UCP_STORES: UcpStore[] = [
       "20g clean", "clean protein", "protein shake", "shake creamy",
       "creamy chocolate", "20g", "20gs", "clean", "cleans", "protein",
       "proteins", "shake",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Cardamom Milk" — USD 20
-    // Endpoint declared by the live profile at verification: otherland-candles.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Otherland",
-    profileHost: "otherland.com",
-    brand: "Otherland",
-    fallbackEndpoint: "https://otherland-candles.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "otherland",
-    ],
-    keywords: [
-      "cardamom milk", "cardamom", "cardamoms", "milk", "milks",
-      "home goods",
     ],
     prefixBrand: true,
   },
@@ -5179,96 +3029,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "CloudKnit Shortsleeve" — USD 58
-    // Endpoint declared by the live profile at verification: outdoor-voices.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Outdoor Voices",
-    profileHost: "outdoorvoices.com",
-    brand: "Outdoor Voices",
-    fallbackEndpoint: "https://outdoor-voices.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "outdoor voices", "outdoorvoices",
-    ],
-    keywords: [
-      "shirt", "cloudknit shortsleeve", "cloudknit", "cloudknits",
-      "shortsleeve", "shortsleeves", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Blanket Shirt" — USD 168
-    // Endpoint declared by the live profile at verification: outerknown.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Outerknown",
-    profileHost: "outerknown.com",
-    brand: "Outerknown",
-    fallbackEndpoint: "https://outerknown.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "outerknown",
-    ],
-    keywords: [
-      "shirt", "blanket shirt", "blanket", "blankets", "shirts", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "FreeSip®" — USD 23.99
-    // Endpoint declared by the live profile at verification: owala.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Owala",
-    profileHost: "owalalife.com",
-    brand: "Owala",
-    fallbackEndpoint: "https://owala.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "owala",
-    ],
-    keywords: [
-      "freesip", "freesips", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Advocate Like a Mother T-shirt" — USD 32.5
-    // Endpoint declared by the live profile at verification: owletcare.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Owlet",
-    profileHost: "owletcare.com",
-    brand: "Owlet",
-    fallbackEndpoint: "https://owletcare.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "owlet",
-    ],
-    keywords: [
-      "shirt", "advocate like", "like mother", "mother shirt", "advocate",
-      "advocates", "like", "likes", "mother", "mothers", "shirts",
-      "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Just the Basics" — USD 48.45
-    // Endpoint declared by the live profile at verification: p-f-candle-co.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "P. F. Candle Co.",
-    profileHost: "pfcandleco.com",
-    brand: "P. F. Candle Co.",
-    fallbackEndpoint: "https://p-f-candle-co.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "p f candle co", "pfcandleco",
-    ],
-    keywords: [
-      "just basics", "just", "justs", "basics", "basic", "candle", "candles",
-      "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Tobacco + Patchouli - Apothecary 8 oz Candle" — USD 30
     // Endpoint declared by the live profile at verification: paddywaxhq.myshopify.com
     merchant: "Paddywax",
@@ -5283,77 +3043,6 @@ export const UCP_STORES: UcpStore[] = [
       "tobacco patchouli", "patchouli apothecary", "apothecary candle",
       "tobacco", "tobaccos", "patchouli", "patchoulis", "apothecary",
       "apothecaries", "candle", "candles", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Brushed Cotton Top Sheet (Sky)" — USD 90
-    // Endpoint declared by the live profile at verification: parachute-home-2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Parachute Home",
-    profileHost: "parachutehome.com",
-    brand: "Parachute Home",
-    fallbackEndpoint: "https://parachute-home-2.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "parachute home", "parachutehome",
-    ],
-    keywords: [
-      "brushed cotton", "cotton top", "top sheet", "sheet sky", "brushed",
-      "cotton", "cottons", "top", "tops", "sheet", "sheets", "sky",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Vanilla Wafers" — USD 39.99
-    // Endpoint declared by the live profile at verification: partake-foods.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Partake Foods",
-    profileHost: "partakefoods.com",
-    brand: "Partake Foods",
-    fallbackEndpoint: "https://partake-foods.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "partake foods", "partakefoods",
-    ],
-    keywords: [
-      "vanilla wafers", "vanilla", "vanillas", "wafers", "wafer",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Adult Wonder Woman T-Shirt" — USD 25.49
-    // Endpoint declared by the live profile at verification: 1agzjw-e1.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Party City",
-    profileHost: "partycity.com",
-    brand: "Party City",
-    fallbackEndpoint: "https://1agzjw-e1.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "party city", "partycity",
-    ],
-    keywords: [
-      "shirt", "adult wonder", "wonder woman", "woman shirt", "adult",
-      "adults", "wonder", "wonders", "woman", "womans", "shirts", "clothing",
-    ],
-    prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "PMG X THE MET DIVINE L/S T" — USD 60
-    // Endpoint declared by the live profile at verification: pat-mcgrath.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "PAT McGRATH LABS",
-    profileHost: "patmcgrath.com",
-    brand: "PAT McGRATH LABS",
-    fallbackEndpoint: "https://pat-mcgrath.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "pat mcgrath labs", "patmcgrathlabs",
-    ],
-    keywords: [
-      "pmg met", "met divine", "pmg", "pmgs", "met", "mets", "divine",
-      "divines",
     ],
     prefixBrand: true,
   },
@@ -5392,62 +3081,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Electric Blue Striped Shirt iPhone 15 Pro Case" — USD 65
-    // Endpoint declared by the live profile at verification: pelacase.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Pela Case",
-    profileHost: "pelacase.com",
-    brand: "Pela Case",
-    fallbackEndpoint: "https://pelacase.myshopify.com/api/ucp/mcp",
-    category: "Electronics",
-    brandAliases: [
-      "pela case", "pelacase",
-    ],
-    keywords: [
-      "shirt", "electric striped", "striped shirt", "shirt iphone",
-      "electric", "electrics", "striped", "shirts", "iphone", "iphones",
-      "electronics",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Elva Oversized Shirt - Black Stripe" — USD 69
-    // Endpoint declared by the live profile at verification: petal-and-pup-usa.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Petal & Pup",
-    profileHost: "petalandpup.com",
-    brand: "Petal & Pup",
-    fallbackEndpoint: "https://petal-and-pup-usa.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "petal and pup", "petal pup", "petalandpup",
-    ],
-    keywords: [
-      "shirt", "elva oversized", "oversized shirt", "shirt stripe", "elva",
-      "elvas", "oversized", "shirts", "stripe", "stripes", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "TRICK OR TREAT TEE" — USD 14.99
-    // Endpoint declared by the live profile at verification: wowteam1.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Petsense",
-    profileHost: "petsense.com",
-    brand: "Petsense",
-    fallbackEndpoint: "https://wowteam1.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "petsense",
-    ],
-    keywords: [
-      "shirt", "trick treat", "treat tee", "trick", "tricks", "treat",
-      "treats", "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: false,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Vanilla & Cream - Body Mist Duo" — USD 68
     // Endpoint declared by the live profile at verification: phlur-shop.myshopify.com
     merchant: "Phlur",
@@ -5461,77 +3094,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "vanilla body", "body mist", "mist duo", "vanilla", "vanillas", "body",
       "bodies", "mist", "mists", "duo", "duos", "makeup",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Super CC Color-Correction + Care CC Cream | Light/Medium" — USD 16.99
-    // Endpoint declared by the live profile at verification: markwins-pf.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Physician's Formula",
-    profileHost: "physiciansformula.com",
-    brand: "Physician's Formula",
-    fallbackEndpoint: "https://markwins-pf.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "physician s formula", "physiciansformula",
-    ],
-    keywords: [
-      "super color", "color correction", "correction care", "care light",
-      "light medium", "super", "supers", "color", "colors", "correction",
-      "corrections", "care",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Wautomobile" — USD 24.99
-    // Endpoint declared by the live profile at verification: usa-plantoys.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "PlanToys",
-    profileHost: "plantoys.com",
-    brand: "PlanToys",
-    fallbackEndpoint: "https://usa-plantoys.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "plantoys",
-    ],
-    keywords: [
-      "wautomobile", "wautomobiles",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Perfect Tee - Black" — USD 35
-    // Endpoint declared by the live profile at verification: popflex.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "POPFLEX",
-    profileHost: "popflexactive.com",
-    brand: "POPFLEX",
-    fallbackEndpoint: "https://popflex.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "popflex",
-    ],
-    keywords: [
-      "shirt", "perfect tee", "perfect", "perfects", "tee", "tees",
-      "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Black Classic Shirt" — USD 24
-    // Endpoint declared by the live profile at verification: poshpeanuts-com.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Posh Peanut",
-    profileHost: "poshpeanut.com",
-    brand: "Posh Peanut",
-    fallbackEndpoint: "https://poshpeanuts-com.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "posh peanut", "poshpeanut",
-    ],
-    keywords: [
-      "shirt", "shirts", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -5588,60 +3150,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Drinking Glasses" — USD 35.95
-    // Endpoint declared by the live profile at verification: morgans-dont-run-out.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Public Goods",
-    profileHost: "publicgoods.com",
-    brand: "Public Goods",
-    fallbackEndpoint: "https://morgans-dont-run-out.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "public goods", "publicgoods",
-    ],
-    keywords: [
-      "drinking glasses", "drinking", "drinkings", "glasses", "glasse",
-      "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Dental Chews" — USD 15.99
-    // Endpoint declared by the live profile at verification: 96d3f5-7a.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Pupford",
-    profileHost: "pupford.com",
-    brand: "Pupford",
-    fallbackEndpoint: "https://96d3f5-7a.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "pupford",
-    ],
-    keywords: [
-      "dental chews", "dental", "dentals", "chews", "chew", "pet supplies",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Rev Oscillating Toothbrush" — USD 55
-    // Endpoint declared by the live profile at verification: bb73c3-5.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "quip",
-    profileHost: "getquip.com",
-    brand: "quip",
-    fallbackEndpoint: "https://bb73c3-5.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "quip",
-    ],
-    keywords: [
-      "rev oscillating", "oscillating toothbrush", "rev", "revs",
-      "oscillating", "oscillatings", "toothbrush", "toothbrushes", "makeup",
-      "skincare", "beauty",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "100/175/200W N-Type Solar Panel" — USD 109.99
     // Endpoint declared by the live profile at verification: rvi38u-rz.myshopify.com
     merchant: "Renogy",
@@ -5693,24 +3201,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Ridge Apparel - The Blueprint Shirt" — USD 35
-    // Endpoint declared by the live profile at verification: ridge-wallet.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Ridge",
-    profileHost: "ridge.com",
-    brand: "Ridge",
-    fallbackEndpoint: "https://ridge-wallet.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "ridge",
-    ],
-    keywords: [
-      "shirt", "apparel blueprint", "blueprint shirt", "apparel", "apparels",
-      "blueprint", "blueprints", "shirts", "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Synbiotic+" — USD 61.36
     // Endpoint declared by the live profile at verification: mrwbcu-wt.myshopify.com
     merchant: "Ritual",
@@ -5727,61 +3217,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "The Original Slip On Sneaker - Latte" — USD 125
-    // Endpoint declared by the live profile at verification: rothys.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Rothy's",
-    profileHost: "rothys.com",
-    brand: "Rothy's",
-    fallbackEndpoint: "https://rothys.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "rothy s", "rothys",
-    ],
-    keywords: [
-      "shirt", "slip sneaker", "sneaker latte", "slip", "slips", "sneaker",
-      "sneakers", "latte", "lattes", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's 'ADVENTURE' T-Shirt" — USD 14.99
-    // Endpoint declared by the live profile at verification: ruffwear.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Ruffwear",
-    profileHost: "ruffwear.com",
-    brand: "Ruffwear",
-    fallbackEndpoint: "https://ruffwear.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "ruffwear",
-    ],
-    keywords: [
-      "shirt", "adventure shirt", "adventure", "adventures", "shirts",
-      "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Original Puffy Blanket - Midnight Retro Stripes" — USD 99.95
-    // Endpoint declared by the live profile at verification: gorumpl.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Rumpl",
-    profileHost: "rumpl.com",
-    brand: "Rumpl",
-    fallbackEndpoint: "https://gorumpl.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "rumpl",
-    ],
-    keywords: [
-      "puffy blanket", "blanket midnight", "midnight retro", "retro stripes",
-      "puffy", "puffies", "blanket", "blankets", "midnight", "midnights",
-      "retro", "retros",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Bento Box" — USD 35
     // Endpoint declared by the live profile at verification: swell-lifetime.myshopify.com
     merchant: "S'well",
@@ -5794,25 +3229,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "bento box", "bento", "bentos", "box", "boxes", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Slip Tint™ Tinted Moisturizer" — USD 38
-    // Endpoint declared by the live profile at verification: saiehello.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Saie",
-    profileHost: "saiehello.com",
-    brand: "Saie",
-    fallbackEndpoint: "https://saiehello.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "saie",
-    ],
-    keywords: [
-      "slip tinttm", "tinttm tinted", "tinted moisturizer", "slip", "slips",
-      "tinttm", "tinttms", "tinted", "moisturizer", "moisturizers", "makeup",
-      "skincare",
     ],
     prefixBrand: true,
   },
@@ -5847,25 +3263,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "oxford striped", "striped pillowcases", "oxford", "oxfords",
       "striped", "pillowcases", "pillowcase", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Lorraine Leather Flat Sandal" — USD 96.6
-    // Endpoint declared by the live profile at verification: schutz.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "SCHUTZ",
-    profileHost: "schutz-shoes.com",
-    brand: "SCHUTZ",
-    fallbackEndpoint: "https://schutz.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "schutz",
-    ],
-    keywords: [
-      "shirt", "lorraine leather", "leather flat", "flat sandal", "lorraine",
-      "lorraines", "leather", "leathers", "flat", "flats", "sandal",
-      "sandals",
     ],
     prefixBrand: true,
   },
@@ -5937,80 +3334,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: false,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Christopher & Banks Plaid Button Front Long Sleeve Shirt" — USD 19.99
-    // Endpoint declared by the live profile at verification: 0bk0hn-tb.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "ShopHQ",
-    profileHost: "shophq.com",
-    brand: "ShopHQ",
-    fallbackEndpoint: "https://0bk0hn-tb.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "shophq",
-    ],
-    keywords: [
-      "shirt", "christopher banks", "banks plaid", "plaid button",
-      "button front", "christopher", "christophers", "banks", "bank",
-      "plaid", "plaids", "button",
-    ],
-    prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Lil Button Up Shirt ~ Field Green Gingham" — USD 28
-    // Endpoint declared by the live profile at verification: showmeyourmumu.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Show Me Your Mumu",
-    profileHost: "showmeyourmumu.com",
-    brand: "Show Me Your Mumu",
-    fallbackEndpoint: "https://showmeyourmumu.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "show me your mumu", "showmeyourmumu",
-    ],
-    keywords: [
-      "shirt", "lil button", "button shirt", "shirt field", "field gingham",
-      "lil", "lils", "button", "buttons", "shirts", "field", "fields",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Dark Chocolate Salted Caramel Bites" — USD 22.99
-    // Endpoint declared by the live profile at verification: skinny-dipped.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "SkinnyDipped",
-    profileHost: "skinnydipped.com",
-    brand: "SkinnyDipped",
-    fallbackEndpoint: "https://skinny-dipped.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "skinnydipped",
-    ],
-    keywords: [
-      "dark chocolate", "chocolate salted", "salted caramel",
-      "caramel bites", "dark", "darks", "chocolate", "chocolates", "salted",
-      "caramel", "caramels", "bites",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "All Things Skratch Resort Shirt" — USD 112
-    // Endpoint declared by the live profile at verification: skratchlabs.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Skratch Labs",
-    profileHost: "skratchlabs.com",
-    brand: "Skratch Labs",
-    fallbackEndpoint: "https://skratchlabs.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "skratch labs", "skratchlabs",
-    ],
-    keywords: [
-      "shirt", "things resort", "resort shirt", "things", "thing", "resort",
-      "resorts", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Crusher® ANC 2" — USD 239.99
     // Endpoint declared by the live profile at verification: f822a6-3.myshopify.com
     merchant: "Skullcandy",
@@ -6023,23 +3346,6 @@ export const UCP_STORES: UcpStore[] = [
     ],
     keywords: [
       "crusher anc", "crusher", "crushers", "anc", "ancs", "electronics",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Peach Rings" — USD 3.49
-    // Endpoint declared by the live profile at verification: smartsweets.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "SmartSweets",
-    profileHost: "smartsweets.com",
-    brand: "SmartSweets",
-    fallbackEndpoint: "https://smartsweets.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "smartsweets",
-    ],
-    keywords: [
-      "peach rings", "peach", "peaches", "rings", "ring",
     ],
     prefixBrand: true,
   },
@@ -6061,24 +3367,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Wagyu Porterhouse Steak" — USD 145
-    // Endpoint declared by the live profile at verification: f9c425-2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Snake River Farms",
-    profileHost: "snakeriverfarms.com",
-    brand: "Snake River Farms",
-    fallbackEndpoint: "https://f9c425-2.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "snake river farms", "snakeriverfarms",
-    ],
-    keywords: [
-      "wagyu porterhouse", "porterhouse steak", "wagyu", "wagyus",
-      "porterhouse", "porterhouses", "steak", "steaks",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Anti Social Social Club Tonkatsu Fine Wind, Clear Morning Tee - White" — USD 38.5
     // Endpoint declared by the live profile at verification: sneakerpolitics.myshopify.com
     merchant: "Sneaker Politics",
@@ -6095,60 +3383,6 @@ export const UCP_STORES: UcpStore[] = [
       "tonkatsu",
     ],
     prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Super Soft Sweatshirt" — USD 55
-    // Endpoint declared by the live profile at verification: snifco-2.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Snif",
-    profileHost: "snif.co",
-    brand: "Snif",
-    fallbackEndpoint: "https://snifco-2.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "snif",
-    ],
-    keywords: [
-      "shirt", "super soft", "soft sweatshirt", "super", "supers", "soft",
-      "softs", "sweatshirt", "sweatshirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Soft Cotton Logo Short Sleeve T-Shirt" — USD 26.97
-    // Endpoint declared by the live profile at verification: snow-peak-staging.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Snow Peak",
-    profileHost: "snowpeak.com",
-    brand: "Snow Peak",
-    fallbackEndpoint: "https://snow-peak-staging.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "snow peak", "snowpeak",
-    ],
-    keywords: [
-      "shirt", "soft cotton", "cotton logo", "logo short", "short sleeve",
-      "soft", "softs", "cotton", "cottons", "logo", "logos", "short",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Percale Sheet Set" — USD 247
-    // Endpoint declared by the live profile at verification: snowehome.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Snowe",
-    profileHost: "snowehome.com",
-    brand: "Snowe",
-    fallbackEndpoint: "https://snowehome.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "snowe",
-    ],
-    keywords: [
-      "percale sheet", "sheet set", "percale", "percales", "sheet", "sheets",
-      "set", "sets", "home goods",
-    ],
-    prefixBrand: true,
   },
   {
     // Sweep-verified Nov 4, 2026: "WORLD TOUR T-SHIRT" — USD 65
@@ -6253,61 +3487,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Classic Fit T-Shirt \"Bright White\" 125AS254192F" — USD 46
-    // Endpoint declared by the live profile at verification: stadiumgoods-qa.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Stadium Goods",
-    profileHost: "stadiumgoods.com",
-    brand: "Stadium Goods",
-    fallbackEndpoint: "https://stadiumgoods-qa.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "stadium goods", "stadiumgoods",
-    ],
-    keywords: [
-      "shirt", "fit shirt", "shirt bright", "bright 125as254192f", "fit",
-      "fits", "shirts", "bright", "brights", "125as254192f",
-      "125as254192ves", "clothing",
-    ],
-    prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The IceFlow® Flip Straw Jug | 64 OZ" — USD 60
-    // Endpoint declared by the live profile at verification: stanley-pmi.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Stanley 1913",
-    profileHost: "stanley1913.com",
-    brand: "Stanley 1913",
-    fallbackEndpoint: "https://stanley-pmi.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "stanley 1913", "stanley1913",
-    ],
-    keywords: [
-      "iceflow flip", "flip straw", "straw jug", "iceflow", "iceflows",
-      "flip", "flips", "straw", "straws", "jug", "jugs", "home goods",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "\"The Springer\" Solid White" — USD 105
-    // Endpoint declared by the live profile at verification: state-and-liberty-clothing-company.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "State and Liberty",
-    profileHost: "stateandliberty.com",
-    brand: "State and Liberty",
-    fallbackEndpoint: "https://state-and-liberty-clothing-company.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "state and liberty", "state liberty", "stateandliberty",
-    ],
-    keywords: [
-      "shirt", "springer solid", "springer", "springers", "solid", "solids",
-      "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Crew Neck T Shirt | White" — USD 98
     // Endpoint declared by the live profile at verification: staud-clothing.myshopify.com
     merchant: "STAUD",
@@ -6321,59 +3500,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "crew neck", "neck shirt", "crew", "crews", "neck", "necks",
       "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Duck Duck Goose Freeze-Dried Raw Dinner Morsels for Cats" — USD 10.99
-    // Endpoint declared by the live profile at verification: stella-chewys-dtc.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Stella & Chewy's",
-    profileHost: "stellaandchewys.com",
-    brand: "Stella & Chewy's",
-    fallbackEndpoint: "https://stella-chewys-dtc.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "stella and chewy s", "stella chewy s", "stellaandchewys",
-    ],
-    keywords: [
-      "duck duck", "duck goose", "goose freeze", "freeze dried", "dried raw",
-      "duck", "ducks", "goose", "gooses", "freeze", "freezes", "dried",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Roaster's Pick" — USD 23
-    // Endpoint declared by the live profile at verification: stumptowncoffee.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Stumptown Coffee",
-    profileHost: "stumptowncoffee.com",
-    brand: "Stumptown Coffee",
-    fallbackEndpoint: "https://stumptowncoffee.myshopify.com/api/ucp/mcp",
-    category: "Food & Beverage",
-    brandAliases: [
-      "stumptown coffee", "stumptowncoffee",
-    ],
-    keywords: [
-      "roaster pick", "roaster", "roasters", "pick", "picks", "coffee",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Jet Lag Mask" — USD 49
-    // Endpoint declared by the live profile at verification: summerfridaysbeauty.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Summer Fridays",
-    profileHost: "summerfridays.com",
-    brand: "Summer Fridays",
-    fallbackEndpoint: "https://summerfridaysbeauty.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "summer fridays", "summerfridays",
-    ],
-    keywords: [
-      "jet lag", "lag mask", "jet", "jets", "lag", "lags", "mask", "masks",
-      "makeup", "skincare", "beauty",
     ],
     prefixBrand: true,
   },
@@ -6396,114 +3522,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Par 3 Bamboo Golf Tees (80ct)" — USD 15
-    // Endpoint declared by the live profile at verification: sundaygolfco.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Sunday Golf",
-    profileHost: "sundaygolf.com",
-    brand: "Sunday Golf",
-    fallbackEndpoint: "https://sundaygolfco.myshopify.com/api/ucp/mcp",
-    category: "Sporting Goods",
-    brandAliases: [
-      "sunday golf", "sundaygolf",
-    ],
-    keywords: [
-      "shirt", "par bamboo", "bamboo tees", "tees 80ct", "par", "pars",
-      "bamboo", "bamboos", "tees", "tee", "80ct", "80cts",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Heritage Shirt" — USD 75
-    // Endpoint declared by the live profile at verification: lithiumcycles.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "SUPER73",
-    profileHost: "super73.com",
-    brand: "SUPER73",
-    fallbackEndpoint: "https://lithiumcycles.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "super73",
-    ],
-    keywords: [
-      "shirt", "heritage shirt", "heritage", "heritages", "shirts",
-      "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Wear Sunscreen Tee" — USD 24
-    // Endpoint declared by the live profile at verification: supergoop.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Supergoop!",
-    profileHost: "supergoop.com",
-    brand: "Supergoop!",
-    fallbackEndpoint: "https://supergoop.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "supergoop",
-    ],
-    keywords: [
-      "shirt", "wear sunscreen", "sunscreen tee", "wear", "wears",
-      "sunscreen", "sunscreens", "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Dewy Skin Cream" — USD 25
-    // Endpoint declared by the live profile at verification: t6rvq5-fe.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Tatcha",
-    profileHost: "tatcha.com",
-    brand: "Tatcha",
-    fallbackEndpoint: "https://t6rvq5-fe.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "tatcha",
-    ],
-    keywords: [
-      "dewy skin", "dewy", "dewies", "skin", "skins",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Tate’s Bake Shop T-Shirt Designed by Deanna First" — USD 30
-    // Endpoint declared by the live profile at verification: k07ked-t5.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Tate's Bake Shop",
-    profileHost: "tatesbakeshop.com",
-    brand: "Tate's Bake Shop",
-    fallbackEndpoint: "https://k07ked-t5.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "tate s bake shop", "tatesbakeshop",
-    ],
-    keywords: [
-      "shirt", "shirt designed", "designed deanna", "deanna first", "shirts",
-      "designed", "deanna", "deannas", "first", "firsts", "clothing",
-      "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "The Division Shirt in Black Cherry" — USD 142
-    // Endpoint declared by the live profile at verification: taylor-stitch.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Taylor Stitch",
-    profileHost: "taylorstitch.com",
-    brand: "Taylor Stitch",
-    fallbackEndpoint: "https://taylor-stitch.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "taylor stitch", "taylorstitch",
-    ],
-    keywords: [
-      "shirt", "division shirt", "shirt cherry", "division", "divisions",
-      "shirts", "cherry", "cherries", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Flannel Button Up Shirt" — USD 19.97
     // Endpoint declared by the live profile at verification: c1ic1r-im.myshopify.com
     merchant: "Tea Collection",
@@ -6517,42 +3535,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "flannel button", "button shirt", "flannel", "flannels",
       "button", "buttons", "shirts", "tea", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's Standard Issue Pocket Tee" — USD 45
-    // Endpoint declared by the live profile at verification: tecovas-3.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Tecovas",
-    profileHost: "tecovas.com",
-    brand: "Tecovas",
-    fallbackEndpoint: "https://tecovas-3.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "tecovas",
-    ],
-    keywords: [
-      "shirt", "standard issue", "issue pocket", "pocket tee", "standard",
-      "standards", "issue", "issues", "pocket", "pockets", "tee", "tees",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Tactical Shirt" — USD 78
-    // Endpoint declared by the live profile at verification: ten-thousand.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Ten Thousand",
-    profileHost: "tenthousand.cc",
-    brand: "Ten Thousand",
-    fallbackEndpoint: "https://ten-thousand.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "ten thousand", "tenthousand",
-    ],
-    keywords: [
-      "shirt", "tactical shirt", "tactical", "tacticals", "shirts",
-      "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -6589,25 +3571,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Everyday Button-Down Shirt | Black" — USD 98
-    // Endpoint declared by the live profile at verification: the-boot-company.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Thursday Boot Company",
-    profileHost: "thursdayboots.com",
-    brand: "Thursday Boot Company",
-    fallbackEndpoint: "https://the-boot-company.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "thursday boot company", "thursdaybootcompany",
-    ],
-    keywords: [
-      "shirt", "everyday button", "button down", "down shirt", "everyday",
-      "everydays", "button", "buttons", "down", "downs", "shirts",
-      "clothing",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Unisex Classic Script Oversized Tee" — USD 37.6
     // Endpoint declared by the live profile at verification: tlfapparel.myshopify.com
     merchant: "TLF Apparel",
@@ -6621,24 +3584,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "script oversized", "oversized tee", "script", "scripts",
       "oversized", "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Airsmyth Shirt" — USD 90
-    // Endpoint declared by the live profile at verification: toadandco.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Toad&Co",
-    profileHost: "toadandco.com",
-    brand: "Toad&Co",
-    fallbackEndpoint: "https://toadandco.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "toad and co", "toad co", "toadandco",
-    ],
-    keywords: [
-      "shirt", "airsmyth shirt", "airsmyth", "airsmyths", "shirts",
-      "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -6726,23 +3671,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "TL T-Shirt" — USD 29.99
-    // Endpoint declared by the live profile at verification: transparent-labs.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Transparent Labs",
-    profileHost: "transparentlabs.com",
-    brand: "Transparent Labs",
-    fallbackEndpoint: "https://transparent-labs.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "transparent labs", "transparentlabs",
-    ],
-    keywords: [
-      "shirt", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Cloud Crew Tee" — USD 44.96
     // Endpoint declared by the live profile at verification: 00d268-cc.myshopify.com
     merchant: "TravisMathew",
@@ -6756,96 +3684,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "cloud crew", "crew tee", "cloud", "clouds", "crew", "crews",
       "tee", "tees", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Calvin Klein Men's Abstract Print Short Sleeve Cotton Shirt" — USD 30
-    // Endpoint declared by the live profile at verification: f810ac.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Tuesday Morning",
-    profileHost: "tuesdaymorning.com",
-    brand: "Tuesday Morning",
-    fallbackEndpoint: "https://f810ac.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "tuesday morning", "tuesdaymorning",
-    ],
-    keywords: [
-      "shirt", "calvin klein", "klein abstract", "abstract print",
-      "print short", "calvin", "calvins", "klein", "kleins", "abstract",
-      "abstracts", "print",
-    ],
-    prefixBrand: false,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Really Great Cat Litter - OdorStop" — USD 29
-    // Endpoint declared by the live profile at verification: tuft-paw.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Tuft & Paw",
-    profileHost: "tuftandpaw.com",
-    brand: "Tuft & Paw",
-    fallbackEndpoint: "https://tuft-paw.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "tuft and paw", "tuft paw", "tuftandpaw",
-    ],
-    keywords: [
-      "really great", "great cat", "cat litter", "litter odorstop", "really",
-      "reallies", "great", "greats", "cat", "cats", "litter", "litters",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "T&N Original Mattress" — USD 399
-    // Endpoint declared by the live profile at verification: tuftandneedle-production.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Tuft and Needle",
-    profileHost: "tuftandneedle.com",
-    brand: "Tuft and Needle",
-    fallbackEndpoint: "https://tuftandneedle-production.myshopify.com/api/ucp/mcp",
-    category: "Furniture",
-    brandAliases: [
-      "tuft and needle", "tuft needle", "tuftandneedle",
-    ],
-    keywords: [
-      "mattress", "furniture",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "PlugBug Find My 120W Travel" — USD 129.99
-    // Endpoint declared by the live profile at verification: twelvesouth.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Twelve South",
-    profileHost: "twelvesouth.com",
-    brand: "Twelve South",
-    fallbackEndpoint: "https://twelvesouth.myshopify.com/api/ucp/mcp",
-    category: "Electronics",
-    brandAliases: [
-      "twelve south", "twelvesouth",
-    ],
-    keywords: [
-      "plugbug find", "find 120w", "120w travel", "plugbug", "plugbugs",
-      "find", "finds", "120w", "120ws", "travel", "travels", "electronics",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Men's Merino Crew Neck T-Shirt" — USD 68
-    // Endpoint declared by the live profile at verification: unbound-merino.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Unbound Merino",
-    profileHost: "unboundmerino.com",
-    brand: "Unbound Merino",
-    fallbackEndpoint: "https://unbound-merino.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "unbound merino", "unboundmerino",
-    ],
-    keywords: [
-      "shirt", "crew neck", "neck shirt", "crew", "crews", "neck", "necks",
-      "shirts", "clothing", "apparel",
     ],
     prefixBrand: true,
   },
@@ -6952,43 +3790,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Noble Fir Garland - 5 Wick Hearth Candle" — USD 275
-    // Endpoint declared by the live profile at verification: voluspa-us.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Voluspa",
-    profileHost: "voluspa.com",
-    brand: "Voluspa",
-    fallbackEndpoint: "https://voluspa-us.myshopify.com/api/ucp/mcp",
-    category: "Home",
-    brandAliases: [
-      "voluspa",
-    ],
-    keywords: [
-      "noble fir", "fir garland", "garland wick", "wick hearth",
-      "hearth candle", "noble", "nobles", "fir", "firs", "garland",
-      "garlands", "wick",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "20-Slot Knife Case" — USD 140
-    // Endpoint declared by the live profile at verification: wusthof.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "WÜSTHOF",
-    profileHost: "wusthof.com",
-    brand: "WÜSTHOF",
-    fallbackEndpoint: "https://wusthof.myshopify.com/api/ucp/mcp",
-    category: "Kitchen",
-    brandAliases: [
-      "w sthof", "wsthof", "wusthof",
-    ],
-    keywords: [
-      "slot knife", "knife case", "slot", "slots", "knife", "knives", "case",
-      "cases", "kitchen", "cookware",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "All Rig No Gig Shirt" — USD 29
     // Endpoint declared by the live profile at verification: walrus-audio-2.myshopify.com
     merchant: "Walrus Audio",
@@ -7002,24 +3803,6 @@ export const UCP_STORES: UcpStore[] = [
     keywords: [
       "shirt", "rig gig", "gig shirt", "rig", "rigs", "gig", "gigs",
       "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Skin Activator Serum" — USD 125
-    // Endpoint declared by the live profile at verification: westman-atelier.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Westman Atelier",
-    profileHost: "westman-atelier.com",
-    brand: "Westman Atelier",
-    fallbackEndpoint: "https://westman-atelier.myshopify.com/api/ucp/mcp",
-    category: "Beauty",
-    brandAliases: [
-      "westman atelier", "westmanatelier",
-    ],
-    keywords: [
-      "skin activator", "activator serum", "skin", "skins", "activator",
-      "activators", "serum", "serums", "makeup", "skincare", "beauty",
     ],
     prefixBrand: true,
   },
@@ -7059,42 +3842,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "Waterproof Dog Collar" — USD 35
-    // Endpoint declared by the live profile at verification: wildonepets.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Wild One",
-    profileHost: "wildone.com",
-    brand: "Wild One",
-    fallbackEndpoint: "https://wildonepets.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "wild one", "wildone",
-    ],
-    keywords: [
-      "waterproof dog", "dog collar", "waterproof", "waterprooves", "dog",
-      "dogs", "collar", "collars", "pet supplies",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Charli XCX iPhone Case" — USD 18.5
-    // Endpoint declared by the live profile at verification: wildflower-3.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Wildflower Cases",
-    profileHost: "wildflowercases.com",
-    brand: "Wildflower Cases",
-    fallbackEndpoint: "https://wildflower-3.myshopify.com/api/ucp/mcp",
-    category: "Electronics",
-    brandAliases: [
-      "wildflower cases", "wildflowercases",
-    ],
-    keywords: [
-      "charli xcx", "xcx iphone", "iphone case", "charli", "charlis", "xcx",
-      "xcxes", "iphone", "iphones", "case", "cases", "electronics",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Sleep" — USD 199.95
     // Endpoint declared by the live profile at verification: 0e1fdz-w5.myshopify.com
     merchant: "Withings",
@@ -7109,42 +3856,6 @@ export const UCP_STORES: UcpStore[] = [
       "sleep", "sleeps", "makeup", "skincare", "beauty",
     ],
     prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "130 Button-Down Shirt" — USD 158
-    // Endpoint declared by the live profile at verification: wptest.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Wool&Prince",
-    profileHost: "woolandprince.com",
-    brand: "Wool&Prince",
-    fallbackEndpoint: "https://wptest.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "wool and prince", "wool prince", "woolandprince",
-    ],
-    keywords: [
-      "shirt", "button down", "down shirt", "button", "buttons", "down",
-      "downs", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Move on Groove on - 7-Inch Single" — USD 19.99
-    // Endpoint declared by the live profile at verification: worldwidestereo.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "World Wide Stereo",
-    profileHost: "worldwidestereo.com",
-    brand: "World Wide Stereo",
-    fallbackEndpoint: "https://worldwidestereo.myshopify.com/api/ucp/mcp",
-    category: "Media",
-    brandAliases: [
-      "world wide stereo", "worldwidestereo",
-    ],
-    keywords: [
-      "move groove", "groove single", "move", "moves", "groove", "grooves",
-      "single", "singles",
-    ],
-    prefixBrand: false,
   },
   {
     // Sweep-verified Nov 4, 2026: "Wyze Hoodie - Black" — USD 32
@@ -7196,23 +3907,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Sweep-verified Nov 4, 2026: "466 Tailored Tees" — USD 36
-    // Endpoint declared by the live profile at verification: youngla.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "YoungLA",
-    profileHost: "youngla.com",
-    brand: "YoungLA",
-    fallbackEndpoint: "https://youngla.myshopify.com/api/ucp/mcp",
-    category: "General",
-    brandAliases: [
-      "youngla",
-    ],
-    keywords: [
-      "shirt", "tailored tees", "tailored", "tees", "tee",
-    ],
-    prefixBrand: true,
-  },
-  {
     // Sweep-verified Nov 4, 2026: "Glass Elite Anti-Glare Screen Protector" — USD 44.99
     // Endpoint declared by the live profile at verification: zagg-2640.myshopify.com
     merchant: "ZAGG",
@@ -7229,43 +3923,6 @@ export const UCP_STORES: UcpStore[] = [
       "glare", "glares",
     ],
     prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "Senior Advanced 11-in-1 Multivitamin Bites for Senior Dogs" — USD 42.97
-    // Endpoint declared by the live profile at verification: zesty-paws.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Zesty Paws",
-    profileHost: "zestypaws.com",
-    brand: "Zesty Paws",
-    fallbackEndpoint: "https://zesty-paws.myshopify.com/api/ucp/mcp",
-    category: "Pet Supplies",
-    brandAliases: [
-      "zesty paws", "zestypaws",
-    ],
-    keywords: [
-      "senior advanced", "advanced multivitamin", "multivitamin bites",
-      "bites senior", "senior dogs", "senior", "seniors", "advanced",
-      "multivitamin", "multivitamins", "bites", "bite",
-    ],
-    prefixBrand: true,
-  },
-  {
-    // Sweep-verified Nov 4, 2026: "adidas Men's 3-Stripes T-Shirt" — USD 20.99
-    // Endpoint declared by the live profile at verification: lyons-group.myshopify.com
-    // Terms: bans bots generally — UCP-only, not authorized in the terms
-    merchant: "Zulily",
-    profileHost: "zulily.com",
-    brand: "Zulily",
-    fallbackEndpoint: "https://lyons-group.myshopify.com/api/ucp/mcp",
-    category: "Apparel",
-    brandAliases: [
-      "zulily",
-    ],
-    keywords: [
-      "shirt", "adidas stripes", "stripes shirt", "adidas", "adida",
-      "stripes", "stripe", "shirts", "clothing", "apparel",
-    ],
-    prefixBrand: false,
   },
 ];
 
