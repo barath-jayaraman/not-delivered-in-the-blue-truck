@@ -103,6 +103,7 @@ async function callMetaModel(
   messages: ChatMessage[],
   temperature: number,
   timeoutMs: number = LIVE_TIMEOUT_MS,
+  maxTokens: number = LIVE_MAX_TOKENS,
 ): Promise<string | null> {
   const config = getMetaModelConfig();
   const apiKey = process.env.META_MODEL_API_KEY?.trim();
@@ -124,7 +125,7 @@ async function callMetaModel(
         body: JSON.stringify({
           model: config.model,
           messages,
-          max_tokens: LIVE_MAX_TOKENS,
+          max_tokens: maxTokens,
           reasoning_effort: "low",
           temperature,
         }),
@@ -363,6 +364,132 @@ export async function explainRecommendation(
     Math.abs(input.winner.totalCost - input.cheapestSticker.totalCost),
   ];
   return figuresAreGrounded(text, allowedFigures) ? text : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Highlights step (live) — distill a listing description              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Highlights budget (Nov 4, 2026): the distill call runs on the
+ * product-page path only, in parallel with the description fetch /
+ * explanation, under the same ~10s discipline as the other product-
+ * page calls. Output is a handful of short bullets, so the token cap
+ * is tight.
+ */
+const HIGHLIGHTS_TIMEOUT_MS = 10_000;
+const HIGHLIGHTS_MAX_TOKENS = 800;
+const HIGHLIGHTS_MIN = 3;
+const HIGHLIGHTS_MAX = 5;
+
+const HIGHLIGHT_STOPWORDS = new Set([
+  "with", "from", "that", "this", "your", "yours", "their", "them",
+  "they", "have", "has", "had", "will", "would", "can", "could",
+  "should", "about", "above", "after", "again", "also", "and", "are",
+  "been", "before", "below", "between", "both", "but", "by", "for",
+  "if", "in", "into", "is", "it", "its", "no", "not", "of", "on",
+  "or", "our", "out", "over", "per", "so", "than", "the", "to",
+  "under", "up", "upon", "was", "we", "were", "when", "while", "you",
+  "a", "an", "as", "at", "be", "do", "does",
+]);
+
+function significantTokens(text: string): string[] {
+  return (text.toLowerCase().match(/[a-z][a-z'-]*/g) ?? []).filter(
+    (token) => token.length >= 4 && !HIGHLIGHT_STOPWORDS.has(token),
+  );
+}
+
+function figuresIn(text: string): string[] {
+  return (text.match(/\d+(?:\.\d+)?/g) ?? []).map((n) =>
+    String(Number.parseFloat(n)),
+  );
+}
+
+/**
+ * Grounding gate for one bullet, stricter than the explain step's:
+ * the bullet's input is a single source text, so EVERY figure in the
+ * bullet must appear in that text verbatim, and at least 60% of the
+ * bullet's significant words must come from it. A bullet that needs
+ * an outside fact fails here and is dropped, never repaired.
+ */
+function bulletIsGrounded(bullet: string, source: string): boolean {
+  const sourceFigures = new Set(figuresIn(source));
+  if (!figuresIn(bullet).every((f) => sourceFigures.has(f))) return false;
+  const bulletTokens = significantTokens(bullet);
+  if (!bulletTokens.length) return false;
+  const sourceTokens = new Set(significantTokens(source));
+  const hits = bulletTokens.filter((t) => sourceTokens.has(t)).length;
+  return hits / bulletTokens.length >= 0.6;
+}
+
+/** Defensive parse of the model's reply into plain bullet strings. */
+function parseHighlights(raw: string): string[] {
+  const start = raw.indexOf("[");
+  const end = raw.lastIndexOf("]");
+  if (start < 0 || end <= start) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw.slice(start, end + 1));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const bullets: string[] = [];
+  for (const entry of parsed) {
+    if (typeof entry !== "string") continue;
+    const cleaned = entry
+      .replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 120);
+    if (cleaned.length >= 8) bullets.push(cleaned);
+    if (bullets.length >= HIGHLIGHTS_MAX) break;
+  }
+  return bullets;
+}
+
+/**
+ * Ask Muse Spark to distill ONE offer's retrieved listing description
+ * into 4–5 short highlight bullets, grounded strictly in that text:
+ * no added features, no marketing language, no figure that does not
+ * appear verbatim in the source. Returns null — and the page renders
+ * no Highlights section — when live calls are not configured, the
+ * call fails, or fewer than HIGHLIGHTS_MIN bullets pass the grounding
+ * gate. There is no local fallback text: unvalidated model output is
+ * never shown.
+ */
+export async function distillHighlights(
+  description: string,
+): Promise<string[] | null> {
+  if (!getMetaModelConfig().liveConfigured) return null;
+  const source = description.trim();
+  if (source.length < 80) return null;
+
+  const raw = await callMetaModel(
+    [
+      {
+        role: "system",
+        content:
+          "You extract highlights for 'Not Delivered in the Blue Truck', a shopping comparison app. " +
+          "You are given ONE product listing's description text, retrieved live from the store. " +
+          "Distill it into 4 to 5 short highlight bullets — the key points a shopper would want, in the listing's own substance. " +
+          "Use ONLY facts stated in the text: never add features, materials, benefits, or claims that are not there, and add no marketing language of your own. " +
+          "Do not state any number, dimension, weight, or rating unless it appears in the text exactly as given. " +
+          "Each bullet is one plain phrase of at most 12 words, no trailing period needed. " +
+          "Return ONLY a JSON array of strings (no markdown, no commentary).",
+      },
+      { role: "user", content: source.slice(0, 4000) },
+    ],
+    0,
+    HIGHLIGHTS_TIMEOUT_MS,
+    HIGHLIGHTS_MAX_TOKENS,
+  );
+  if (!raw) return null;
+
+  const grounded = parseHighlights(raw).filter((bullet) =>
+    bulletIsGrounded(bullet, source),
+  );
+  return grounded.length >= HIGHLIGHTS_MIN ? grounded : null;
 }
 
 /* ------------------------------------------------------------------ */

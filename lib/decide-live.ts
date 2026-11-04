@@ -1,5 +1,6 @@
 import {
   buildAgentActivity,
+  distillHighlights,
   explainRecommendation,
   getMetaModelConfig,
   interpretQuery,
@@ -92,6 +93,27 @@ async function buildLiveComparison(
   // already carry whatever description their search payload stated.
   const enrichDescriptions = enrichEbayOfferDescriptions(offers);
   const recommendation = offers[0];
+  // Highlights (Nov 4, 2026): Muse Spark distills the featured
+  // offer's retrieved description into grounded bullets (lib/agent.ts
+  // validates every bullet against the source text). The featured
+  // offer is the one whose description the product page shows: the
+  // recommendation, else the first offer carrying one. When such an
+  // offer already has its description (UCP / browsing routes), the
+  // call starts now and runs in parallel with the enrichment and the
+  // explanation; an eBay-only comparison starts it after enrichment
+  // lands the description (see the await below). A failed call or
+  // failed validation leaves the offer without highlights — the page
+  // then renders no Highlights section.
+  const featuredOffer = (): ScoredOffer | null =>
+    offers.find((o) => o.id === recommendation.id && o.description) ??
+    offers.find((o) => o.description) ??
+    null;
+  const distillFor = async (offer: ScoredOffer | null): Promise<void> => {
+    if (!offer?.description || offer.highlights?.length) return;
+    const highlights = await distillHighlights(offer.description);
+    if (highlights) offer.highlights = highlights;
+  };
+  const earlyHighlights = distillFor(featuredOffer());
   const cheapestSticker = [...scored].sort((a, b) => a.price - b.price)[0];
   let explanation = buildExplanation(
     recommendation,
@@ -184,6 +206,13 @@ async function buildLiveComparison(
   // Descriptions land on the same offer objects the response carries
   // (recommendation included — it is offers[0] by reference).
   await enrichDescriptions;
+  // Highlights for the pre-enrichment featured offer resolve here; if
+  // enrichment is what first produced a description (eBay), distill
+  // for the newly featured offer now, under the same 10s cap.
+  await earlyHighlights;
+  if (!offers.some((o) => o.highlights?.length)) {
+    await distillFor(featuredOffer());
+  }
 
   return {
     product: {

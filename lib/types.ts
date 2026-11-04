@@ -194,6 +194,17 @@ export interface Offer {
    */
   description?: string | null;
   /**
+   * 4–5 short highlight bullets distilled by Muse Spark from THIS
+   * offer's retrieved description — and nothing else (lib/agent.ts
+   * validates every bullet against the source text: figures must
+   * appear verbatim in it, content words must largely come from it).
+   * Absent/null when no live call ran, the call failed, or validation
+   * rejected the output; the page then shows no Highlights section.
+   * Present only on the offer whose description the product page
+   * features.
+   */
+  highlights?: string[] | null;
+  /**
    * The source's own listing id for this offer (for eBay, the Buy
    * Browse item id), carried so the product page can fetch listing
    * detail (the description) for exactly the item that was priced.
