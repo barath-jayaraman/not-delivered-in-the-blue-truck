@@ -133,6 +133,14 @@ export default function ShoppingApp() {
   const [filterFreeReturns, setFilterFreeReturns] = useState(false);
   const [filterMinReturnDays, setFilterMinReturnDays] = useState<number | null>(null);
 
+  /* Sidebar filter groups start collapsed; each group's header
+     carries its active selection (Barath, Nov 3, 2026). */
+  const [openFilterGroups, setOpenFilterGroups] = useState<Record<string, boolean>>({});
+
+  function toggleFilterGroup(id: string) {
+    setOpenFilterGroups((previous) => ({ ...previous, [id]: !previous[id] }));
+  }
+
   const [result, setResult] = useState<DecideResponse | null>(null);
   const [priority, setPriority] = useState<Priority>("cheapest");
   /** Live-search groups currently openable: group id → the query that found it. */
@@ -269,127 +277,257 @@ export default function ShoppingApp() {
     return true;
   }
 
-  function renderFilterBar(shown: number, totalCount: number) {
+  /* ----- results filter sidebar -----
+     Every filter lives in this left-hand sidebar as a collapsed,
+     expandable group (Barath, Nov 3, 2026): a group's header shows
+     its active selection, clicking the header expands the group to
+     change its values, and nothing sits across the top of the
+     results. Groups start collapsed; the results header keeps only
+     the result count and Sort. */
+
+  function renderFilterGroupHead(id: string, name: string, summary: string) {
+    const open = !!openFilterGroups[id];
     return (
-      <div className="filterBar" aria-label="Filter offers">
-        <span className="filterBarLabel">Filters</span>
-        <div className="filterChipRow" role="group" aria-label="Price, total including shipping">
-          <button
-            type="button"
-            className={`filterChip ${filterMinTotal === null && filterMaxTotal === null ? "active" : ""}`}
-            onClick={() => applyPricePreset(null)}
-          >
-            Any price
-          </button>
-          <button
-            type="button"
-            className={`filterChip ${filterMinTotal === null && filterMaxTotal === 200 ? "active" : ""}`}
-            onClick={() => applyPricePreset(200)}
-          >
-            Under $200
-          </button>
-          <button
-            type="button"
-            className={`filterChip ${filterMinTotal === null && filterMaxTotal === 500 ? "active" : ""}`}
-            onClick={() => applyPricePreset(500)}
-          >
-            Under $500
-          </button>
-        </div>
-        <form className="filterRange" onSubmit={applyCustomRange}>
-          <label className="sr-only" htmlFor="filter-min-total">
-            Minimum total price
-          </label>
-          <span className="filterRangeSign" aria-hidden="true">
-            $
-          </span>
-          <input
-            id="filter-min-total"
-            type="text"
-            inputMode="decimal"
-            placeholder="Min"
-            value={customMin}
-            onChange={(e) => setCustomMin(e.target.value)}
-          />
-          <span className="filterRangeDash" aria-hidden="true">
-            –
-          </span>
-          <label className="sr-only" htmlFor="filter-max-total">
-            Maximum total price
-          </label>
-          <span className="filterRangeSign" aria-hidden="true">
-            $
-          </span>
-          <input
-            id="filter-max-total"
-            type="text"
-            inputMode="decimal"
-            placeholder="Max"
-            value={customMax}
-            onChange={(e) => setCustomMax(e.target.value)}
-          />
-          <button type="submit" className="filterApply">
-            Apply
-          </button>
-        </form>
-        <button
-          type="button"
-          className={`filterChip ${filterFreeShipping ? "active" : ""}`}
-          aria-pressed={filterFreeShipping}
-          onClick={() => setFilterFreeShipping((value) => !value)}
-        >
-          Free shipping
-        </button>
-        <button
-          type="button"
-          className={`filterChip ${filterWarrantyStated ? "active" : ""}`}
-          aria-pressed={filterWarrantyStated}
-          onClick={() => setFilterWarrantyStated((value) => !value)}
-        >
-          Warranty stated
-        </button>
-        <button
-          type="button"
-          className={`filterChip ${filterFreeReturns ? "active" : ""}`}
-          aria-pressed={filterFreeReturns}
-          onClick={() => setFilterFreeReturns((value) => !value)}
-        >
-          Free returns
-        </button>
-        <div className="filterChipRow" role="group" aria-label="Return window">
-          <button
-            type="button"
-            className={`filterChip ${filterMinReturnDays === null ? "active" : ""}`}
-            onClick={() => setFilterMinReturnDays(null)}
-          >
-            Any return window
-          </button>
-          <button
-            type="button"
-            className={`filterChip ${filterMinReturnDays === 30 ? "active" : ""}`}
-            onClick={() => setFilterMinReturnDays(30)}
-          >
-            30+ day returns
-          </button>
-          <button
-            type="button"
-            className={`filterChip ${filterMinReturnDays === 60 ? "active" : ""}`}
-            onClick={() => setFilterMinReturnDays(60)}
-          >
-            60+ day returns
-          </button>
-        </div>
-        {anyFilterActive && (
-          <>
+      <button
+        type="button"
+        className="filterGroupHead"
+        aria-expanded={open}
+        onClick={() => toggleFilterGroup(id)}
+      >
+        <span className="filterGroupName">{name}</span>
+        <span className="filterGroupSummary">{summary}</span>
+        <span className="filterGroupChevron" aria-hidden="true">
+          {open ? "▾" : "▸"}
+        </span>
+      </button>
+    );
+  }
+
+  function renderFilterSidebar() {
+    const priceSummary =
+      filterMinTotal === null && filterMaxTotal === null
+        ? "Any price"
+        : filterMinTotal !== null && filterMaxTotal !== null
+          ? `$${filterMinTotal} – $${filterMaxTotal}`
+          : filterMaxTotal !== null
+            ? `Under $${filterMaxTotal}`
+            : `Over $${filterMinTotal}`;
+    const brandSummary =
+      filterBrands.length === 0
+        ? "All brands"
+        : filterBrands.length === 1
+          ? filterBrands[0]
+          : `${filterBrands.length} selected`;
+    const deliverySummary =
+      filterMaxDays === null ? "Any speed" : `${filterMaxDays} days or faster`;
+    const returnsSummaryBits: string[] = [];
+    if (filterFreeReturns) returnsSummaryBits.push("Free returns");
+    if (filterMinReturnDays !== null)
+      returnsSummaryBits.push(`${filterMinReturnDays}+ day returns`);
+    const returnsSummary =
+      returnsSummaryBits.length > 0 ? returnsSummaryBits.join(" · ") : "Any returns";
+
+    return (
+      <aside className="filterRail" aria-label="Filters">
+        <div className="filterRailHead">
+          <span className="label">Filters</span>
+          {anyFilterActive && (
             <button type="button" className="filterClear" onClick={clearAllFilters}>
               Clear filters
             </button>
-            <span className="filterCount">
-              {shown} of {totalCount}
-            </span>
-          </>
+          )}
+        </div>
+
+        <div className="filterGroup">
+          {renderFilterGroupHead("price", "Price", priceSummary)}
+          {!!openFilterGroups.price && (
+            <div className="filterGroupBody">
+              {(
+                [
+                  [null, "Any price"],
+                  [200, "Under $200"],
+                  [500, "Under $500"],
+                ] as [number | null, string][]
+              ).map(([value, label]) => (
+                <label className="filterOption" key={label}>
+                  <input
+                    type="radio"
+                    name="filter-price"
+                    checked={
+                      value === null
+                        ? filterMinTotal === null && filterMaxTotal === null
+                        : filterMinTotal === null && filterMaxTotal === value
+                    }
+                    onChange={() => applyPricePreset(value)}
+                  />
+                  {label}
+                </label>
+              ))}
+              <form className="filterRange" onSubmit={applyCustomRange}>
+                <label className="sr-only" htmlFor="filter-min-total">
+                  Minimum total price
+                </label>
+                <span className="filterRangeSign" aria-hidden="true">
+                  $
+                </span>
+                <input
+                  id="filter-min-total"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Min"
+                  value={customMin}
+                  onChange={(e) => setCustomMin(e.target.value)}
+                />
+                <span className="filterRangeDash" aria-hidden="true">
+                  –
+                </span>
+                <label className="sr-only" htmlFor="filter-max-total">
+                  Maximum total price
+                </label>
+                <span className="filterRangeSign" aria-hidden="true">
+                  $
+                </span>
+                <input
+                  id="filter-max-total"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Max"
+                  value={customMax}
+                  onChange={(e) => setCustomMax(e.target.value)}
+                />
+                <button type="submit" className="filterApply">
+                  Apply
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+
+        {resultBrands.length > 1 && (
+          <div className="filterGroup">
+            {renderFilterGroupHead("brand", "Brand", brandSummary)}
+            {!!openFilterGroups.brand && (
+              <div className="filterGroupBody">
+                {resultBrands.map((brand) => (
+                  <label className="filterOption" key={brand}>
+                    <input
+                      type="checkbox"
+                      checked={filterBrands.includes(brand)}
+                      onChange={(e) =>
+                        setFilterBrands((previous) =>
+                          e.target.checked
+                            ? [...previous, brand]
+                            : previous.filter((entry) => entry !== brand),
+                        )
+                      }
+                    />
+                    {brand}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         )}
-      </div>
+
+        <div className="filterGroup">
+          {renderFilterGroupHead("delivery", "Delivery speed", deliverySummary)}
+          {!!openFilterGroups.delivery && (
+            <div className="filterGroupBody">
+              {(
+                [
+                  [null, "Any speed"],
+                  [2, "2 days or faster"],
+                  [3, "3 days or faster"],
+                  [5, "5 days or faster"],
+                ] as [number | null, string][]
+              ).map(([value, label]) => (
+                <label className="filterOption" key={label}>
+                  <input
+                    type="radio"
+                    name="filter-delivery"
+                    checked={filterMaxDays === value}
+                    onChange={() => setFilterMaxDays(value)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="filterGroup">
+          {renderFilterGroupHead(
+            "shipping",
+            "Shipping",
+            filterFreeShipping ? "Free shipping" : "Any shipping",
+          )}
+          {!!openFilterGroups.shipping && (
+            <div className="filterGroupBody">
+              <label className="filterOption">
+                <input
+                  type="checkbox"
+                  checked={filterFreeShipping}
+                  onChange={(e) => setFilterFreeShipping(e.target.checked)}
+                />
+                Free shipping
+              </label>
+            </div>
+          )}
+        </div>
+
+        <div className="filterGroup">
+          {renderFilterGroupHead(
+            "warranty",
+            "Warranty",
+            filterWarrantyStated ? "Warranty stated" : "Any warranty",
+          )}
+          {!!openFilterGroups.warranty && (
+            <div className="filterGroupBody">
+              <label className="filterOption">
+                <input
+                  type="checkbox"
+                  checked={filterWarrantyStated}
+                  onChange={(e) => setFilterWarrantyStated(e.target.checked)}
+                />
+                Warranty stated
+              </label>
+            </div>
+          )}
+        </div>
+
+        <div className="filterGroup">
+          {renderFilterGroupHead("returns", "Returns", returnsSummary)}
+          {!!openFilterGroups.returns && (
+            <div className="filterGroupBody">
+              <label className="filterOption">
+                <input
+                  type="checkbox"
+                  checked={filterFreeReturns}
+                  onChange={(e) => setFilterFreeReturns(e.target.checked)}
+                />
+                Free returns
+              </label>
+              {(
+                [
+                  [null, "Any return window"],
+                  [30, "30+ day returns"],
+                  [60, "60+ day returns"],
+                ] as [number | null, string][]
+              ).map(([value, label]) => (
+                <label className="filterOption" key={label}>
+                  <input
+                    type="radio"
+                    name="filter-return-window"
+                    checked={filterMinReturnDays === value}
+                    onChange={() => setFilterMinReturnDays(value)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
     );
   }
 
@@ -599,7 +737,6 @@ export default function ShoppingApp() {
 
         <div className="homeSteps">
           <div className="homeStep">
-            <span className="stepNum">1</span>
             <p>
               <strong>Step 1 — Search for the product.</strong>
               <br />
@@ -607,13 +744,11 @@ export default function ShoppingApp() {
             </p>
           </div>
           <div className="homeStep">
-            <span className="stepNum">2</span>
             <p>
               <strong>Step 2 — See it across different stores and compare price, delivery speed, return policy, and warranty.</strong>
             </p>
           </div>
           <div className="homeStep">
-            <span className="stepNum">3</span>
             <p>
               <strong>Step 3 — Check out at the store.</strong>
             </p>
@@ -651,56 +786,9 @@ export default function ShoppingApp() {
           </label>
         </div>
 
-        {total > 0 && renderFilterBar(visibleResults.length, total)}
 
         <div className={`resultsLayout ${total === 0 ? "noRail" : ""}`}>
-          {total > 0 && (
-            <aside className="filterRail" aria-label="Filters">
-              <span className="label">Filters</span>
-              {resultBrands.length > 1 && (
-                <div className="filterGroup">
-                  <h3>Brand</h3>
-                  {resultBrands.map((brand) => (
-                    <label className="filterOption" key={brand}>
-                      <input
-                        type="checkbox"
-                        checked={filterBrands.includes(brand)}
-                        onChange={(e) =>
-                          setFilterBrands((previous) =>
-                            e.target.checked
-                              ? [...previous, brand]
-                              : previous.filter((entry) => entry !== brand),
-                          )
-                        }
-                      />
-                      {brand}
-                    </label>
-                  ))}
-                </div>
-              )}
-              <div className="filterGroup">
-                <h3>Delivery speed</h3>
-                {(
-                  [
-                    [null, "Any speed"],
-                    [2, "2 days or faster"],
-                    [3, "3 days or faster"],
-                    [5, "5 days or faster"],
-                  ] as [number | null, string][]
-                ).map(([value, label]) => (
-                  <label className="filterOption" key={label}>
-                    <input
-                      type="radio"
-                      name="filter-delivery"
-                      checked={filterMaxDays === value}
-                      onChange={() => setFilterMaxDays(value)}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-            </aside>
-          )}
+          {total > 0 && renderFilterSidebar()}
 
           {visibleResults.length === 0 ? (
             <div className="emptyBox">

@@ -542,23 +542,71 @@ img {
   padding: 6px 18px 10px;
 }
 
-.filterRail > .label {
+.filterRailHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+
+.filterRailHead .label {
   display: block;
-  padding: 12px 0 2px;
 }
 
 .filterGroup {
   border-top: 1px solid var(--border);
-  padding: 14px 0 16px;
+  padding: 12px 0 14px;
 }
 
-.filterGroup h3 {
-  margin: 0 0 10px;
+/* Collapsed-by-default sidebar groups: the header carries the
+   group's active selection; clicking expands the group to change
+   it (Barath, Nov 3, 2026). */
+.filterGroupHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.filterGroupName {
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 800;
   color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.filterGroupSummary {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pine);
+  text-align: right;
+}
+
+.filterGroupChevron {
+  color: var(--muted);
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.filterGroupBody {
+  padding-top: 8px;
+}
+
+.filterGroupBody .filterRange {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  row-gap: 8px;
 }
 
 .filterOption {
@@ -1868,7 +1916,7 @@ a.btnOutline {
   align-items: center;
   justify-content: center;
   text-align: center;
-  width: min(760px, 100% - 32px);
+  width: min(1080px, 100% - 32px);
   min-height: calc(100dvh - 210px);
   padding: 48px 0 16px;
 }
@@ -1881,6 +1929,10 @@ a.btnOutline {
   font-weight: bold;
   letter-spacing: -0.01em;
   margin: 0 0 14px;
+  /* The hero has the width for one line — never wrap the headline
+     where it isn't required (Barath, Nov 4, 2026). Narrow screens
+     below reset this and may wrap. */
+  white-space: nowrap;
 }
 
 .homeSub {
@@ -1945,7 +1997,7 @@ a.btnOutline {
 .homeSteps {
   margin-top: 64px;
   width: 100%;
-  max-width: 680px;
+  max-width: 920px;
   display: flex;
   gap: 28px;
   justify-content: center;
@@ -1954,20 +2006,6 @@ a.btnOutline {
 .homeStep {
   flex: 1;
   text-align: left;
-}
-
-.stepNum {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--butter);
-  color: var(--pine);
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 10px;
 }
 
 .homeStep p {
@@ -1984,6 +2022,10 @@ a.btnOutline {
   .homeMain {
     padding: 32px 0 8px;
     min-height: calc(100dvh - 190px);
+  }
+
+  .homeTitle {
+    white-space: normal;
   }
 
   .homeSub {
