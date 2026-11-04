@@ -344,21 +344,6 @@ export const UCP_STORES: UcpStore[] = [
     prefixBrand: true,
   },
   {
-    // Verified: "Pure Encapsulations, Vitamin D3, 125 mcg (5,000 IU),
-    // 120 Capsules" — USD 36
-    merchant: "Vitacost",
-    profileHost: "vitacost.com",
-    brand: "Vitacost",
-    fallbackEndpoint: "https://icost.myshopify.com/api/ucp/mcp",
-    category: "Health & Grocery",
-    brandAliases: ["vitacost"],
-    keywords: [
-      "vitamin", "vitamins", "vitamin d", "supplement", "supplements",
-      "probiotics", "protein powder",
-    ],
-    prefixBrand: false,
-  },
-  {
     // Verified: "STT 925 Silver MI05 Ring" — USD 199.99
     merchant: "ShopLC",
     profileHost: "shoplc.com",

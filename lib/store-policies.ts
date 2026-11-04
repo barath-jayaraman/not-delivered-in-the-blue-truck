@@ -135,13 +135,6 @@ const VERIFIED_STORE_POLICIES: Partial<
     policyNote: "With limited exceptions, returns are refunded as store credit only, not to original payment.",
     sourceUrl: "https://www.pier1.com/policies/refund-policy",
   },
-  "Vitacost": {
-    returnWindowDays: 30,
-    returnCost: null,
-    restockingFee: null,
-    policyNote: "EU orders have a 14-day cooling-off period. A return shipping label is sent if the return is accepted; cost not stated.",
-    sourceUrl: "https://www.vitacost.com/policies/refund-policy",
-  },
   "ShopLC": {
     returnWindowDays: 30,
     returnCost: "buyer-paid",

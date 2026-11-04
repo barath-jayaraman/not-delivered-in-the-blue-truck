@@ -608,7 +608,7 @@ export default function ShoppingApp() {
           </div>
         </div>
 
-        <p className="heroHint">Searching 231 stores — and growing.</p>
+        <p className="heroHint">Searching 230 stores — and growing.</p>
       </main>
     );
   }
@@ -691,7 +691,7 @@ export default function ShoppingApp() {
               <strong>{total === 0 ? "No products to show" : "No offers match those filters"}</strong>
               <p>
                 {total === 0
-                  ? `Nothing matched “${searchMeta?.query}” — live search at eBay, Walmart, and the UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty, Lord & Taylor, Stein Mart, Scandinavian Designs, Slumberland, Pier 1, Vitacost, ShopLC, The Lakeside Collection, LTD Commodities, SkyMall, Mast General Store, Kane's Furniture, Steinhafels, Schneiderman's Furniture, FYE, DTLR, Beach Camera, Turtle Beach, Evo, FAO Schwarz, Casper, Away, HexClad, Lodge Cast Iron, Rad Power Bikes, The Sill, Brookstone, Sharper Image, Peak Design, Woodcraft, Arhaus, Bonobos), and the browsing-route stores (Micro Center, Harbor Freight, Carter's, Mattress Firm) returned nothing for it. Try headphones, a 55 inch TV, running shoes, leggings, a sweater, a carry-on, sneakers, a chef's knife, lip gloss, a sofa, a mattress, a camera, a snowboard, a frying pan, an electric bike, a plush toy, a laptop, a drill, or a bodysuit.`
+                  ? `Nothing matched “${searchMeta?.query}” — live search at eBay, Walmart, and the UCP stores (Steve Madden, Gymshark, Everlane, Monos, Allbirds, Kith, Misen, SKIMS, Fenty Beauty, Lord & Taylor, Stein Mart, Scandinavian Designs, Slumberland, Pier 1, ShopLC, The Lakeside Collection, LTD Commodities, SkyMall, Mast General Store, Kane's Furniture, Steinhafels, Schneiderman's Furniture, FYE, DTLR, Beach Camera, Turtle Beach, Evo, FAO Schwarz, Casper, Away, HexClad, Lodge Cast Iron, Rad Power Bikes, The Sill, Brookstone, Sharper Image, Peak Design, Woodcraft, Arhaus, Bonobos), and the browsing-route stores (Micro Center, Harbor Freight, Carter's, Mattress Firm) returned nothing for it. Try headphones, a 55 inch TV, running shoes, leggings, a sweater, a carry-on, sneakers, a chef's knife, lip gloss, a sofa, a mattress, a camera, a snowboard, a frying pan, an electric bike, a plush toy, a laptop, a drill, or a bodysuit.`
                   : "Loosen a filter to see more."}
               </p>
             </div>

@@ -181,7 +181,6 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     "Scandinavian Designs",
     "Slumberland",
     "Pier 1",
-    "Vitacost",
     "ShopLC",
     "The Lakeside Collection",
     "LTD Commodities",
