@@ -913,6 +913,8 @@ export default function ShoppingApp() {
             </p>
           </div>
         </div>
+
+        <p className="heroHint">Searching 54 stores — and growing.</p>
       </main>
     );
   }
