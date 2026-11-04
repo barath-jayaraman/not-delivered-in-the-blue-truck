@@ -2,6 +2,8 @@ import { getMerchantPolicy } from "../adapters";
 import { normalizeSearch } from "../data";
 import { cleanDescription } from "../description";
 import type { Merchant, Offer } from "../types";
+import { getVerifiedStorePolicy } from "../store-policies";
+import { extractWarrantyFromText } from "../warranty";
 
 /**
  * BROWSING-ROUTE STORE ADAPTERS — assortment-routed first-party stores
@@ -60,6 +62,10 @@ import type { Merchant, Offer } from "../types";
  * Return terms and warranty are never estimated: when the page states
  * none, they render as "Not stated by seller" (accuracy fix,
  * Nov 4, 2026 — a generic 30-day default previously rendered as fact).
+ * The one warranty exception mirrors the UCP adapter: when the
+ * listing text the page itself carried states a warranty explicitly,
+ * lib/warranty.ts extracts exactly that statement and the provenance
+ * note quotes it (warranty-extraction fix, Nov 4, 2026).
  *
  * Enabled by default. Set ENABLE_BROWSE_STORES=0 to disable. The
  * merchant policy registry gate still applies on top of this switch.
@@ -72,8 +78,6 @@ const MIN_INTERVAL_MS = 1_500;
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_PRODUCTS_PER_STORE = 12;
 const MAX_BROWSE_STORES_PER_QUERY = 3;
-/** Standard ground service estimate used when a page states no delivery time (as in the UCP adapter). */
-const SERVICE_DELIVERY_DAYS = 5;
 export function browseStoresEnabled(): boolean {
   return process.env.ENABLE_BROWSE_STORES !== "0";
 }
@@ -652,15 +656,15 @@ export function buildBrowseOffer(
   retrievedAt: string,
   searchUrl: string,
 ): Offer {
-  return {
+  const offer: Offer = {
     id: `browse-${store.merchant.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${product.productKey}`,
     merchant: store.merchant,
     seller: store.merchant,
     channel: store.merchant,
     condition: product.condition ?? "New",
     price: product.price,
-    shippingCost: 0,
-    deliveryDays: SERVICE_DELIVERY_DAYS,
+    shippingCost: null,
+    deliveryDays: null,
     deliveryBasis: "Sample shipping-service estimate",
     returnWindowDays: null,
     returnCost: "not-stated",
@@ -684,8 +688,8 @@ export function buildBrowseOffer(
         `any active block or challenge stops it — none was encountered for this retrieval. ` +
         `The price is the figure the page itself displayed for this listing. The search page ` +
         `did not state a shipping charge (shipping is set by the merchant at checkout and is ` +
-        `not included in the total), a delivery estimate (a ${SERVICE_DELIVERY_DAYS}-day ` +
-        `standard ground service estimate is used for scoring), return terms (none are ` +
+        `not included in the total), a delivery estimate (none is shown — delivery is ` +
+        `stated only when a source states it), return terms (none are ` +
         `stated, so returns are shown as "Not stated by seller" — the merchant's own ` +
         `published policy governs), or a warranty period` +
         (product.rating != null
@@ -695,4 +699,41 @@ export function buildBrowseOffer(
         `Nothing here is stored: the price was fetched in this request.`,
     },
   };
+  // Warranty from the listing text the page itself carried (same
+  // verbatim-grounded rule as the UCP adapter, lib/warranty.ts): when
+  // the text states one, the offer carries it and the provenance note
+  // says where it came from.
+  const warranty = extractWarrantyFromText(product.description);
+  if (warranty) {
+    offer.warrantyMonths = warranty.months;
+    offer.warrantyLabel = warranty.label;
+    offer.provenance.policyNote =
+      offer.provenance.policyNote.replace(", or a warranty period", "") +
+      ` Warranty source: this listing's own text on the page states ` +
+      `"${warranty.phrase}" — the warranty shown is that statement, read ` +
+      `from the listing text retrieved in this request.`;
+  }
+  // Return terms from the merchant's own published policy, fetched
+  // and verified on Nov 4, 2026 (lib/store-policies.ts): only the
+  // fields that policy actually states are applied; the rest stay
+  // "Not stated by seller".
+  const policy = getVerifiedStorePolicy(store.merchant);
+  if (policy) {
+    if (policy.returnWindowDays != null) {
+      offer.returnWindowDays = policy.returnWindowDays;
+    }
+    if (policy.returnCost != null) {
+      offer.returnCost = policy.returnCost;
+    }
+    offer.restockingFee = policy.restockingFee;
+    offer.returnPolicyNote = policy.policyNote;
+    offer.returnPolicySource = "Verified merchant policy";
+    offer.provenance.policyNote +=
+      ` Return terms source: ${store.merchant}'s published policy ` +
+      `(${policy.sourceUrl}), read and verified Nov 4, 2026 — the return ` +
+      `window, return cost, and restocking fee shown are that policy's ` +
+      `own stated terms; anything the policy does not state is shown ` +
+      `as "Not stated by seller".`;
+  }
+  return offer;
 }

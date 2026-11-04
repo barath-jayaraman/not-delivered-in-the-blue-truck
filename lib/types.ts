@@ -319,8 +319,21 @@ export interface Offer {
   channel: Merchant;
   condition: "New" | "Open-box" | "Certified refurbished" | "Refurbished";
   price: number;
-  shippingCost: number; // 0 = free shipping
-  deliveryDays: number; // sample estimate / service-level proxy in this prototype
+  /**
+   * Shipping charge stated by the source. null means the source stated
+   * NO shipping charge — it is calculated by the merchant at checkout
+   * and is NOT included in any total (no-fake-numbers rule, Nov 4,
+   * 2026: an unstated shipping charge must never render as $0.00 or
+   * "free"). 0 only when the source itself states free shipping.
+   */
+  shippingCost: number | null;
+  /**
+   * Delivery window in days stated by the source. null means the
+   * source stated NO delivery estimate — displayed as "Not stated by
+   * seller"; scoring and need-by logic skip nulls. Never an invented
+   * service-level estimate.
+   */
+  deliveryDays: number | null;
   /** Be explicit about a key API gap: Best Buy does not supply an ETA attribute. */
   deliveryBasis:
     | "Sample seller delivery estimate"
@@ -338,17 +351,41 @@ export interface Offer {
    */
   returnWindowDays: number | null;
   returnCost: ReturnCost;
-  /** Where the return terms came from: the listing itself, or not stated. */
+  /** Where the return terms came from: the listing itself, the
+   *  merchant's own published policy (fetched and verified, see
+   *  lib/store-policies.ts), or not stated. */
   returnPolicySource:
     | "Sample seller return terms"
     | "Curated retailer-policy sample"
+    | "Verified merchant policy"
     | "Not stated by seller";
+  /**
+   * Restocking fee stated in the merchant's verified published policy:
+   * a display string such as "20%", or "None" ONLY where the published
+   * policy affirmatively supports no restocking fee. null means no
+   * verified source states one — displayed as "Not stated by seller";
+   * "None" is never inferred from silence.
+   */
+  restockingFee?: string | null;
+  /**
+   * Short faithful summary of verified published return/cancellation
+   * terms the structured fields cannot express (e.g. a cancellation
+   * window), from lib/store-policies.ts. Null when no verified policy
+   * adds anything beyond the structured fields.
+   */
+  returnPolicyNote?: string | null;
   /**
    * Stated warranty period in months. 0 means the source stated NO
    * warranty period — an absence of data, displayed as "Not stated by
    * seller"; it must never be rendered or phrased as "no warranty".
    */
   warrantyMonths: number;
+  /**
+   * Display label when the listing text states a lifetime warranty
+   * ("Lifetime warranty") — a label, not a count, so months stays 0
+   * (lib/warranty.ts). Null/absent otherwise.
+   */
+  warrantyLabel?: string | null;
   /** Seller / retailer rating, 0–5 scale. */
   sellerRating: number;
   /** Sample-only listing label. This is deliberately not a live purchase URL. */
@@ -425,7 +462,10 @@ export interface ProductSummary {
   hasFreeReturns: boolean;
   /** Longest stated return window (days) across the group's offers. */
   longestReturnWindowDays: number;
-  fastestDeliveryDays: number;
+  /** Fastest STATED delivery window across the group's offers; null
+   *  when no offer states one (unstated delivery never sorts or
+   *  filters as fast). */
+  fastestDeliveryDays: number | null;
   exactMatch: boolean;
   dataSource: DataMode;
   sourceMerchants: Merchant[];
@@ -472,7 +512,8 @@ export interface DecideResponse {
   cheapestSticker: ScoredOffer;
   explanation: string;
   priceRange: { lowest: number; highest: number };
-  fastestDeliveryDays: number;
+  /** Fastest STATED delivery window among the offers; null when none states one. */
+  fastestDeliveryDays: number | null;
   dataSource: DataMode;
   sourceMerchants: Merchant[];
   acquisitionMethod: OfferAcquisitionMethod;

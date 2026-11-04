@@ -64,6 +64,7 @@ function toExplainFacts(offer: ScoredOffer): ExplainOfferFacts {
     returnWindowDays: offer.returnWindowDays,
     returnCost: offer.returnCost,
     warrantyMonths: offer.warrantyMonths,
+    warrantyLabel: offer.warrantyLabel ?? null,
     sellerRating: offer.sellerRating,
     score: offer.score,
     firstPartyStore: offer.provenance.policyStatus === "ucp-public-profile",
@@ -232,7 +233,14 @@ async function buildLiveComparison(
       lowest: Math.min(...group.offers.map((o) => o.price)),
       highest: Math.max(...group.offers.map((o) => o.price)),
     },
-    fastestDeliveryDays: Math.min(...group.offers.map((o) => o.deliveryDays)),
+    // Fastest STATED delivery window among the offers; null when none
+    // states one.
+    fastestDeliveryDays: (() => {
+      const stated = group.offers
+        .map((o) => o.deliveryDays)
+        .filter((d): d is number => d != null);
+      return stated.length > 0 ? Math.min(...stated) : null;
+    })(),
     dataSource: "live",
     sourceMerchants: group.merchants,
     acquisitionMethod: group.offers[0].provenance.acquisitionMethod,

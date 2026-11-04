@@ -58,24 +58,42 @@ export function scoreOffers(
   offers: Offer[],
   req: DecideRequest,
 ): ScoredOffer[] {
-  const totals = offers.map((o) => o.price + o.shippingCost);
+  // Totals compare on price + STATED shipping only: an unstated
+  // shipping charge (null) is calculated at the merchant's checkout
+  // and must never be scored or displayed as $0/free (Nov 4, 2026).
+  const totals = offers.map((o) => o.price + (o.shippingCost ?? 0));
   const minTotal = Math.min(...totals);
   const maxTotal = Math.max(...totals);
-  const maxDays = Math.max(...offers.map((o) => o.deliveryDays), 1);
+  // Speed is scored only across offers whose source states a delivery
+  // window; unstated delivery (null) is skipped, never estimated.
+  const statedDays = offers
+    .map((o) => o.deliveryDays)
+    .filter((d): d is number => d != null);
+  const maxDays = Math.max(...statedDays, 1);
   const w = WEIGHTS[req.priority];
 
   return offers
     .map((offer) => {
-      const totalCost = offer.price + offer.shippingCost;
+      const totalCost = offer.price + (offer.shippingCost ?? 0);
       const flags: string[] = [];
 
       const costScore =
         maxTotal === minTotal
           ? 1
           : 1 - (totalCost - minTotal) / (maxTotal - minTotal);
-      const speedScore = 1 - (offer.deliveryDays - 1) / Math.max(maxDays - 1, 1);
+      // No stated delivery window → neutral speed score; the offer is
+      // neither rewarded nor penalised for a figure nobody stated.
+      const speedScore =
+        offer.deliveryDays == null
+          ? 0.5
+          : 1 - (offer.deliveryDays - 1) / Math.max(maxDays - 1, 1);
       const retScore = returnsSubscore(offer, req.priority);
-      const warrantyScore = clamp01(offer.warrantyMonths / 24);
+      // A stated lifetime warranty is the strongest warranty signal
+      // there is; it carries months 0 (a label, not a count), so score
+      // it at the cap rather than as no warranty at all.
+      const warrantyScore = clamp01(
+        offer.warrantyLabel ? 1 : offer.warrantyMonths / 24,
+      );
       const ratingScore = clamp01((offer.sellerRating - 3.5) / 1.5);
 
       let score =
@@ -86,7 +104,7 @@ export function scoreOffers(
           w.warranty * warrantyScore +
           w.rating * ratingScore);
 
-      if (offer.deliveryDays > req.needByDays) {
+      if (offer.deliveryDays != null && offer.deliveryDays > req.needByDays) {
         score -= 25;
         flags.push(
           `Arrives in ${offer.deliveryDays} days — after your ${req.needByDays}-day need-by`,
@@ -99,15 +117,14 @@ export function scoreOffers(
       if (offer.returnCost === "final-sale") flags.push("Final sale — no returns");
       if (offer.returnCost === "buyer-paid") flags.push("Returns are buyer-paid");
       // "Free shipping" is claimed only when the source stated a $0
-      // charge. UCP catalog offers carry shippingCost 0 because the
-      // catalog states no shipping charge at all (it is calculated at
-      // the merchant's checkout) — that absence must never read as free.
+      // charge (shippingCost === 0). An unstated charge is null since
+      // the Nov 4, 2026 null-out — it never passes this check.
       if (
         offer.shippingCost === 0 &&
         offer.provenance.policyStatus !== "ucp-public-profile"
       )
         flags.push("Free shipping");
-      if (offer.deliveryDays <= req.needByDays)
+      if (offer.deliveryDays != null && offer.deliveryDays <= req.needByDays)
         flags.push(`Arrives in ${offer.deliveryDays} day${offer.deliveryDays === 1 ? "" : "s"}`);
 
       return {
@@ -133,6 +150,9 @@ function returnsPhrase(o: ScoredOffer): string {
  * phrased as "0 months" / "no warranty".
  */
 function warrantyPhrase(o: ScoredOffer): string {
+  // A lifetime warranty is a stated label, not a month count — name
+  // it as what the listing text stated, never as months.
+  if (o.warrantyLabel) return "a lifetime warranty stated in the listing text";
   return o.warrantyMonths > 0
     ? `${o.warrantyMonths} months of warranty`
     : "no warranty stated by the seller";
@@ -147,14 +167,25 @@ function ratingPhrase(o: ScoredOffer): string {
 }
 
 function shippingPhrase(o: ScoredOffer): string {
-  // UCP catalog offers state no shipping charge: it is calculated by
-  // the merchant at checkout and excluded from the total — never "free".
+  // An unstated shipping charge (null) is calculated by the merchant
+  // at checkout and excluded from the total — never "free".
+  if (o.shippingCost === null) {
+    return "shipping not stated by the seller — calculated at checkout and not included in the total";
+  }
   if (o.provenance.policyStatus === "ucp-public-profile") {
     return "shipping calculated at the merchant's checkout, not included";
   }
   return o.shippingCost === 0
     ? "free shipping"
     : `${money(o.shippingCost)} shipping`;
+}
+
+function deliveryPhrase(o: ScoredOffer): string {
+  // An unstated delivery window (null) is an absence of data, never an
+  // estimate: phrase it as not stated, do not invent an arrival.
+  return o.deliveryDays == null
+    ? "delivery time not stated by its seller"
+    : `arrives in ${o.deliveryDays} day${o.deliveryDays === 1 ? "" : "s"}`;
 }
 
 export function buildExplanation(
@@ -174,9 +205,9 @@ export function buildExplanation(
     return (
       `The cheapest sticker price is also the right buy here. ${winner.seller} is the best whole deal on ${priorityLabel}: ` +
       `${money(winner.totalCost)} all-in (${money(winner.price)} + ${shippingPhrase(winner)}), ` +
-      `arrives in ${winner.deliveryDays} day${winner.deliveryDays === 1 ? "" : "s"}, ${returnsPhrase(winner)}, ` +
+      `${deliveryPhrase(winner)}, ${returnsPhrase(winner)}, ` +
       `${warrantyPhrase(winner)}, and ${ratingPhrase(winner)}. ` +
-      (winner.deliveryDays > needByDays
+      (winner.deliveryDays != null && winner.deliveryDays > needByDays
         ? `One warning: no live offer in this comparison makes your ${needByDays}-day deadline — this is the closest option. `
         : "") +
       `No trade-off to explain — the lowest price and the best decision are the same offer this time.`
@@ -198,7 +229,11 @@ export function buildExplanation(
       : `${money(totalDiff)} more all-in (${money(winner.totalCost)} vs ${money(cheapest.totalCost)})`,
   );
 
-  if (winner.deliveryDays !== cheapest.deliveryDays) {
+  if (
+    winner.deliveryDays != null &&
+    cheapest.deliveryDays != null &&
+    winner.deliveryDays !== cheapest.deliveryDays
+  ) {
     parts.push(
       winner.deliveryDays < cheapest.deliveryDays
         ? `arrives ${cheapest.deliveryDays - winner.deliveryDays} day${cheapest.deliveryDays - winner.deliveryDays === 1 ? "" : "s"} sooner (${winner.deliveryDays} vs ${cheapest.deliveryDays} days)`
@@ -209,6 +244,7 @@ export function buildExplanation(
   }
   if (
     winner.shippingCost === 0 &&
+    cheapest.shippingCost != null &&
     cheapest.shippingCost > 0 &&
     winner.provenance.policyStatus !== "ucp-public-profile"
   ) {
@@ -222,13 +258,18 @@ export function buildExplanation(
       `${returnsPhrase(winner)} instead of ${returnsPhrase(cheapest)}`,
     );
   }
-  if (winner.warrantyMonths !== cheapest.warrantyMonths) {
+  if (
+    winner.warrantyMonths !== cheapest.warrantyMonths ||
+    (winner.warrantyLabel ?? null) !== (cheapest.warrantyLabel ?? null)
+  ) {
     parts.push(
-      winner.warrantyMonths > 0 && cheapest.warrantyMonths > 0
-        ? `${winner.warrantyMonths} months of warranty vs ${cheapest.warrantyMonths} from the cheapest seller`
-        : winner.warrantyMonths > 0
-          ? `${winner.warrantyMonths} months of warranty vs none stated by the cheapest seller`
-          : `no warranty stated by its seller vs ${cheapest.warrantyMonths} months from the cheapest seller`,
+      winner.warrantyLabel || cheapest.warrantyLabel
+        ? `${warrantyPhrase(winner)} vs ${warrantyPhrase(cheapest)}`
+        : winner.warrantyMonths > 0 && cheapest.warrantyMonths > 0
+          ? `${winner.warrantyMonths} months of warranty vs ${cheapest.warrantyMonths} from the cheapest seller`
+          : winner.warrantyMonths > 0
+            ? `${winner.warrantyMonths} months of warranty vs none stated by the cheapest seller`
+            : `no warranty stated by its seller vs ${cheapest.warrantyMonths} months from the cheapest seller`,
     );
   }
   if (

@@ -246,11 +246,15 @@ export interface ExplainOfferFacts {
   merchant: string;
   totalCost: number;
   price: number;
-  shippingCost: number;
-  deliveryDays: number;
+  /** Null = the source stated no shipping charge (calculated at checkout, not in the total). */
+  shippingCost: number | null;
+  /** Null = the source stated no delivery window. */
+  deliveryDays: number | null;
   returnWindowDays: number | null;
   returnCost: ReturnCost;
   warrantyMonths: number;
+  /** Set when the listing text states a lifetime warranty (label, not a count). */
+  warrantyLabel?: string | null;
   sellerRating: number;
   score: number;
   /**
@@ -276,11 +280,16 @@ const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 function offerFacts(label: string, o: ExplainOfferFacts): string {
-  const shipping = o.firstPartyStore
-    ? "shipping not stated by the merchant — calculated at checkout and NOT included in the total (never call it free)"
-    : o.shippingCost === 0
-      ? "free"
-      : money(o.shippingCost);
+  const shipping =
+    o.firstPartyStore || o.shippingCost === null
+      ? "shipping not stated by the merchant — calculated at checkout and NOT included in the total (never call it free)"
+      : o.shippingCost === 0
+        ? "free"
+        : money(o.shippingCost);
+  const delivery =
+    o.deliveryDays === null
+      ? "delivery time not stated by the seller"
+      : `arrives in ${o.deliveryDays} days`;
   const rating = o.firstPartyStore
     ? "no seller rating (the merchant's own first-party store)"
     : o.sellerRating.toFixed(1);
@@ -296,8 +305,8 @@ function offerFacts(label: string, o: ExplainOfferFacts): string {
   return (
     `${label}: seller ${o.seller} (${o.merchant}), total ${money(o.totalCost)} ` +
     `(sticker ${money(o.price)} + shipping ${shipping}), ` +
-    `arrives in ${o.deliveryDays} days, returns: ${returns}, ` +
-    `warranty ${o.warrantyMonths > 0 ? `${o.warrantyMonths} months` : "not stated by seller"}, seller rating ${rating}, score ${o.score}/100.`
+    `${delivery}, returns: ${returns}, ` +
+    `warranty ${o.warrantyLabel ? "lifetime, as stated in the listing text" : o.warrantyMonths > 0 ? `${o.warrantyMonths} months` : "not stated by seller"}, seller rating ${rating}, score ${o.score}/100.`
   );
 }
 
@@ -362,7 +371,8 @@ export async function explainRecommendation(
     // without them, any "costs $X more" phrasing reads as ungrounded.
     Math.abs(input.winner.price - input.cheapestSticker.price),
     Math.abs(input.winner.totalCost - input.cheapestSticker.totalCost),
-  ];
+    // Unstated shipping (null) is not a figure the model may cite.
+  ].filter((n): n is number => n != null);
   return figuresAreGrounded(text, allowedFigures) ? text : null;
 }
 

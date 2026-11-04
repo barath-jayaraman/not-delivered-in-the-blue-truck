@@ -1,7 +1,12 @@
 import { getMerchantPolicy } from "../adapters";
 import { normalizeSearch } from "../data";
-import { cleanDescription } from "../description";
+import { cleanDescription, cleanDescriptionFull } from "../description";
+import { getVerifiedStorePolicy } from "../store-policies";
 import type { Merchant, Offer } from "../types";
+import {
+  extractWarrantyFromText,
+  type ExtractedWarranty,
+} from "../warranty";
 
 /**
  * UCP LIVE ADAPTER — Universal Commerce Protocol catalog over MCP.
@@ -42,10 +47,13 @@ import type { Merchant, Offer } from "../types";
  * shipping-service estimate in lib/adapters.ts), those Offer fields use
  * clearly labelled curated/service estimates, disclosed in every
  * offer's provenance note:
- * - shippingCost 0 means "not stated by the catalog — calculated by the
- *   merchant at checkout", NOT free shipping (lib/scoring.ts does not
- *   attach its "Free shipping" flag to UCP offers);
- * - deliveryDays is a standard ground service-level estimate;
+ * - shippingCost is null: the catalog states no shipping charge — it
+ *   is calculated by the merchant at checkout and is NOT included in
+ *   any total, never rendered as $0.00 or "free" (delivery/shipping
+ *   null-out, Nov 4, 2026 — the earlier shippingCost 0 read as free);
+ * - deliveryDays is null: the catalog states no delivery estimate, so
+ *   none is shown (the earlier hardcoded 5-day service estimate
+ *   rendered as an arrival promise — removed under the same rule);
  * - return terms are NOT stated (returnWindowDays null, rendered
  *   "Not stated by seller"). Accuracy fix, Nov 4, 2026: the earlier
  *   generic 30-day/buyer-paid default rendered in the comparison table
@@ -106,9 +114,6 @@ const CATALOG_LIMIT = 5;
 const SESSION_CACHE_TTL_MS = 10 * 60_000;
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const CATALOG_SEARCH_CAP = "dev.ucp.shopping.catalog.search";
-
-/** Service estimate for the delivery field the UCP catalog does not state. */
-const SERVICE_DELIVERY_DAYS = 5;
 
 export function ucpEnabled(): boolean {
   return process.env.ENABLE_UCP !== "0";
@@ -4104,6 +4109,12 @@ export interface UcpProduct {
    * carried none for this product.
    */
   description: string | null;
+  /**
+   * Warranty stated in that same listing text, extracted at parse
+   * time by lib/warranty.ts (verbatim-grounded: an explicit duration
+   * or lifetime statement only). Null when the text states none.
+   */
+  warranty?: ExtractedWarranty | null;
   /** Major-unit price (e.g. dollars), converted from UCP minor units. */
   price: number;
   currency: string;
@@ -4214,6 +4225,10 @@ function normalizeUcpProduct(raw: RawUcpProduct): UcpProduct | null {
   return {
     title: raw.title,
     description: cleanDescription(rawDescription),
+    // Warranty: scanned from the FULL cleaned listing text (not the
+    // 600-char display excerpt) — the statement counts only when the
+    // store's own text makes it explicitly (lib/warranty.ts).
+    warranty: extractWarrantyFromText(cleanDescriptionFull(rawDescription)),
     price,
     currency: "USD",
     url: typeof raw.url === "string" ? raw.url : null,
@@ -4504,24 +4519,26 @@ export async function searchUcpStore(
 
 /**
  * Build an Offer from one live UCP catalog product. The price is the
- * merchant's own live figure; fields the catalog does not state use
- * the labelled curated/service estimates documented at the top of
- * this file and disclosed again in the provenance note.
+ * merchant's own live figure; every other field is shown only when a
+ * source states it — the catalog itself, the listing's own text
+ * (warranty), or the merchant's verified published policy
+ * (lib/store-policies.ts) — and is otherwise null / "Not stated by
+ * seller", never an estimate or a default.
  */
 export function buildUcpOffer(
   store: UcpStore,
   product: UcpProduct,
   retrievedAt: string,
 ): Offer {
-  return {
+  const offer: Offer = {
     id: `ucp-${store.profileHost.replace(/[^a-z0-9]+/gi, "-")}-${product.productKey}`,
     merchant: store.merchant,
     seller: store.merchant,
     channel: store.merchant,
     condition: "New",
     price: product.price,
-    shippingCost: 0,
-    deliveryDays: SERVICE_DELIVERY_DAYS,
+    shippingCost: null,
+    deliveryDays: null,
     deliveryBasis: "Sample shipping-service estimate",
     returnWindowDays: null,
     returnCost: "not-stated",
@@ -4546,11 +4563,55 @@ export function buildUcpOffer(
         `buyer starts checkout, over this same published profile). The price is the ` +
         `merchant's own live figure. The UCP catalog does not state ` +
         `a shipping charge (shipping is calculated by the merchant at checkout and is not ` +
-        `included in the total), a delivery estimate (a ${SERVICE_DELIVERY_DAYS}-day standard ` +
-        `ground service estimate is used for scoring), return terms (none are stated, so ` +
-        `returns are shown as "Not stated by seller" — the merchant's own published ` +
-        `policy, on its site, governs), a warranty period, or a seller rating — this is the merchant's own ` +
+        `included in the total), a delivery estimate (none is shown — delivery is stated ` +
+        `only when a source states it), return terms (none are stated in the catalog, so ` +
+        `returns are shown as "Not stated by seller" unless the merchant's own published ` +
+        `policy was verified — see below), a warranty period, or a seller rating — this is the merchant's own ` +
         `first-party store. Nothing here is stored: the price was fetched in this request.`,
     },
   };
+  // Warranty from the store's own listing text (extracted at parse
+  // time, lib/warranty.ts): when the text states one, the offer
+  // carries it, and the provenance note says where it came from —
+  // replacing this offer's "the catalog does not state a warranty
+  // period" clause, which is no longer true for it.
+  const warranty = product.warranty ?? null;
+  if (warranty) {
+    offer.warrantyMonths = warranty.months;
+    offer.warrantyLabel = warranty.label;
+    offer.provenance.policyNote =
+      offer.provenance.policyNote.replace(
+        ", a warranty period, or a seller rating",
+        ", or a seller rating",
+      ) +
+      ` Warranty source: this listing's own description text in the catalog ` +
+      `states "${warranty.phrase}" — the warranty shown is that statement, ` +
+      `read from the listing text retrieved in this request.`;
+  }
+  // Return terms from the merchant's own published policy, fetched
+  // and verified on Nov 4, 2026 (lib/store-policies.ts): only the
+  // fields that policy actually states are applied; the rest stay
+  // "Not stated by seller". Kane's Furniture is the worked example —
+  // its policy states no return window at all, only a 48-hour
+  // cancellation right and a 20% restocking fee, so the window stays
+  // null and the fee + note carry the real terms.
+  const policy = getVerifiedStorePolicy(store.merchant);
+  if (policy) {
+    if (policy.returnWindowDays != null) {
+      offer.returnWindowDays = policy.returnWindowDays;
+    }
+    if (policy.returnCost != null) {
+      offer.returnCost = policy.returnCost;
+    }
+    offer.restockingFee = policy.restockingFee;
+    offer.returnPolicyNote = policy.policyNote;
+    offer.returnPolicySource = "Verified merchant policy";
+    offer.provenance.policyNote +=
+      ` Return terms source: ${store.merchant}'s published policy ` +
+      `(${policy.sourceUrl}), read and verified Nov 4, 2026 — the return ` +
+      `window, return cost, and restocking fee shown are that policy's ` +
+      `own stated terms; anything the policy does not state is shown ` +
+      `as "Not stated by seller".`;
+  }
+  return offer;
 }

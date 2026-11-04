@@ -1,6 +1,7 @@
 import { getMerchantPolicy } from "../adapters";
 import { cleanDescription } from "../description";
 import type { Offer } from "../types";
+import { extractWarrantyFromText } from "../warranty";
 
 /**
  * EBAY LIVE API ADAPTER — official eBay Buy Browse API only.
@@ -597,7 +598,33 @@ export async function enrichEbayOfferDescriptions(
       const description = await fetchEbayItemDescription(
         offer.sourceItemId as string,
       );
-      if (description) offer.description = description;
+      if (description) {
+        offer.description = description;
+        // Warranty from the listing's own description text, under the
+        // same verbatim-grounded rule as every other route
+        // (lib/warranty.ts): an explicit duration or lifetime
+        // statement in the text we just retrieved, or nothing. The
+        // provenance note's search-time "no warranty stated" claim is
+        // replaced for this offer when the detail text states one.
+        const warranty = extractWarrantyFromText(description);
+        if (warranty) {
+          offer.warrantyMonths = warranty.months;
+          offer.warrantyLabel = warranty.label;
+          const sourceSentence =
+            `Warranty source: the listing's own description text states ` +
+            `"${warranty.phrase}" — the warranty shown is that statement, ` +
+            `read from the listing text retrieved in this request.`;
+          const noWarrantyClaim =
+            "No warranty period is stated by the listing, so none is claimed.";
+          offer.provenance.policyNote =
+            offer.provenance.policyNote.includes(noWarrantyClaim)
+              ? offer.provenance.policyNote.replace(
+                  noWarrantyClaim,
+                  sourceSentence,
+                )
+              : `${offer.provenance.policyNote} ${sourceSentence}`;
+        }
+      }
     }),
   );
 }

@@ -37,7 +37,8 @@ import type { Offer, Product } from "../types";
  *   falls back to sample data. Nothing here evades a block.
  *
  * Enabled by default (Barath's go-live directive, Oct 29, 2026). Set
- * ENABLE_WALMART_BROWSE=0 to disable. The merchant policy registry gate
+ * ENABLE_WALMART_BROWSE=1 to enable (off by default since Nov 4, 2026,
+ * pending Walmart's Agent Gateway decision). The merchant policy registry gate
  * still applies on top of this switch.
  */
 
@@ -52,7 +53,11 @@ const FETCH_TIMEOUT_MS = 10_000;
 /** Walmart's published free-shipping threshold for non-Walmart+ orders. */
 const FREE_SHIPPING_THRESHOLD = 35;
 export function walmartBrowseEnabled(): boolean {
-  return process.env.ENABLE_WALMART_BROWSE !== "0";
+  // OFF by default (Barath, Nov 4, 2026): the browse route stays
+  // disabled until Walmart decides the Agent Gateway application
+  // submitted Nov 1, 2026. Opt in explicitly with
+  // ENABLE_WALMART_BROWSE=1. (Previously on unless set to "0".)
+  return process.env.ENABLE_WALMART_BROWSE === "1";
 }
 
 /* ------------------------------------------------------------------ */

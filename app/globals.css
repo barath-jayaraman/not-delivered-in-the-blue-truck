@@ -2057,3 +2057,28 @@ a.btnOutline {
     display: none;
   }
 }
+
+/* Product-page Details / Highlights (the winning offer's own listing
+   description and Muse-distilled highlights, Nov 4, 2026). */
+.detailsSection {
+  background: #fff;
+  border: 1px solid var(--line, #e5ded2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  line-height: 1.55;
+}
+.detailsSection h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+.detailsSection p {
+  margin: 0;
+}
+.highlightsList {
+  margin: 0;
+  padding-left: 20px;
+}
+.highlightsList li {
+  margin: 2px 0;
+}

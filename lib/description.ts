@@ -45,11 +45,12 @@ function decodeEntities(text: string): string {
 }
 
 /**
- * Clean one raw description (plain text or HTML) into display text.
- * Returns null when nothing readable remains — callers then simply
- * render no description for that offer.
+ * Clean one raw description (plain text or HTML) into plain text with
+ * NO length cap. Returns null when nothing readable remains. Used
+ * where the full retrieved text matters (warranty extraction scans
+ * the whole listing text, not just the displayed excerpt).
  */
-export function cleanDescription(
+export function cleanDescriptionFull(
   raw: string | null | undefined,
 ): string | null {
   if (typeof raw !== "string" || !raw.trim()) return null;
@@ -62,6 +63,18 @@ export function cleanDescription(
   )
     .replace(/\s+/g, " ")
     .trim();
+  return text || null;
+}
+
+/**
+ * Clean one raw description (plain text or HTML) into display text.
+ * Returns null when nothing readable remains — callers then simply
+ * render no description for that offer.
+ */
+export function cleanDescription(
+  raw: string | null | undefined,
+): string | null {
+  const text = cleanDescriptionFull(raw);
   if (!text) return null;
   if (text.length <= DESCRIPTION_MAX_CHARS) return text;
   const cut = text.slice(0, DESCRIPTION_MAX_CHARS);

@@ -486,10 +486,14 @@ function summarizeGroup(group: LiveProductGroup, query: string): ProductSummary 
     lowestPrice: Math.min(...prices),
     highestPrice: Math.max(...prices),
     lowestTotal: Math.min(
-      ...group.offers.map((o) => o.price + o.shippingCost),
+      ...group.offers.map((o) => o.price + (o.shippingCost ?? 0)),
     ),
     hasFreeShipping: group.offers.some((o) => o.shippingCost === 0),
-    hasStatedWarranty: group.offers.some((o) => o.warrantyMonths > 0),
+    // A stated warranty is a stated duration OR a stated lifetime
+    // label (lib/warranty.ts) — a lifetime offer carries months 0.
+    hasStatedWarranty: group.offers.some(
+      (o) => o.warrantyMonths > 0 || !!o.warrantyLabel,
+    ),
     hasFreeReturns: group.offers.some((o) => o.returnCost === "free"),
     // Longest STATED window in the group; offers that state none
     // (returnWindowDays null) contribute 0, and 0 means "no offer in
@@ -498,7 +502,14 @@ function summarizeGroup(group: LiveProductGroup, query: string): ProductSummary 
       0,
       ...group.offers.map((o) => o.returnWindowDays ?? 0),
     ),
-    fastestDeliveryDays: Math.min(...group.offers.map((o) => o.deliveryDays)),
+    // Fastest STATED delivery window; null when no offer in the group
+    // states one (unstated delivery never sorts or filters as fast).
+    fastestDeliveryDays: (() => {
+      const stated = group.offers
+        .map((o) => o.deliveryDays)
+        .filter((d): d is number => d != null);
+      return stated.length > 0 ? Math.min(...stated) : null;
+    })(),
     exactMatch: normalizeSearch(group.name).includes(normalizeSearch(query)),
     dataSource: "live",
     sourceMerchants: group.merchants,

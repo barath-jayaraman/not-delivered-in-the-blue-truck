@@ -53,6 +53,13 @@ function returnWindowLabel(offer: ScoredOffer): string {
   return `${offer.returnWindowDays} days`;
 }
 
+function restockingFeeLabel(offer: ScoredOffer): string {
+  // The fee renders only from a verified published policy (a stated
+  // percentage, or "None" where the policy affirmatively supports
+  // it). Anything else is an absence of data — never an inference.
+  return offer.restockingFee ?? "Not stated by seller";
+}
+
 function returnCostLabel(offer: ScoredOffer): string {
   if (offer.returnCost === "free") return "Free";
   if (offer.returnCost === "buyer-paid") return "Buyer-paid";
@@ -61,6 +68,8 @@ function returnCostLabel(offer: ScoredOffer): string {
 }
 
 function warrantyLabel(offer: ScoredOffer): string {
+  // A stated lifetime warranty is a label, not a month count.
+  if (offer.warrantyLabel) return offer.warrantyLabel;
   // warrantyMonths 0 means the source stated no warranty period — that is
   // an absence of data, never a claim of "no warranty".
   if (offer.warrantyMonths <= 0) return "Not stated by seller";
@@ -164,12 +173,24 @@ export default function ShoppingApp() {
       // Return filters judge a product by its most generous offer.
       if (filterFreeReturns && !product.hasFreeReturns) return false;
       if (filterMinReturnDays !== null && product.longestReturnWindowDays < filterMinReturnDays) return false;
-      if (filterMaxDays !== null && product.fastestDeliveryDays > filterMaxDays) return false;
+      // A delivery-speed filter can only be satisfied by a STATED
+      // delivery window — unstated (null) never passes it.
+      if (
+        filterMaxDays !== null &&
+        (product.fastestDeliveryDays === null ||
+          product.fastestDeliveryDays > filterMaxDays)
+      )
+        return false;
       return true;
     });
     if (sort === "price") list = [...list].sort((a, b) => a.lowestPrice - b.lowestPrice);
     if (sort === "fastest") {
-      list = [...list].sort((a, b) => a.fastestDeliveryDays - b.fastestDeliveryDays);
+      // Unstated delivery (null) sorts last — never as fastest.
+      list = [...list].sort(
+        (a, b) =>
+          (a.fastestDeliveryDays ?? Number.POSITIVE_INFINITY) -
+          (b.fastestDeliveryDays ?? Number.POSITIVE_INFINITY),
+      );
     }
     return list;
   }, [searchMeta, filterBrands, filterMinTotal, filterMaxTotal, filterFreeShipping, filterWarrantyStated, filterFreeReturns, filterMinReturnDays, filterMaxDays, sort]);
@@ -691,7 +712,9 @@ export default function ShoppingApp() {
                       From <strong>{money(product.lowestPrice)}</strong>
                     </p>
                     <p className="arrivalLine">
-                      Arrives in as fast as {product.fastestDeliveryDays} days
+                      {product.fastestDeliveryDays !== null
+                        ? `Arrives in as fast as ${product.fastestDeliveryDays} days`
+                        : "Delivery not stated by seller"}
                     </p>
                     {product.dataSource === "live" && (
                       <p className="resultMeta">
@@ -717,6 +740,14 @@ export default function ShoppingApp() {
        beat. Only crown a winner when stores actually compete. */
     const winnerId = result.offers.length > 1 ? result.recommendation.id : null;
     const visibleOffers = result.offers;
+    /* Details: the winning offer's own listing description, exactly as
+       its source returned it (fetched live and cleaned server-side —
+       never generated). Falls back to the first offer that carries
+       one; the section renders nothing when no offer does. */
+    const detailsOffer =
+      (result.recommendation.description ? result.recommendation : null) ??
+      result.offers.find((offer) => offer.description) ??
+      null;
     /* Counts are stated by distinct stores, not offers — several offers
        can come from a single store. */
     const storeCount = result.sourceMerchants.length;
@@ -747,12 +778,17 @@ export default function ShoppingApp() {
 
         <p className="productFacts">
           {storeCount === 1
-            ? `Sold by ${result.offers[0].merchant} · ${result.offers[0].condition} · `
+            ? `${result.offers[0].condition} · `
             : `${storeCount} stores compared · ${money(result.priceRange.lowest)}–${money(result.priceRange.highest)} · `}
-          Arrives in as fast as {result.fastestDeliveryDays} day
-          {result.fastestDeliveryDays === 1 ? "" : "s"}
+          {result.fastestDeliveryDays !== null
+            ? `Arrives in as fast as ${result.fastestDeliveryDays} day${result.fastestDeliveryDays === 1 ? "" : "s"}`
+            : "Delivery not stated by seller"}
         </p>
 
+        {/* "Muse Spark's take" note removed from the product page
+            (Barath, Nov 4, 2026 — display only; the /api/decide
+            explanation machinery is untouched and can be restored by
+            uncommenting this block).
         {result.explanation && (
           <p className="museNote">
             <strong>
@@ -764,6 +800,7 @@ export default function ShoppingApp() {
             {result.explanation}
           </p>
         )}
+        */}
 
         {result.offers.length > 1 && (
         <div className="priorityRow" aria-label="Sort offers">
@@ -805,6 +842,7 @@ export default function ShoppingApp() {
                 <th scope="col">Delivery date</th>
                 <th scope="col">Return window</th>
                 <th scope="col">Return cost</th>
+                <th scope="col">Restocking fee</th>
                 <th scope="col">Warranty</th>
                 <th scope="col">
                   <span className="sr-only">Action</span>
@@ -841,19 +879,45 @@ export default function ShoppingApp() {
                       </span>
                     </td>
                     <td data-label="Total (all-in)">
-                      <span className="totalValue">{money(offer.totalCost)}</span>
-                      <span className="breakdown">
-                        {money(offer.price)} + {money(offer.shippingCost)} shipping
-                      </span>
+                      {offer.shippingCost === null ? (
+                        <>
+                          <span className="totalValue">{money(offer.price)}</span>
+                          <span className="breakdown">
+                            Shipping not stated — calculated at checkout
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="totalValue">{money(offer.totalCost)}</span>
+                          <span className="breakdown">
+                            {money(offer.price)} +{" "}
+                            {offer.shippingCost === 0
+                              ? "free shipping"
+                              : `${money(offer.shippingCost)} shipping`}
+                          </span>
+                        </>
+                      )}
                     </td>
                     <td data-label="Delivery date">
-                      <span className="deliveryDate">{arrivalFullDate(offer.deliveryDays)}</span>
-                      <span className="arrivesSub">
-                        Arrives in {offer.deliveryDays} day{offer.deliveryDays === 1 ? "" : "s"}
-                      </span>
+                      {offer.deliveryDays === null ? (
+                        <span className="deliveryDate">Not stated by seller</span>
+                      ) : (
+                        <>
+                          <span className="deliveryDate">{arrivalFullDate(offer.deliveryDays)}</span>
+                          <span className="arrivesSub">
+                            Arrives in {offer.deliveryDays} day{offer.deliveryDays === 1 ? "" : "s"}
+                          </span>
+                        </>
+                      )}
                     </td>
-                    <td data-label="Return window">{returnWindowLabel(offer)}</td>
+                    <td data-label="Return window">
+                      {returnWindowLabel(offer)}
+                      {offer.returnPolicyNote && (
+                        <span className="breakdown">{offer.returnPolicyNote}</span>
+                      )}
+                    </td>
                     <td data-label="Return cost">{returnCostLabel(offer)}</td>
+                    <td data-label="Restocking fee">{restockingFeeLabel(offer)}</td>
                     <td data-label="Warranty">{warrantyLabel(offer)}</td>
                     <td data-label="Action">
                       {canPreloadStoreCart(offer) ? (
@@ -920,7 +984,24 @@ export default function ShoppingApp() {
         </div>
         )}
 
-        <p className="shipsLine">Ships from and sold by {result.recommendation.seller}</p>
+        {detailsOffer?.highlights && detailsOffer.highlights.length > 0 && (
+          <section className="detailsSection" aria-label="Highlights">
+            <h2>Highlights</h2>
+            <ul className="highlightsList">
+              {detailsOffer.highlights.map((highlight) => (
+                <li key={highlight}>{highlight}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {detailsOffer?.description && (
+          <section className="detailsSection" aria-label="Product details">
+            <h2>Details</h2>
+            <p>{detailsOffer.description}</p>
+          </section>
+        )}
+
         {result.dataSource === "live" && result.retrievedAt && (
           <p className="liveLine">
             Prices retrieved {formatDateTime(result.retrievedAt)} from{" "}
@@ -930,8 +1011,8 @@ export default function ShoppingApp() {
         )}
         <p className="smallPrint">
           {result.agentActivity.mode === "live"
-            ? "Comparison assembled with Muse Spark."
-            : "Comparison assembled locally — live model unavailable for this request."}
+            ? "Details derived by Muse Spark"
+            : "Details derived locally — live model unavailable for this request."}
         </p>
       </main>
     );
