@@ -3921,7 +3921,7 @@ export function findUcpStore(merchant: string): UcpStore | undefined {
   return UCP_STORES.find((store) => store.merchant === merchant);
 }
 
-const MAX_UCP_STORES_PER_QUERY = 4;
+const MAX_UCP_STORES_PER_QUERY = 25;
 
 /**
  * Route a shopper query to the UCP stores whose assortment it matches:
