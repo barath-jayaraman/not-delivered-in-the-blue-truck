@@ -863,8 +863,8 @@ export default function ShoppingApp() {
                     </p>
                     {product.dataSource === "live" && (
                       <p className="resultMeta">
-                        Live prices from {product.sourceMerchants.join(" · ")} ·{" "}
-                        {product.offerCount} offer{product.offerCount === 1 ? "" : "s"}
+                        Live prices from {product.sourceMerchants.join(" · ")}
+                        {product.offerCount > 1 ? ` · ${product.offerCount} offers` : ""}
                       </p>
                     )}
                   </span>
