@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 /**
  * Terms of service in plain language, matching the app's actual
  * behavior: live prices that can change, the selling store as the
- * seller of record, invite-only code-gated checkout, payment by the
+ * seller of record, in-app checkout, payment by the
  * store's provider, and delivery/returns handled by the store.
  */
 export default function TermsPage() {
@@ -57,13 +57,12 @@ export default function TermsPage() {
         from the checkout before you pay.
       </p>
 
-      <h2>Invite-only checkout</h2>
+      <h2>Checkout</h2>
       <p>
-        Checkout on this site is currently limited to invited guests and
-        requires an access code. Entering a code does not create an account.
-        We may change, pause, or end checkout availability at any time. Do
-        not enter payment card details anywhere on this site — payment is
-        only ever taken on the selling store&apos;s secure payment step.
+        Checkout on this site does not create an account. We may change,
+        pause, or end checkout availability at any time. Do not enter
+        payment card details anywhere on this site — payment is only ever
+        taken on the selling store&apos;s secure payment step.
       </p>
 
       <h2>Orders and confirmations</h2>

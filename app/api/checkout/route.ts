@@ -14,62 +14,36 @@ import type { StoreOrder } from "@/lib/types";
 export const maxDuration = 60;
 
 /**
- * POST /api/checkout — real, CODE-GATED checkout at UCP stores.
+ * POST /api/checkout — real checkout at UCP stores.
  *
- * Barath's rule (Nov 2, 2026): in-app checkout exists, but completing
- * it requires an access code, so random visitors cannot buy. The code
- * is validated HERE, server-side, against the CHECKOUT_ACCESS_CODE
- * environment variable; it is never shipped to the browser. When the
- * variable is unset the gate fails CLOSED (503) — a deployment without
- * a configured code cannot check anyone out.
+ * TEMPORARILY OPEN (Barath, Nov 3, 2026): the invite-only access-code
+ * gate is removed for now so checkout can be tested end to end; it
+ * may be restored tomorrow. While this gate is out, no access code is
+ * required or checked, and the CHECKOUT_ACCESS_CODE environment
+ * variable is ignored. To restore the gate, re-add the server-side
+ * code check before the action handling below.
  *
  * Actions:
- * - "start": { accessCode, merchant, items: [{ itemId, quantity }],
+ * - "start": { merchant, items: [{ itemId, quantity }],
  *   buyer: { name, email, phone }, address: { street, extended?, city,
  *   region, postal } } → creates a live checkout session at the store
  *   (lib/adapters/ucp-checkout.ts) and returns the store's own session
  *   summary, including its hosted payment continuation. Guest details
  *   pass through to the store in this request and are stored nowhere.
- * - "status": { accessCode, merchant, checkoutId, buyerEmail } →
+ * - "status": { merchant, checkoutId, buyerEmail } →
  *   re-reads the session from the store; returns a StoreOrder ONLY
  *   when the store itself returns an order for the session.
- * - "cartlink": { accessCode, merchant, items } → Path B: creates an
+ * - "cartlink": { merchant, items } → Path B: creates an
  *   items-only session at the store (NO buyer details are collected
  *   or sent) and returns the store's own continuation URL, which
  *   lands the buyer on the store's site with the items already in
- *   its cart to enter details and pay there. Same code gate.
+ *   its cart to enter details and pay there.
  *
  * This app never receives a card number: payment is taken by the
  * store's own declared payment handlers on the store's continuation.
  * eBay, Walmart, and the browsing-route stores are not served here at
  * all — they check out on their own sites via the listing link.
  */
-
-function gateError(): NextResponse | null {
-  const expected = process.env.CHECKOUT_ACCESS_CODE?.trim();
-  if (!expected) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Checkout is invite-only and is not configured on this deployment yet.",
-      },
-      { status: 503 },
-    );
-  }
-  return null;
-}
-
-function codeAccepted(candidate: unknown): boolean {
-  const expected = process.env.CHECKOUT_ACCESS_CODE?.trim();
-  return (
-    typeof expected === "string" &&
-    expected.length > 0 &&
-    typeof candidate === "string" &&
-    candidate.length > 0 &&
-    candidate === expected
-  );
-}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const POSTAL_RE = /^\d{5}(-\d{4})?$/;
@@ -87,19 +61,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, error: "Invalid JSON body." },
       { status: 400 },
-    );
-  }
-
-  const unconfigured = gateError();
-  if (unconfigured) return unconfigured;
-  if (!codeAccepted(body.accessCode)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Checkout is currently invite-only. Enter a valid access code to check out.",
-      },
-      { status: 403 },
     );
   }
 

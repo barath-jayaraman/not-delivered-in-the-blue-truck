@@ -171,7 +171,6 @@ export default function ShoppingApp() {
   const [guestCity, setGuestCity] = useState("");
   const [guestRegion, setGuestRegion] = useState("");
   const [guestPostal, setGuestPostal] = useState("");
-  const [accessCode, setAccessCode] = useState("");
   const [buyerConsent, setBuyerConsent] = useState(false);
 
   /** Per-merchant live checkout state, keyed by merchant name. The
@@ -663,8 +662,7 @@ export default function ShoppingApp() {
 
   /**
    * Start a REAL checkout session at one UCP store for that store's
-   * cart items. The server validates the access code before creating
-   * anything; the session, totals, and messages shown afterwards are
+   * cart items. The session, totals, and messages shown afterwards are
    * the store's own response. No order exists until the store confirms
    * one (see checkStoreOrder).
    */
@@ -680,7 +678,6 @@ export default function ShoppingApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "start",
-          accessCode,
           merchant,
           items: items.map((item) => ({
             itemId: item.checkoutItemId,
@@ -740,7 +737,6 @@ export default function ShoppingApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "cartlink",
-          accessCode,
           merchant,
           items: items.map((item) => ({
             itemId: item.checkoutItemId,
@@ -813,7 +809,6 @@ export default function ShoppingApp() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "status",
-          accessCode,
           merchant,
           checkoutId: session.checkoutId,
           buyerEmail: guestEmail,
@@ -1329,10 +1324,9 @@ export default function ShoppingApp() {
 
             {checkoutMerchants.length > 0 && (
               <section className="checkoutForm" aria-label="Checkout">
-                <h4>Checkout — invite-only</h4>
+                <h4>Checkout</h4>
                 <p className="warningText">
-                  Checkout here is real, and currently limited to invited guests:
-                  it takes an access code, and each store below is checked out
+                  Checkout here is real, and each store below is checked out
                   separately with that store. Your details go to the selling
                   store to fulfill your order and are not stored by this site.
                   Payment is taken by the store&apos;s own payment provider on
@@ -1340,17 +1334,6 @@ export default function ShoppingApp() {
                   number on this site.
                 </p>
                 <div className="formGrid">
-                  <label className="field">
-                    <span>Access code</span>
-                    <input
-                      className="codeInput"
-                      type="password"
-                      value={accessCode}
-                      onChange={(e) => setAccessCode(e.target.value)}
-                      autoComplete="off"
-                      placeholder="Required to check out"
-                    />
-                  </label>
                   <label className="field">
                     <span>Guest name</span>
                     <input value={guestName} onChange={(e) => setGuestName(e.target.value)} autoComplete="name" />
@@ -1444,10 +1427,7 @@ export default function ShoppingApp() {
                           type="button"
                           className="btnCoral btnBlock"
                           disabled={
-                            state.busy ||
-                            !accessCode.trim() ||
-                            !guestDetailsValid ||
-                            !buyerConsent
+                            state.busy || !guestDetailsValid || !buyerConsent
                           }
                           onClick={() => void startStoreCheckout(merchant)}
                         >
@@ -1554,7 +1534,7 @@ export default function ShoppingApp() {
                         <button
                           type="button"
                           className="btnOutline btnBlock"
-                          disabled={state.cartBusy || !accessCode.trim()}
+                          disabled={state.cartBusy}
                           onClick={() => void continueAtStore(merchant)}
                         >
                           {state.cartBusy
@@ -1577,11 +1557,6 @@ export default function ShoppingApp() {
                           <p className="mutedText">{state.cartNote}</p>
                         )}
                       </div>
-                      {!accessCode.trim() && (
-                        <p className="consentHint">
-                          Enter your access code above to enable checkout.
-                        </p>
-                      )}
                     </section>
                   );
                 })}

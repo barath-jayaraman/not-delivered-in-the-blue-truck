@@ -41,8 +41,7 @@ export default function PrivacyPage() {
 
       <h2>Checking out</h2>
       <p>
-        Checkout is currently invite-only: it requires an access code. When
-        you check out with a store that sells through this site, you enter
+        When you check out with a store that sells through this site, you enter
         your name, email address, phone number, and delivery address. Those
         details are sent to the selling store so it can take your order and
         deliver it. <strong>We do not store your checkout details on our
