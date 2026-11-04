@@ -215,7 +215,7 @@ export type Merchant =
   | "JLab"
   | "Juvia's Place"
   | "K18Hair"
-  | "KBDfans Mechanical Keyboards Store"
+  | "KBDfans"
   | "KEEN Footwear"
   | "Kelty"
   | "Keychron"

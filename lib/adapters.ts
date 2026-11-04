@@ -498,7 +498,7 @@ export const MERCHANT_POLICY_REGISTRY: MerchantPolicy[] = [
     "Jenni Kayne",
     "Jessica Simpson",
     "K18Hair",
-    "KBDfans Mechanical Keyboards Store",
+    "KBDfans",
     "KEEN Footwear",
     "Knix",
     "Kyte Baby",
